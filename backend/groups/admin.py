@@ -1,50 +1,133 @@
 from django.contrib import admin
-from .models import (
-    Group, Level, Question, GroupJumpTest, GroupJumpTestAttempt, 
-    PlantGrowthStage, UserPlantProgress
-)
+from django.utils.html import format_html
+from django.urls import reverse
+from django.utils.safestring import mark_safe
+from .models import Group, GroupProgress, GroupUnlockTest, GroupUnlockTestAttempt
+
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'group_number', 'level_count', 'is_unlocked', 'unlock_condition', 'plant_type')
-    list_filter = ('is_unlocked', 'unlock_condition', 'plant_type', 'created_at')
+    list_display = (
+        'group_number', 'name', 'difficulty', 'is_unlocked', 
+        'unlock_condition', 'xp_reward', 'is_active', 'created_at'
+    )
+    list_filter = ('difficulty', 'is_unlocked', 'unlock_condition', 'is_active', 'created_at')
     search_fields = ('name', 'description')
     ordering = ('group_number',)
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('group_number', 'name', 'description', 'difficulty')
+        }),
+        ('Unlock Configuration', {
+            'fields': ('is_unlocked', 'unlock_condition', 'required_level')
+        }),
+        ('Test Configuration', {
+            'fields': ('test_questions', 'pass_percentage'),
+            'classes': ('collapse',)
+        }),
+        ('Rewards', {
+            'fields': ('xp_reward', 'badge_name', 'badge_description')
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
 
-@admin.register(Level)
-class LevelAdmin(admin.ModelAdmin):
-    list_display = ('name', 'group', 'level_number', 'questions_count', 'xp_reward', 'is_unlocked', 'plant_growth_stage')
-    list_filter = ('group', 'is_unlocked', 'plant_growth_stage', 'created_at')
-    search_fields = ('name', 'description')
-    ordering = ('group', 'level_number')
 
-@admin.register(Question)
-class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('question_text', 'level', 'question_type', 'difficulty', 'xp_value', 'question_order')
-    list_filter = ('question_type', 'difficulty', 'level__group')
-    search_fields = ('question_text',)
-    ordering = ('level', 'question_order')
+@admin.register(GroupProgress)
+class GroupProgressAdmin(admin.ModelAdmin):
+    list_display = (
+        'user', 'group', 'is_unlocked', 'is_completed', 
+        'completion_percentage', 'levels_completed', 'total_xp_earned', 'created_at'
+    )
+    list_filter = ('is_unlocked', 'is_completed', 'group', 'created_at')
+    search_fields = ('user__username', 'group__name')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at', 'unlocked_at', 'completed_at')
+    
+    fieldsets = (
+        ('Progress Data', {
+            'fields': ('user', 'group', 'is_unlocked', 'is_completed', 'completion_percentage')
+        }),
+        ('Statistics', {
+            'fields': ('levels_completed', 'total_xp_earned', 'time_spent_minutes')
+        }),
+        ('Test Results', {
+            'fields': ('unlock_test_passed', 'unlock_test_attempts', 'best_unlock_test_score')
+        }),
+        ('Timestamps', {
+            'fields': ('unlocked_at', 'completed_at', 'last_accessed_at', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'group')
 
-@admin.register(GroupJumpTest)
-class GroupJumpTestAdmin(admin.ModelAdmin):
-    list_display = ('name', 'target_group', 'pass_percentage', 'time_limit_minutes', 'is_active')
-    list_filter = ('target_group', 'is_active', 'created_at')
-    search_fields = ('name', 'description')
 
-@admin.register(GroupJumpTestAttempt)
-class GroupJumpTestAttemptAdmin(admin.ModelAdmin):
-    list_display = ('user', 'jump_test', 'score', 'percentage', 'passed', 'attempted_at')
-    list_filter = ('passed', 'jump_test__target_group', 'attempted_at')
-    search_fields = ('user__username',)
+@admin.register(GroupUnlockTest)
+class GroupUnlockTestAdmin(admin.ModelAdmin):
+    list_display = (
+        'group', 'name', 'questions_count', 'pass_percentage', 
+        'time_limit_minutes', 'xp_reward', 'is_active', 'created_at'
+    )
+    list_filter = ('is_active', 'group', 'created_at')
+    search_fields = ('name', 'description', 'group__name')
+    ordering = ('group__group_number',)
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Test Information', {
+            'fields': ('group', 'name', 'description')
+        }),
+        ('Test Configuration', {
+            'fields': ('questions_count', 'pass_percentage', 'time_limit_minutes')
+        }),
+        ('Rewards', {
+            'fields': ('xp_reward',)
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
 
-@admin.register(PlantGrowthStage)
-class PlantGrowthStageAdmin(admin.ModelAdmin):
-    list_display = ('group', 'stage_name', 'stage_order', 'level_range_start', 'level_range_end')
-    list_filter = ('group', 'stage_name')
-    ordering = ('group', 'stage_order')
 
-@admin.register(UserPlantProgress)
-class UserPlantProgressAdmin(admin.ModelAdmin):
-    list_display = ('user', 'group', 'current_stage', 'current_level', 'is_wilting', 'last_level_completed')
-    list_filter = ('group', 'current_stage', 'is_wilting', 'created_at')
-    search_fields = ('user__username',)
+@admin.register(GroupUnlockTestAttempt)
+class GroupUnlockTestAttemptAdmin(admin.ModelAdmin):
+    list_display = (
+        'user', 'test', 'score', 'percentage', 'passed', 
+        'time_taken_seconds', 'started_at', 'completed_at'
+    )
+    list_filter = ('passed', 'test', 'started_at', 'completed_at')
+    search_fields = ('user__username', 'test__name')
+    ordering = ('-started_at',)
+    readonly_fields = ('started_at', 'completed_at', 'xp_earned')
+    
+    fieldsets = (
+        ('Attempt Data', {
+            'fields': ('user', 'test', 'score', 'total_questions', 'correct_answers', 'percentage', 'passed')
+        }),
+        ('Time Tracking', {
+            'fields': ('time_taken_seconds', 'started_at', 'completed_at')
+        }),
+        ('Rewards', {
+            'fields': ('xp_earned',)
+        }),
+        ('User Answers', {
+            'fields': ('user_answers',),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'test__group')
