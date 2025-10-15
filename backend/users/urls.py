@@ -1,32 +1,35 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from . import views
 
-router = DefaultRouter()
-router.register(r'profiles', views.UserProfileViewSet)
-router.register(r'stats', views.UserStatsViewSet)
-
 urlpatterns = [
-    # Authentication
-    path('register/', views.UserRegistrationView.as_view(), name='user-register'),
-    path('login/', views.UserLoginView.as_view(), name='user-login'),
-    path('logout/', views.UserLogoutView.as_view(), name='user-logout'),
-    path('change-password/', views.PasswordChangeView.as_view(), name='password-change'),
+    # Authentication URLs
+    path('auth/student-login/', views.StudentLoginView.as_view(), name='student-login'),
+    path('auth/email-login/', views.EmailLoginView.as_view(), name='email-login'),
+    path('auth/logout/', views.logout_view, name='logout'),
+    path('auth/check/', views.check_auth, name='check-auth'),
     
-    # User Management
+    # Registration URLs
+    path('register/student/', views.StudentRegistrationView.as_view(), name='student-registration'),
+    path('register/teacher/', views.TeacherRegistrationView.as_view(), name='teacher-registration'),
+    path('register/donor/', views.DonorRegistrationView.as_view(), name='donor-registration'),
+    
+    # User Management URLs
     path('profile/', views.UserProfileView.as_view(), name='user-profile'),
-    path('profile/update/', views.UserUpdateView.as_view(), name='user-update'),
-    path('profile/stats/', views.UserStatsView.as_view(), name='user-stats'),
+    path('change-password/', views.PasswordChangeView.as_view(), name='change-password'),
+    path('stats/', views.UserStatsView.as_view(), name='user-stats'),
     
-    # Student Management (for teachers/admins)
+    # User Lists (Admin only)
     path('students/', views.StudentListView.as_view(), name='student-list'),
-    path('students/<int:pk>/', views.StudentDetailView.as_view(), name='student-detail'),
-    path('students/<int:pk>/progress/', views.StudentProgressView.as_view(), name='student-progress'),
+    path('teachers/', views.TeacherListView.as_view(), name='teacher-list'),
+    path('donors/', views.DonorListView.as_view(), name='donor-list'),
     
-    # Parent Management
-    path('children/', views.ChildrenListView.as_view(), name='children-list'),
-    path('children/<int:pk>/progress/', views.ChildProgressView.as_view(), name='child-progress'),
+    # List Management (Admin only)
+    path('manage/students/', views.StudentListManagementView.as_view(), name='manage-student-list'),
+    path('manage/teachers/', views.TeacherListManagementView.as_view(), name='manage-teacher-list'),
+    path('manage/donors/', views.DonorListManagementView.as_view(), name='manage-donor-list'),
     
-    # Router URLs
-    path('', include(router.urls)),
+    # Utility URLs
+    path('check/student-id/', views.check_student_id, name='check-student-id'),
+    path('check/email/', views.check_email, name='check-email'),
+    path('logs/', views.LoginLogsView.as_view(), name='login-logs'),
 ]
