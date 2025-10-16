@@ -46,9 +46,7 @@ INSTALLED_APPS = [
     # Local apps
     'users',
     'groups',
-    'levels',
-    'tests',
-    'plants',
+    'care',
     'progress',
 ]
 
