@@ -5,9 +5,11 @@ import { motion } from 'framer-motion'
 import { BookOpen, Trophy, Leaf, Target, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false)
+  const { isLoggedIn, user } = useAuth()
 
   useEffect(() => {
     setMounted(true)
@@ -245,27 +247,45 @@ export default function HomePage() {
               Master English through 8 groups with 50 levels each. Watch your plant grow from seed to fruit tree as you progress!
             </p>
               <div className="flex flex-col gap-3 justify-center items-center lg:items-start">
-                <Link 
-                  href="/register" 
-                  className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white text-sm sm:text-base px-6 sm:px-8 py-4 sm:py-5 rounded-full font-bold transition-all duration-300 hover:shadow-2xl hover:scale-110 hover:from-[#02033a] hover:to-[#0099cc] transform w-[70%] text-center shadow-xl"
-                  style={{
-                    boxShadow: '0 12px 24px rgba(3, 4, 94, 0.4), 0 6px 12px rgba(0, 191, 230, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-                  }}
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    🚀 GET STARTED
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-                </Link>
-                <Link 
-                  href="/login" 
-                  className="group relative bg-white text-[#03045e] text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold border-2 border-[#03045e]/20 transition-all duration-300 hover:bg-[#03045e] hover:text-white hover:shadow-xl hover:scale-105 transform w-[70%] text-center whitespace-nowrap shadow-lg"
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    👤 I ALREADY HAVE AN ACCOUNT
-                  </span>
-                </Link>
+                {isLoggedIn ? (
+                  <Link 
+                    href="/groups" 
+                    className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white text-sm sm:text-base px-6 sm:px-8 py-4 sm:py-5 rounded-full font-bold transition-all duration-300 hover:shadow-2xl hover:scale-110 hover:from-[#02033a] hover:to-[#0099cc] transform w-[70%] text-center shadow-xl"
+                    style={{
+                      boxShadow: '0 12px 24px rgba(3, 4, 94, 0.4), 0 6px 12px rgba(0, 191, 230, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                    }}
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      🚀 START LEARNING
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                  </Link>
+                ) : (
+                  <>
+                    <Link 
+                      href="/register" 
+                      className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white text-sm sm:text-base px-6 sm:px-8 py-4 sm:py-5 rounded-full font-bold transition-all duration-300 hover:shadow-2xl hover:scale-110 hover:from-[#02033a] hover:to-[#0099cc] transform w-[70%] text-center shadow-xl"
+                      style={{
+                        boxShadow: '0 12px 24px rgba(3, 4, 94, 0.4), 0 6px 12px rgba(0, 191, 230, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                      }}
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        🚀 GET STARTED
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                    </Link>
+                    <Link 
+                      href="/login" 
+                      className="group relative bg-white text-[#03045e] text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold border-2 border-[#03045e]/20 transition-all duration-300 hover:bg-[#03045e] hover:text-white hover:shadow-xl hover:scale-105 transform w-[70%] text-center whitespace-nowrap shadow-lg"
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        👤 I ALREADY HAVE AN ACCOUNT
+                      </span>
+                    </Link>
+                  </>
+                )}
             </div>
           </motion.div>
           </div>
@@ -389,13 +409,23 @@ export default function HomePage() {
           <p className="text-xl text-blue-100 mb-8">
             Join thousands of learners who are mastering English with our plant-based system
           </p>
-          <Link 
-            href="/register" 
-            className="group relative inline-block bg-white text-[#03045e] font-semibold py-4 px-8 rounded-lg text-lg hover:bg-gray-50 transition-all duration-300 hover:shadow-2xl hover:scale-105 transform"
-          >
-            <span className="relative z-10">Get Started Now</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-lg opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-          </Link>
+          {isLoggedIn ? (
+            <Link 
+              href="/groups" 
+              className="group relative inline-block bg-white text-[#03045e] font-semibold py-4 px-8 rounded-lg text-lg hover:bg-gray-50 transition-all duration-300 hover:shadow-2xl hover:scale-105 transform"
+            >
+              <span className="relative z-10">Start Learning Now</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-lg opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+            </Link>
+          ) : (
+            <Link 
+              href="/register" 
+              className="group relative inline-block bg-white text-[#03045e] font-semibold py-4 px-8 rounded-lg text-lg hover:bg-gray-50 transition-all duration-300 hover:shadow-2xl hover:scale-105 transform"
+            >
+              <span className="relative z-10">Get Started Now</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-lg opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+            </Link>
+          )}
         </div>
       </section>
 

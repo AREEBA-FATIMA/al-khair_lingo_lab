@@ -58,7 +58,7 @@ export default function Navigation({
             <div className="flex items-center space-x-2">
               <Leaf className="h-8 w-8 text-blue-600" />
               <h1 className="text-2xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent">
-                Lingo Master
+                Lingo 
               </h1>
             </div>
           </div>
