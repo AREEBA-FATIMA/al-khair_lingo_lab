@@ -14,7 +14,14 @@ export default function HomePage() {
   }, [])
 
   if (!mounted) {
-    return null
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-[#00bfe6] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
   }
 
   return (

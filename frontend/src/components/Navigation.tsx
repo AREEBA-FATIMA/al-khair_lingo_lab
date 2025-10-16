@@ -25,6 +25,9 @@ export default function Navigation({
   const [isNavigating, setIsNavigating] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // Debug logging
+  console.log('Navigation - isLoggedIn:', isLoggedIn, 'user:', user)
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

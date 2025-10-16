@@ -28,16 +28,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if user is logged in on page load
     const savedUser = localStorage.getItem('user')
+    console.log('AuthContext - savedUser from localStorage:', savedUser)
     if (savedUser) {
-      setUser(JSON.parse(savedUser))
+      const userData = JSON.parse(savedUser)
+      console.log('AuthContext - parsed userData:', userData)
+      setUser(userData)
       setIsLoggedIn(true)
     }
   }, [])
 
   const login = (userData: User) => {
+    console.log('AuthContext - login called with:', userData)
     setUser(userData)
     setIsLoggedIn(true)
     localStorage.setItem('user', JSON.stringify(userData))
+    console.log('AuthContext - user set and saved to localStorage')
   }
 
   const logout = () => {
