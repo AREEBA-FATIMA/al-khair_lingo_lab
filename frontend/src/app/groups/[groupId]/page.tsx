@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Play, CheckCircle, Lock, Leaf, Star, Clock, Target } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import Navigation from '@/components/Navigation'
 
 interface Level {
   id: number
@@ -216,33 +217,8 @@ export default function GroupDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Link href="/groups" className="text-gray-600 hover:text-primary-600 transition-colors">
-                <ArrowLeft className="h-6 w-6" />
-              </Link>
-              <div className="flex items-center space-x-2">
-                <Leaf className="h-8 w-8 text-primary-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Lingo Master</h1>
-              </div>
-            </div>
-            <nav className="hidden md:flex space-x-8">
-              <Link href="/" className="text-gray-600 hover:text-primary-600 transition-colors">
-                Home
-              </Link>
-              <Link href="/groups" className="text-primary-600 font-medium">
-                Groups
-              </Link>
-              <Link href="/progress" className="text-gray-600 hover:text-primary-600 transition-colors">
-                Progress
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      {/* Navigation */}
+      <Navigation showBackButton={true} backHref="/groups" backLabel="Groups" />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
