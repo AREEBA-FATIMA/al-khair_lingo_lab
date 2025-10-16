@@ -33,6 +33,9 @@ urlpatterns = [
     # API URLs
     path('api/users/', include('users.urls')),
     path('api/groups/', include('groups.urls')),
+    path('api/levels/', include('levels.urls')),
+    path('api/tests/', include('tests.urls')),
+    path('api/plants/', include('plants.urls')),
     path('api/progress/', include('progress.urls')),
 ]
 

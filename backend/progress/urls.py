@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
-router.register(r'group-progress', views.GroupProgressViewSet)
 router.register(r'level-progress', views.LevelProgressViewSet)
 router.register(r'daily-progress', views.DailyProgressViewSet)
 

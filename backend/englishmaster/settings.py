@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     # Local apps
     'users',
     'groups',
-    'care',
+    'levels',
+    'tests',
+    'plants',
     'progress',
 ]
 
@@ -135,6 +137,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
+
+# Custom Authentication Backend
+AUTHENTICATION_BACKENDS = [
+    'users.authentication.MultiMethodAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 # REST Framework Configuration
 REST_FRAMEWORK = {

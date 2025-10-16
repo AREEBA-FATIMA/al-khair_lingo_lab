@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django.db.models import Q
-from .models import GroupProgress, LevelProgress, QuestionProgress, DailyProgress
+from .models import LevelProgress, QuestionProgress, DailyProgress
 
 class ProgressOverviewView(generics.GenericAPIView):
     """Progress overview"""
@@ -94,12 +94,6 @@ class PerformanceAnalyticsView(generics.GenericAPIView):
     
     def get(self, request):
         return Response({'message': 'Performance analytics endpoint'})
-
-class GroupProgressViewSet(ModelViewSet):
-    """Group progress viewset"""
-    queryset = GroupProgress.objects.all()
-    serializer_class = None
-    permission_classes = [IsAuthenticated]
 
 class LevelProgressViewSet(ModelViewSet):
     """Level progress viewset"""
