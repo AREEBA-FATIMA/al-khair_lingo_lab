@@ -87,7 +87,7 @@ class Level(models.Model):
         ]
     
     def __str__(self):
-        return f"Level {self.level_number}: {self.name}"
+        return f"Level {self.level_number}"
     
     def save(self, *args, **kwargs):
         """Auto-set test level for every 10th level"""

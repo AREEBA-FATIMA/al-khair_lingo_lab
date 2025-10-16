@@ -1,6 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from groups.models import Group, Level, Question, PlantGrowthStage
+from groups.models import Group
+from levels.models import Level, Question
+from plants.models import PlantStage
 from users.models import User
 
 User = get_user_model()
@@ -21,75 +23,67 @@ class Command(BaseCommand):
             Group.objects.all().delete()
             Level.objects.all().delete()
             Question.objects.all().delete()
-            PlantGrowthStage.objects.all().delete()
+            PlantStage.objects.all().delete()
 
         self.stdout.write('Creating groups and levels...')
         
-        # Group data with different level counts
+        # Group data
         groups_data = [
             {
                 'group_number': 0,
-                'name': 'Basic English (Shuruati Angrezi)',
+                'name': 'Basic English',
                 'description': 'Basic level for complete beginners',
-                'level_count': 20,
-                'plant_type': 'basic_seed',
-                'unlock_condition': 'complete_previous'
+                'unlock_condition': 'complete_previous',
+                'is_unlocked': True  # Only Group 0 unlocked initially
             },
             {
                 'group_number': 1,
-                'name': 'Elementary English (Buniyadi Angrezi)',
+                'name': 'Elementary English',
                 'description': 'Elementary level English learning',
-                'level_count': 50,
-                'plant_type': 'flower_seed',
-                'unlock_condition': 'test_100_percent'
+                'unlock_condition': 'test_100_percent',
+                'is_unlocked': False  # Locked initially
             },
             {
                 'group_number': 2,
-                'name': 'Pre-Intermediate (Pehle Darje Ka)',
+                'name': 'Pre-Intermediate',
                 'description': 'Pre-intermediate level English',
-                'level_count': 50,
-                'plant_type': 'herb_seed',
-                'unlock_condition': 'test_100_percent'
+                'unlock_condition': 'test_100_percent',
+                'is_unlocked': False  # Locked initially
             },
             {
                 'group_number': 3,
-                'name': 'Intermediate (Darmiyani Darje)',
+                'name': 'Intermediate',
                 'description': 'Intermediate level English',
-                'level_count': 50,
-                'plant_type': 'vegetable_seed',
-                'unlock_condition': 'test_100_percent'
+                'unlock_condition': 'test_100_percent',
+                'is_unlocked': False  # Locked initially
             },
             {
                 'group_number': 4,
-                'name': 'Upper-Intermediate (Ooncha Darje)',
+                'name': 'Upper-Intermediate',
                 'description': 'Upper-intermediate level English',
-                'level_count': 50,
-                'plant_type': 'fruit_seed',
-                'unlock_condition': 'test_100_percent'
+                'unlock_condition': 'test_100_percent',
+                'is_unlocked': False  # Locked initially
             },
             {
                 'group_number': 5,
-                'name': 'Advanced (Aala Darje)',
+                'name': 'Advanced',
                 'description': 'Advanced level English',
-                'level_count': 50,
-                'plant_type': 'tree_seed',
-                'unlock_condition': 'test_100_percent'
+                'unlock_condition': 'test_100_percent',
+                'is_unlocked': False  # Locked initially
             },
             {
                 'group_number': 6,
-                'name': 'Expert (Mahir)',
+                'name': 'Expert ',
                 'description': 'Expert level English',
-                'level_count': 50,
-                'plant_type': 'exotic_seed',
-                'unlock_condition': 'test_100_percent'
+                'unlock_condition': 'test_100_percent',
+                'is_unlocked': False  # Locked initially
             },
             {
                 'group_number': 7,
-                'name': 'Master (Ustaad)',
+                'name': 'Master ',
                 'description': 'Master level English',
-                'level_count': 50,
-                'plant_type': 'legendary_seed',
-                'unlock_condition': 'test_100_percent'
+                'unlock_condition': 'test_100_percent',
+                'is_unlocked': False  # Locked initially
             },
         ]
 
@@ -105,18 +99,20 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f'Group {group.group_number} already exists')
 
-            # Create levels for this group
-            level_count = group.get_level_count()
+            # Create levels for this group (fixed 20 levels per group)
+            level_count = 20
             for level_num in range(1, level_count + 1):
+                # Calculate global level number
+                global_level_num = (group.group_number * level_count) + level_num
+                
                 level, created = Level.objects.get_or_create(
-                    group=group,
-                    level_number=level_num,
+                    level_number=global_level_num,
                     defaults={
-                        'name': f'Level {level_num}',
+                        'name': f'{group.name} - Level {level_num}',
                         'description': f'Level {level_num} of {group.name}',
-                        'questions_count': 6,
                         'xp_reward': 10 + (level_num * 2),
                         'is_unlocked': level_num == 1,  # Only first level unlocked initially
+                        'is_test_level': level_num % 10 == 0,  # Every 10th level is a test
                     }
                 )
                 
@@ -183,35 +179,31 @@ class Command(BaseCommand):
 
     def _create_plant_growth_stages(self, group):
         """Create plant growth stages for a group"""
-        stages = [
-            {'stage_name': 'seed', 'stage_order': 1, 'level_range_start': 1, 'level_range_end': 4},
-            {'stage_name': 'sprout', 'stage_order': 2, 'level_range_start': 5, 'level_range_end': 8},
-            {'stage_name': 'sapling', 'stage_order': 3, 'level_range_start': 9, 'level_range_end': 12},
-            {'stage_name': 'tree', 'stage_order': 4, 'level_range_start': 13, 'level_range_end': 16},
-            {'stage_name': 'fruit_tree', 'stage_order': 5, 'level_range_start': 17, 'level_range_end': 20},
-        ]
+        # Create a plant type for this group first
+        from plants.models import PlantType
+        plant_type, created = PlantType.objects.get_or_create(
+            name=f"{group.name} Plant",
+            defaults={
+                'description': f"Plant type for {group.name}",
+                'max_stages': 5,
+                'xp_per_stage': 100,
+                'is_active': True,
+            }
+        )
         
-        # Adjust ranges based on group level count
-        level_count = group.get_level_count()
-        if level_count == 50:
-            # For 50-level groups, adjust ranges
-            stages = [
-                {'stage_name': 'seed', 'stage_order': 1, 'level_range_start': 1, 'level_range_end': 10},
-                {'stage_name': 'sprout', 'stage_order': 2, 'level_range_start': 11, 'level_range_end': 20},
-                {'stage_name': 'sapling', 'stage_order': 3, 'level_range_start': 21, 'level_range_end': 30},
-                {'stage_name': 'tree', 'stage_order': 4, 'level_range_start': 31, 'level_range_end': 40},
-                {'stage_name': 'fruit_tree', 'stage_order': 5, 'level_range_start': 41, 'level_range_end': 50},
-            ]
+        stages = [
+            {'stage_name': 'seed', 'stage_order': 1},
+            {'stage_name': 'sprout', 'stage_order': 2},
+            {'stage_name': 'sapling', 'stage_order': 3},
+            {'stage_name': 'tree', 'stage_order': 4},
+            {'stage_name': 'flowering', 'stage_order': 5},
+        ]
 
         for stage_data in stages:
-            PlantGrowthStage.objects.get_or_create(
-                group=group,
+            PlantStage.objects.get_or_create(
+                plant_type=plant_type,
                 stage_order=stage_data['stage_order'],
                 defaults={
                     'stage_name': stage_data['stage_name'],
-                    'level_range_start': stage_data['level_range_start'],
-                    'level_range_end': stage_data['level_range_end'],
-                    'description': f'{stage_data["stage_name"].title()} stage for {group.name}',
-                    'xp_required': stage_data['level_range_start'] * 10,
                 }
             )
