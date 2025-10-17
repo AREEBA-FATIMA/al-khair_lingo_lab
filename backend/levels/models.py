@@ -26,6 +26,14 @@ class Level(models.Model):
         help_text="Sequential level number (1, 2, 3...)"
     )
     
+    # Group relationship
+    group = models.ForeignKey(
+        'groups.Group',
+        on_delete=models.CASCADE,
+        related_name='levels',
+        help_text="Group this level belongs to"
+    )
+    
     # Configuration
     difficulty = models.PositiveIntegerField(
         choices=DIFFICULTY_CHOICES,

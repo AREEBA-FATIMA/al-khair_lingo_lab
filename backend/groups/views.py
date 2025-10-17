@@ -10,6 +10,8 @@ from .serializers import (
     GroupUnlockTestAttemptSerializer, GroupUnlockTestAttemptCreateSerializer,
     GroupStatsSerializer
 )
+from levels.models import Level
+from levels.serializers import LevelSerializer
 
 
 class GroupListView(generics.ListAPIView):
@@ -393,3 +395,19 @@ class GroupUnlockTestAttemptViewSet(ModelViewSet):
     search_fields = ['user__username', 'test__name']
     ordering_fields = ['started_at', 'percentage', 'score']
     ordering = ['-started_at']
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_group_levels(request, group_id):
+    """Get all levels for a specific group"""
+    try:
+        group = Group.objects.get(id=group_id, is_active=True)
+        levels = Level.objects.filter(group=group, is_active=True).order_by('level_number')
+        serializer = LevelSerializer(levels, many=True)
+        return Response(serializer.data)
+    except Group.DoesNotExist:
+        return Response(
+            {'error': 'Group not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )

@@ -88,6 +88,69 @@ class StudentLoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class SimpleLoginView(APIView):
+    """Simple login for frontend - username/email and password"""
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        
+        if not username or not password:
+            return Response({
+                'error': 'Username and password are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Try to authenticate with email first, then username
+        user = None
+        
+        # First try with email
+        if '@' in username:
+            user = authenticate(
+                request=request,
+                username=username,
+                password=password
+            )
+        
+        # If not found, try with username (need to find user by username and use email for auth)
+        if not user:
+            try:
+                user_obj = User.objects.get(username=username)
+                user = authenticate(
+                    request=request,
+                    username=user_obj.email,
+                    password=password
+                )
+            except User.DoesNotExist:
+                pass
+        
+        if user and user.is_active:
+            # Generate JWT token
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'message': 'Login successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'role': user.role,
+                    'student_id': user.student_id,
+                },
+                'tokens': {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
+            })
+        else:
+            return Response({
+                'error': 'Invalid credentials'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+
 class TeacherAdminLoginView(APIView):
     """Teacher/Admin login with email and password"""
     permission_classes = [permissions.AllowAny]

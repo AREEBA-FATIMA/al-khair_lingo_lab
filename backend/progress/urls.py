@@ -18,6 +18,7 @@ urlpatterns = [
     # Level Progress
     path('levels/', views.LevelProgressListView.as_view(), name='level-progress-list'),
     path('levels/<int:pk>/', views.LevelProgressDetailView.as_view(), name='level-progress-detail'),
+    path('levels/complete/', views.LevelCompletionView.as_view(), name='level-completion'),
     
     # Daily Progress
     path('daily/', views.DailyProgressListView.as_view(), name='daily-progress-list'),

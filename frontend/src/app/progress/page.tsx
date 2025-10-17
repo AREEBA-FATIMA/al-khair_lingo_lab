@@ -5,20 +5,17 @@ import { motion } from 'framer-motion'
 import { Leaf, Trophy, Target, Clock, Star, TrendingUp, Calendar, Zap } from 'lucide-react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { apiService } from '@/services/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface UserProgress {
+  total_levels: number
+  completed_levels: number
+  completion_percentage: number
   total_xp: number
+  total_questions: number
+  accuracy_percentage: number
   current_streak: number
-  longest_streak: number
-  total_levels_completed: number
-  total_groups_completed: number
-  weekly_levels_completed: number
-  monthly_levels_completed: number
-  weekly_xp_earned: number
-  monthly_xp_earned: number
-  overall_accuracy: number
-  average_time_per_question: number
-  total_study_time: number
 }
 
 interface DailyProgress {
@@ -35,94 +32,39 @@ export default function ProgressPage() {
   const [progress, setProgress] = useState<UserProgress | null>(null)
   const [dailyProgress, setDailyProgress] = useState<DailyProgress[]>([])
   const [loading, setLoading] = useState(true)
+  const { isLoggedIn } = useAuth()
 
   useEffect(() => {
-    // Mock data for now - will be replaced with API calls
-    const mockProgress: UserProgress = {
-      total_xp: 1250,
-      current_streak: 7,
-      longest_streak: 15,
-      total_levels_completed: 25,
-      total_groups_completed: 0,
-      weekly_levels_completed: 5,
-      monthly_levels_completed: 20,
-      weekly_xp_earned: 250,
-      monthly_xp_earned: 1000,
-      overall_accuracy: 85.5,
-      average_time_per_question: 45,
-      total_study_time: 180
+    if (!isLoggedIn) {
+      setLoading(false)
+      return
     }
 
-    const mockDailyProgress: DailyProgress[] = [
-      {
-        date: '2024-01-15',
-        levels_completed: 2,
-        questions_answered: 12,
-        correct_answers: 10,
-        xp_earned: 50,
-        time_spent: 30,
-        streak_maintained: true
-      },
-      {
-        date: '2024-01-14',
-        levels_completed: 1,
-        questions_answered: 6,
-        correct_answers: 5,
-        xp_earned: 25,
-        time_spent: 15,
-        streak_maintained: true
-      },
-      {
-        date: '2024-01-13',
-        levels_completed: 3,
-        questions_answered: 18,
-        correct_answers: 16,
-        xp_earned: 75,
-        time_spent: 45,
-        streak_maintained: true
-      },
-      {
-        date: '2024-01-12',
-        levels_completed: 1,
-        questions_answered: 6,
-        correct_answers: 6,
-        xp_earned: 30,
-        time_spent: 20,
-        streak_maintained: true
-      },
-      {
-        date: '2024-01-11',
-        levels_completed: 2,
-        questions_answered: 12,
-        correct_answers: 9,
-        xp_earned: 45,
-        time_spent: 25,
-        streak_maintained: true
-      },
-      {
-        date: '2024-01-10',
-        levels_completed: 1,
-        questions_answered: 6,
-        correct_answers: 5,
-        xp_earned: 25,
-        time_spent: 18,
-        streak_maintained: true
-      },
-      {
-        date: '2024-01-09',
-        levels_completed: 0,
-        questions_answered: 0,
-        correct_answers: 0,
-        xp_earned: 0,
-        time_spent: 0,
-        streak_maintained: false
+    const fetchProgress = async () => {
+      try {
+        const response = await apiService.getProgressOverview()
+        setProgress(response.overview)
+        setDailyProgress(response.recent_activity || [])
+      } catch (error) {
+        console.error('Error fetching progress:', error)
+        // Fallback to mock data if API fails
+        const mockProgress: UserProgress = {
+          total_levels: 1,
+          completed_levels: 0,
+          completion_percentage: 0,
+          total_xp: 0,
+          total_questions: 0,
+          accuracy_percentage: 0,
+          current_streak: 0
+        }
+        setProgress(mockProgress)
+      } finally {
+        setLoading(false)
       }
-    ]
+    }
 
-    setProgress(mockProgress)
-    setDailyProgress(mockDailyProgress)
-    setLoading(false)
-  }, [])
+    fetchProgress()
+  }, [isLoggedIn])
 
   if (loading) {
     return (

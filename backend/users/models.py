@@ -144,6 +144,12 @@ class LoginLog(models.Model):
         default=True,
         help_text="Was login successful?"
     )
+    failure_reason = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Reason for login failure"
+    )
     attempted_at = models.DateTimeField(
         auto_now_add=True,
         help_text="When login was attempted"

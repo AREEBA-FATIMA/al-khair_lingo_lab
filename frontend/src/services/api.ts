@@ -89,9 +89,92 @@ export interface UserProgress {
 
 // API Functions
 export const apiService = {
+  // Authentication
+  login: async (username: string, password: string) => {
+    console.log('DEBUG - API Service: Making login request', { username })
+    try {
+      const response = await api.post('/users/auth/login/', {
+        username,
+        password
+      })
+      console.log('DEBUG - API Service: Login response received', response.data)
+      return response.data
+    } catch (error) {
+      console.error('DEBUG - API Service: Login error', error)
+      throw error
+    }
+  },
+
+  logout: async () => {
+    const response = await api.post('/users/auth/logout/')
+    return response.data
+  },
+
+  getProfile: async () => {
+    const response = await api.get('/users/profile/')
+    return response.data
+  },
+
+  // Progress
+  getProgressOverview: async () => {
+    const response = await api.get('/progress/overview/')
+    return response.data
+  },
+
+  submitLevelCompletion: async (levelId: number, answers: any[]) => {
+    const response = await api.post('/progress/levels/complete/', {
+      level_id: levelId,
+      answers: answers
+    })
+    return response.data
+  },
+
   // Groups
   getGroups: async (): Promise<Group[]> => {
     const response = await api.get('/groups/')
+    return response.data
+  },
+
+  // Levels - Updated to use correct endpoints
+  getLevel: async (levelNumber: number) => {
+    const response = await api.get(`/levels/${levelNumber}/`)
+    return response.data
+  },
+
+  getLevelQuestions: async (levelNumber: number) => {
+    const response = await api.get(`/levels/${levelNumber}/questions/`)
+    return response.data
+  },
+
+  // Submit answer for a question
+  submitAnswer: async (questionId: number, answer: string) => {
+    const response = await api.post('/levels/submit-answer/', {
+      question_id: questionId,
+      answer: answer
+    })
+    return response.data
+  },
+
+  // Complete a level
+  completeLevel: async (levelId: number, answers: any[]) => {
+    const response = await api.post('/levels/complete-level/', {
+      level: levelId,
+      score: answers.filter(a => a.is_correct).length,
+      total_questions: answers.length,
+      correct_answers: answers.filter(a => a.is_correct).length,
+      time_taken_seconds: answers.reduce((total, a) => total + (a.time_spent || 30), 0),
+      started_at: new Date().toISOString(),
+      user_answers: answers.reduce((acc, a) => {
+        acc[a.question_id] = a.answer
+        return acc
+      }, {})
+    })
+    return response.data
+  },
+
+  // Plant Growth
+  getPlantGrowth: async () => {
+    const response = await api.get('/plants/user-plant/')
     return response.data
   },
 
@@ -100,20 +183,9 @@ export const apiService = {
     return response.data
   },
 
-  // Levels
+  // Get levels for a specific group
   getLevels: async (groupId: number): Promise<Level[]> => {
     const response = await api.get(`/groups/${groupId}/levels/`)
-    return response.data
-  },
-
-  getLevel: async (groupId: number, levelId: number): Promise<Level> => {
-    const response = await api.get(`/groups/${groupId}/levels/${levelId}/`)
-    return response.data
-  },
-
-  // Questions
-  getQuestions: async (groupId: number, levelId: number): Promise<Question[]> => {
-    const response = await api.get(`/groups/${groupId}/levels/${levelId}/questions/`)
     return response.data
   },
 

@@ -2,20 +2,26 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CheckCircle, XCircle, Volume2, Mic, MicOff, Play, Pause } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Volume2, Mic, MicOff, Play, Pause, Leaf, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { apiService } from '@/services/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Question {
   id: number
   question_text: string
-  question_type: 'mcq' | 'text_to_speech' | 'fill_blank' | 'synonyms' | 'antonyms' | 'sentence_completion'
-  options: string[]
-  correct_answer: string
+  question_type: 'mcq' | 'text_to_speech' | 'fill_blank' | 'synonyms' | 'antonyms' | 'sentence_completion' | 'listening' | 'reading' | 'writing' | 'grammar'
+  options: string[] | null
+  correct_answer: string | string[]
   explanation: string
+  hint: string
+  audio_url: string | null
+  image_url: string | null
   xp_value: number
   question_order: number
   difficulty: number
+  time_limit_seconds: number
 }
 
 interface Level {
@@ -23,11 +29,20 @@ interface Level {
   name: string
   description: string
   level_number: number
-  questions_count: number
+  difficulty: number
   xp_reward: number
+  is_active: boolean
   is_unlocked: boolean
-  plant_growth_stage: string
+  is_test_level: boolean
+  test_questions_count: number
+  test_pass_percentage: number
+  test_time_limit_minutes: number
+  questions_count: number
   questions: Question[]
+  next_level: any
+  previous_level: any
+  created_at: string
+  updated_at: string
 }
 
 export default function LevelPage() {
@@ -45,87 +60,50 @@ export default function LevelPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [plantGrowth, setPlantGrowth] = useState<any>(null)
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
+  const { isLoggedIn } = useAuth()
+
   useEffect(() => {
+    console.log('DEBUG - useEffect called:', { isLoggedIn, levelId, groupId })
+    if (!isLoggedIn) {
+      console.log('DEBUG - User not logged in, skipping API calls')
+      setLoading(false)
+      return
+    }
+
     const fetchLevelData = async () => {
       try {
-        // First get all groups to find the correct group by group_number
-        const groupResponse = await fetch(`http://127.0.0.1:8000/api/groups/`)
+        console.log('DEBUG - Starting API calls for level:', levelId)
         
-        if (!groupResponse.ok) {
-          throw new Error(`HTTP error! status: ${groupResponse.status}`)
-        }
+        // Get level details and questions using level_number
+        const levelResponse = await apiService.getLevel(parseInt(levelId))
+        console.log('Level API Response:', levelResponse)
         
-        const groupsResponse = await groupResponse.json()
-        console.log('Groups API Response:', groupsResponse)
+        // Get questions for this level
+        const questionsResponse = await apiService.getLevelQuestions(parseInt(levelId))
+        console.log('Questions API Response:', questionsResponse)
+        console.log('Questions count:', questionsResponse?.results?.length || questionsResponse?.length || 0)
         
-        // Handle paginated response - data is in 'results' field
-        const groupsData = groupsResponse.results || groupsResponse
-        console.log('Groups data:', groupsData)
+        // Get plant growth info
+        const plantResponse = await apiService.getPlantGrowth()
+        console.log('Plant growth response:', plantResponse)
         
-        // Check if groupsData is an array
-        if (!Array.isArray(groupsData)) {
-          throw new Error('Groups data is not an array')
-        }
+        setLevel(levelResponse)
         
-        // Find the group by group_number
-        const groupData = groupsData.find((g: any) => g.group_number === parseInt(groupId))
+        // Handle questions response - it might be paginated
+        const questionsData = questionsResponse?.results || questionsResponse || []
+        console.log('DEBUG - Setting questions:', questionsData.length)
+        setQuestions(questionsData)
         
-        if (!groupData) {
-          throw new Error('Group not found')
-        }
+        setPlantGrowth(plantResponse)
         
-        // Now get levels for this specific group
-        const levelsResponse = await fetch(`http://127.0.0.1:8000/api/groups/${groupData.id}/levels/`)
-        
-        if (!levelsResponse.ok) {
-          throw new Error(`Levels API error! status: ${levelsResponse.status}`)
-        }
-        
-        const levelsResponseData = await levelsResponse.json()
-        console.log('Levels API Response:', levelsResponseData)
-        
-        // Handle paginated response - data is in 'results' field
-        const levelsData = levelsResponseData.results || levelsResponseData
-        console.log('Levels data:', levelsData)
-        
-        // Check if levelsData is an array
-        if (!Array.isArray(levelsData)) {
-          throw new Error('Levels data is not an array')
-        }
-        
-        // Find the level by level_number (not ID)
-        console.log('Looking for level_number:', parseInt(levelId))
-        console.log('Available levels:', levelsData.map((l: any) => ({ id: l.id, level_number: l.level_number, name: l.name })))
-        
-        const targetLevel = levelsData.find((l: any) => l.level_number === parseInt(levelId))
-        console.log('Found target level:', targetLevel)
-        
-        if (targetLevel) {
-          // Get questions for this level
-          const questionsResponse = await fetch(`http://127.0.0.1:8000/api/groups/${groupData.id}/levels/${targetLevel.id}/questions/`)
-          
-          if (!questionsResponse.ok) {
-            throw new Error(`Questions API error! status: ${questionsResponse.status}`)
-          }
-          
-          const questionsResponseData = await questionsResponse.json()
-          console.log('Questions API Response:', questionsResponseData)
-          
-          // Handle paginated response - data is in 'results' field
-          const questionsData = questionsResponseData.results || questionsResponseData
-          console.log('Questions data:', questionsData)
-          
-          setLevel(targetLevel)
-          setQuestions(Array.isArray(questionsData) ? questionsData : [])
-        } else {
-          throw new Error('Level not found')
-        }
       } catch (error) {
         console.error('Error fetching level data:', error)
+        console.log('DEBUG - Error details:', { error: error.message, levelId, groupId })
         // Fallback to mock data
         setLevel({
           id: parseInt(levelId),
@@ -145,7 +123,7 @@ export default function LevelPage() {
     }
 
     fetchLevelData()
-  }, [groupId, levelId])
+  }, [isLoggedIn, groupId, levelId])
 
   const startRecording = async () => {
     try {
@@ -214,18 +192,7 @@ export default function LevelPage() {
 
   const submitAnswer = async (questionId: number, answer: string) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/groups/questions/submit-answer/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question_id: questionId,
-          answer: answer
-        })
-      })
-      
-      const result = await response.json()
+      const result = await apiService.submitAnswer(questionId, answer)
       return result
     } catch (error) {
       console.error('Error submitting answer:', error)
@@ -233,26 +200,32 @@ export default function LevelPage() {
     }
   }
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1)
       setShowResult(false)
     } else {
-      // Level completed - calculate accuracy
-      const correctAnswers = Object.values(userAnswers).filter((answer, index) => 
-        answer === questions[index]?.correct_answer
-      ).length
-      const accuracy = (correctAnswers / questions.length) * 100
-      setScore(correctAnswers)
-      
-      // Level unlocks if accuracy >= 83%
-      const levelUnlocked = accuracy >= 83
-      
-      // Show result with unlock status
-      setShowResult(true)
-      
-      // TODO: Update backend with level completion status
-      console.log(`Level completed! Accuracy: ${accuracy.toFixed(1)}%, Unlocked: ${levelUnlocked}`)
+      // Level completed - submit to backend
+      try {
+        const answers = questions.map((question, index) => ({
+          question_id: question.id,
+          answer: userAnswers[question.id] || '',
+          time_spent: 30 // Default time for now
+        }))
+        
+        const result = await apiService.completeLevel(parseInt(levelId), answers)
+        console.log('Level completion result:', result)
+        
+        setScore(result.correct_answers)
+        setShowResult(true)
+        
+        // Show success message
+        alert(`Level completed! You earned ${result.xp_earned} XP!`)
+        
+      } catch (error) {
+        console.error('Error submitting level completion:', error)
+        alert('Error submitting level completion. Please try again.')
+      }
     }
   }
 
@@ -266,14 +239,29 @@ export default function LevelPage() {
     )
   }
 
-  if (!level || !currentQuestion) {
+  if (!level) {
+    console.log('DEBUG - Level not found:', { level, questions: questions.length })
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Level not found</h2>
+          <p className="text-gray-600 mb-4">Debug: level={level ? 'exists' : 'null'}, questions={questions.length}</p>
           <Link href="/groups" className="btn-primary">
             Back to Groups
           </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (questions.length === 0) {
+    console.log('DEBUG - No questions loaded:', { level, questions: questions.length })
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Questions...</h2>
+          <p className="text-gray-600 mb-4">Please wait while we load the questions for this level.</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
         </div>
       </div>
     )
@@ -325,7 +313,7 @@ export default function LevelPage() {
             </div>
 
             {/* Question Content */}
-            {currentQuestion.question_type === 'mcq' && (
+            {currentQuestion.question_type === 'mcq' && currentQuestion.options && (
               <div className="space-y-3">
                 {currentQuestion.options.map((option, index) => (
                   <button
@@ -383,7 +371,7 @@ export default function LevelPage() {
             )}
 
             {(currentQuestion.question_type === 'fill_blank' || 
-              currentQuestion.question_type === 'sentence_completion') && (
+              currentQuestion.question_type === 'sentence_completion') && currentQuestion.options && (
               <div className="space-y-3">
                 {currentQuestion.options.map((option, index) => (
                   <button
@@ -402,7 +390,7 @@ export default function LevelPage() {
             )}
 
             {(currentQuestion.question_type === 'synonyms' || 
-              currentQuestion.question_type === 'antonyms') && (
+              currentQuestion.question_type === 'antonyms') && currentQuestion.options && (
               <div className="space-y-3">
                 {currentQuestion.options.map((option, index) => (
                   <button
@@ -417,6 +405,93 @@ export default function LevelPage() {
                     {option}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Text input for fill_blank and other text-based questions */}
+            {(currentQuestion.question_type === 'fill_blank' || 
+              currentQuestion.question_type === 'sentence_completion' ||
+              currentQuestion.question_type === 'writing' ||
+              currentQuestion.question_type === 'grammar') && !currentQuestion.options && (
+              <div className="space-y-4">
+                <textarea
+                  value={userAnswers[currentQuestion.id] || ''}
+                  onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
+                  placeholder="Type your answer here..."
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:outline-none resize-none"
+                  rows={4}
+                />
+                {currentQuestion.hint && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Hint:</strong> {currentQuestion.hint}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Audio for listening questions */}
+            {currentQuestion.question_type === 'listening' && currentQuestion.audio_url && (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <button
+                    onClick={isPlaying ? stopPlaying : playRecording}
+                    className="p-4 rounded-full bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+                  >
+                    {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
+                  </button>
+                  <p className="text-sm text-gray-600 mt-2">Click to play audio</p>
+                </div>
+                {currentQuestion.options && (
+                  <div className="space-y-3">
+                    {currentQuestion.options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswer(currentQuestion.id, option)}
+                        className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${
+                          userAnswers[currentQuestion.id] === option
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Reading comprehension */}
+            {currentQuestion.question_type === 'reading' && (
+              <div className="space-y-4">
+                {currentQuestion.image_url && (
+                  <div className="text-center">
+                    <img 
+                      src={currentQuestion.image_url} 
+                      alt="Reading passage" 
+                      className="max-w-full h-auto rounded-lg shadow-md"
+                    />
+                  </div>
+                )}
+                {currentQuestion.options && (
+                  <div className="space-y-3">
+                    {currentQuestion.options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswer(currentQuestion.id, option)}
+                        className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${
+                          userAnswers[currentQuestion.id] === option
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

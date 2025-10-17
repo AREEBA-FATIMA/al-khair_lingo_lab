@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    UserViewSet, StudentLoginView, TeacherAdminLoginView,
+    UserViewSet, StudentLoginView, TeacherAdminLoginView, SimpleLoginView,
     UserRegistrationView, UserProfileView, PasswordChangeView,
     LogoutView, LoginLogViewSet
 )
@@ -14,6 +14,7 @@ urlpatterns = [
     path('', include(router.urls)),
     
     # Authentication endpoints
+    path('auth/login/', SimpleLoginView.as_view(), name='simple-login'),
     path('auth/student-login/', StudentLoginView.as_view(), name='student-login'),
     path('auth/teacher-admin-login/', TeacherAdminLoginView.as_view(), name='teacher-admin-login'),
     path('auth/register/', UserRegistrationView.as_view(), name='user-register'),

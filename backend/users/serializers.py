@@ -167,7 +167,7 @@ class PasswordChangeSerializer(serializers.Serializer):
 class LoginLogSerializer(serializers.ModelSerializer):
     """Serializer for login logs"""
     user_email = serializers.CharField(source='user.email', read_only=True)
-    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    user_name = serializers.CharField(source='user.get_display_name', read_only=True)
     
     class Meta:
         model = LoginLog

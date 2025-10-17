@@ -337,7 +337,7 @@ export default function GroupDetailPage() {
                     </div>
                   ) : status === 'unlocked' ? (
                     <Link 
-                      href={`/groups/${groupId}/levels/${level.level_number}`}
+                      href={`/groups/${groupId}/levels/${level.id}`}
                       className="btn-primary w-full text-center block"
                     >
                       {level.questions_answered > 0 ? 'Continue' : 'Start Level'}

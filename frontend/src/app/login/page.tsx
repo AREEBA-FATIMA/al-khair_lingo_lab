@@ -9,32 +9,34 @@ import { useAuth } from '@/contexts/AuthContext'
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     username: '',
-    campusName: '',
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Login user with form data
-    login({
-      username: formData.username,
-      campusName: formData.campusName,
-      joinDate: new Date().toISOString().split('T')[0], // Current date
-      level: 1,
-      groupsCompleted: 0,
-      totalQuestions: 0,
-      streak: 1
-    })
-    
-    // Redirect to groups page
-    window.location.href = '/groups'
+    try {
+      console.log('DEBUG - Login page: Starting login process')
+      await login(formData.username, formData.password)
+      console.log('DEBUG - Login page: Login successful, redirecting...')
+      // Redirect to groups page on successful login
+      window.location.href = '/groups'
+    } catch (error: any) {
+      console.error('DEBUG - Login page error:', error)
+      console.error('DEBUG - Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      })
+      setError(error.response?.data?.error || 'Login failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,24 +97,16 @@ export default function LoginPage() {
                 />
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Campus/School Name
-                </label>
-                <input
-                  type="text"
-                  name="campusName"
-                  value={formData.campusName}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00bfe6] focus:border-transparent transition-all duration-300"
-                  placeholder="Enter your campus or school name"
-                />
-              </motion.div>
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
 
               <motion.div
                 initial={{ opacity: 0, x: -20 }}

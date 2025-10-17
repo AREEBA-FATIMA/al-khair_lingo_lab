@@ -13,6 +13,7 @@ urlpatterns = [
     # Public API endpoints
     path('', views.GroupListView.as_view(), name='group-list'),
     path('<int:group_number>/', views.GroupDetailView.as_view(), name='group-detail'),
+    path('<int:group_id>/levels/', views.get_group_levels, name='group-levels'),
     path('unlock-tests/', views.GroupUnlockTestListView.as_view(), name='group-unlock-test-list'),
     path('unlock-tests/<int:pk>/', views.GroupUnlockTestDetailView.as_view(), name='group-unlock-test-detail'),
     
