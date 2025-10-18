@@ -7,9 +7,9 @@ from django.db.models import Q
 TEACHER_MODEL = "teachers.Teacher"
 
 # ----------------------
-class Level(models.Model):
+class Grade(models.Model):
     """
-    School levels: Pre-Primary, Primary, Secondary, etc.
+    Top-level grade (e.g., Grade 1, Grade 2)
     """
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=25, unique=True, blank=True, null=True, editable=False)
@@ -18,80 +18,15 @@ class Level(models.Model):
     campus = models.ForeignKey(
         'campus.Campus',
         on_delete=models.CASCADE,
-        related_name='levels',
-        help_text="Campus this level belongs to"
+        related_name='grades',
+        help_text="Campus this grade belongs to"
     )
-    
 
     def save(self, *args, **kwargs):
         if not self.code:
             # Generate campus code: C01, C02, C03, etc.
             campus_id = self.campus.id if self.campus else 1
             campus_code = f"C{campus_id:02d}"
-            
-            # Map level names to codes: L1, L2, L3
-            level_name = self.name.lower()
-            if "pre" in level_name:
-                level_code = "L1"
-            elif "primary" in level_name:
-                level_code = "L2"
-            elif "secondary" in level_name:
-                level_code = "L3"
-            else:
-                level_code = "L1"  # Default
-            
-            # Generate level code: C01-L1, C01-L2, C01-L3
-            self.code = f"{campus_code}-{level_code}"
-            
-            # Ensure uniqueness
-            original_code = self.code
-            suffix = 1
-            while Level.objects.filter(code=self.code).exists():
-                self.code = f"{original_code}-{suffix:02d}"
-                suffix += 1
-        super().save(*args, **kwargs)
-
-    class Meta:
-        unique_together = ("campus", "name")
-        verbose_name = "Level"
-        verbose_name_plural = "Levels"
-        ordering = ['name']
-    
-    def __str__(self):
-        return f"{self.name} ({self.campus.campus_name})"
-
-# ----------------------
-class Grade(models.Model):
-    """
-    Top-level grade (e.g., Grade 1, Grade 2)
-    """
-    name = models.CharField(max_length=50)
-    code = models.CharField(max_length=25, unique=True, blank=True, null=True, editable=False)
-    
-    # Level connection
-    level = models.ForeignKey(
-        Level,
-        on_delete=models.CASCADE,
-        related_name='grade_set',
-        help_text="Level this grade belongs to"
-    )
-
-    def save(self, *args, **kwargs):
-        if not self.code:
-            # Generate campus code: C01, C02, C03, etc.
-            campus_id = self.level.campus.id if self.level and self.level.campus else 1
-            campus_code = f"C{campus_id:02d}"
-            
-            # Level code mapping: Pre-Primary=L1, Primary=L2, Secondary=L3
-            level_name = self.level.name.lower() if self.level else "unknown"
-            if "pre" in level_name:
-                level_code = "L1"
-            elif "primary" in level_name:
-                level_code = "L2"
-            elif "secondary" in level_name:
-                level_code = "L3"
-            else:
-                level_code = "L1"  # Default
             
             # Grade mapping
             grade_name = self.name.replace("Grade", "").strip()
@@ -115,8 +50,8 @@ class Grade(models.Model):
                 else:
                     grade_num = "01"
             
-            # Generate grade code: C01-L1-G00, C01-L1-G01, C01-L1-G02
-            self.code = f"{campus_code}-{level_code}-G{grade_num}"
+            # Generate grade code: C01-G00, C01-G01, C01-G02
+            self.code = f"{campus_code}-G{grade_num}"
             
             # Ensure uniqueness
             original_code = self.code
@@ -128,13 +63,13 @@ class Grade(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ("level", "name")
+        unique_together = ("campus", "name")
         verbose_name = "Grade"
         verbose_name_plural = "Grades"
         ordering = ['name']
     
     def __str__(self):
-        return f"{self.name} ({self.level.campus.campus_name})"
+        return f"{self.name} ({self.campus.campus_name})"
 
 # ----------------------
 class ClassRoom(models.Model):
@@ -206,7 +141,7 @@ class ClassRoom(models.Model):
             
             if existing_classroom:
                 warning_msg = (
-                    f"Teacher {self.class_teacher.full_name} is already assigned to {existing_classroom}. "
+                    f"Teacher {self.class_teacher.name} is already assigned to {existing_classroom}. "
                     "Reassigning will remove them from the previous classroom. Continue?"
                 )
                 raise ValidationError(warning_msg)
@@ -217,7 +152,7 @@ class ClassRoom(models.Model):
         
         if not self.code:
             # Generate campus code: C01, C02, C03, etc.
-            campus_id = self.grade.level.campus.id if self.grade and self.grade.level and self.grade.level.campus else 1
+            campus_id = self.grade.campus.id if self.grade and self.grade.campus else 1
             campus_code = f"C{campus_id:02d}"
             
             # Get shift code from classroom shift field
@@ -229,17 +164,6 @@ class ClassRoom(models.Model):
                 'all': 'ALL'
             }
             shift_code = shift_map.get(self.shift.lower(), 'M')
-            
-            # Level code mapping: Pre-Primary=L1, Primary=L2, Secondary=L3
-            level_name = self.grade.level.name.lower() if self.grade and self.grade.level else "unknown"
-            if "pre" in level_name:
-                level_code = "L1"
-            elif "primary" in level_name:
-                level_code = "L2"
-            elif "secondary" in level_name:
-                level_code = "L3"
-            else:
-                level_code = "L1"  # Default
             
             grade_name = self.grade.name.replace("Grade", "").strip()
             
@@ -275,24 +199,20 @@ class ClassRoom(models.Model):
     
     # Properties for easy access
     @property
-    def level(self):
-        return self.grade.level if self.grade else None
-    
-    @property
     def campus(self):
-        return self.grade.level.campus if self.grade and self.grade.level else None
+        return self.grade.campus if self.grade else None
     
     def get_students_for_teacher(self, teacher):
         """
         Get students assigned to this classroom for a specific teacher
         Only returns students from the same campus as the teacher
         """
-        if not teacher or not teacher.current_campus:
+        if not teacher or not teacher.campus:
             return self.students.none()
         
         return self.students.filter(
-            campus=teacher.current_campus,
-            is_draft=False
+            campus=teacher.campus,
+            is_active=True
         )
     
     def get_available_students_for_assignment(self):
@@ -313,11 +233,11 @@ class ClassRoom(models.Model):
         
         grade_query = Q()
         for grade_var in grade_name_variations:
-            grade_query |= Q(current_grade__icontains=grade_var)
+            grade_query |= Q(grade__icontains=grade_var)
         
         return Student.objects.filter(
             campus=self.campus,
-            is_draft=False
+            is_active=True
         ).filter(grade_query).filter(
-            Q(classroom__isnull=True) | Q(classroom=self)
+            Q(assigned_class__isnull=True) | Q(assigned_class=self)
         )

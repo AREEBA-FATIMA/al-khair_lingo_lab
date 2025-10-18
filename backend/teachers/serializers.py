@@ -1,12 +1,19 @@
 from rest_framework import serializers
 from .models import Teacher
 
-# TeacherRole serializer removed - using current_role_title field instead
+
 class TeacherSerializer(serializers.ModelSerializer):
+    campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
+    assigned_class_name = serializers.CharField(source='assigned_class.__str__', read_only=True)
+    
     class Meta:
         model = Teacher
-        fields = '__all__'
-        read_only_fields = ['teacher_code', 'teacher_id', 'date_created', 'date_updated']
+        fields = [
+            'id', 'name', 'father_name', 'assigned_class', 'assigned_class_name',
+            'campus', 'campus_name', 'email', 'teacher_id', 'is_active', 
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['teacher_id', 'created_at', 'updated_at']
     
     def create(self, validated_data):
         """Create a new teacher"""
@@ -23,38 +30,29 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 class TeacherListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing teachers"""
+    campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
+    assigned_class_name = serializers.CharField(source='assigned_class.__str__', read_only=True)
+    
     class Meta:
         model = Teacher
         fields = [
-            'id', 'full_name', 'teacher_code', 'teacher_id', 'email', 
-            'current_campus', 'shift', 'is_currently_active', 'date_created'
+            'id', 'name', 'father_name', 'assigned_class_name', 
+            'campus_name', 'email', 'teacher_id', 'is_active', 'created_at'
         ]
-
-
-class TeacherDetailSerializer(serializers.ModelSerializer):
-    """Detailed serializer for teacher details"""
-    class Meta:
-        model = Teacher
-        fields = '__all__'
-        read_only_fields = ['teacher_code', 'teacher_id', 'date_created', 'date_updated']
 
 
 class TeacherCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating new teachers"""
     class Meta:
         model = Teacher
-        exclude = ['teacher_id', 'date_created', 'date_updated']
+        fields = [
+            'name', 'father_name', 'assigned_class', 'campus', 'email'
+        ]
     
     def validate_email(self, value):
         """Validate email uniqueness"""
         if Teacher.objects.filter(email=value).exists():
             raise serializers.ValidationError("Email already exists.")
-        return value
-    
-    def validate_cnic(self, value):
-        """Validate CNIC uniqueness"""
-        if value and Teacher.objects.filter(cnic=value).exists():
-            raise serializers.ValidationError("CNIC already exists.")
         return value
 
 
@@ -62,16 +60,12 @@ class TeacherUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating teachers"""
     class Meta:
         model = Teacher
-        exclude = ['teacher_id', 'date_created', 'date_updated']
+        fields = [
+            'name', 'father_name', 'assigned_class', 'campus', 'email', 'is_active'
+        ]
     
     def validate_email(self, value):
         """Validate email uniqueness"""
         if Teacher.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError("Email already exists.")
-        return value
-    
-    def validate_cnic(self, value):
-        """Validate CNIC uniqueness"""
-        if value and Teacher.objects.filter(cnic=value).exclude(pk=self.instance.pk).exists():
-            raise serializers.ValidationError("CNIC already exists.")
         return value

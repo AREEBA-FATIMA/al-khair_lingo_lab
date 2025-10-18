@@ -2,22 +2,37 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils import timezone
 from django.core.validators import RegexValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class UserManager(BaseUserManager):
     """Custom user manager for our User model"""
     
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email=None, password=None, **extra_fields):
         """Create and return a regular user"""
-        if not email:
-            raise ValueError('The Email field must be set')
-        email = self.normalize_email(email)
+        # For students, email is optional
+        if email:
+            email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        if password:
+            user.set_password(password)
         user.save(using=self._db)
+        
+        # Display user info after creation
+        print(f"\n✅ User created successfully!")
+        print(f"   Username: {user.username}")
+        print(f"   Role: {user.get_role_display()}")
+        if user.email:
+            print(f"   Email: {user.email}")
+        if user.student_id:
+            print(f"   Student ID: {user.student_id}")
+        print(f"   Login with: {'Email' if user.email else 'Student ID' if user.student_id else 'Username'}")
+        print()
+        
         return user
     
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(self, email=None, password=None, **extra_fields):
         """Create and return a superuser"""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
@@ -29,6 +44,22 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
         
+        # For superuser (admin), email is optional
+        if email:
+            email = self.normalize_email(email)
+        
+        return self.create_user(email, password, **extra_fields)
+    
+    def create_student_user(self, username, password=None, **extra_fields):
+        """Create a student user (no email required)"""
+        extra_fields.setdefault('role', 'student')
+        extra_fields.setdefault('is_verified', True)
+        return self.create_user(email=None, password=password, username=username, **extra_fields)
+    
+    def create_teacher_user(self, email, password=None, **extra_fields):
+        """Create a teacher user (email required)"""
+        extra_fields.setdefault('role', 'teacher')
+        extra_fields.setdefault('is_verified', True)
         return self.create_user(email, password, **extra_fields)
 
 
@@ -47,7 +78,7 @@ class User(AbstractUser):
     ]
     
     # Override default fields
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     username = models.CharField(max_length=150, unique=True, default='temp_user')
     
     # Custom fields
@@ -64,8 +95,8 @@ class User(AbstractUser):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'role']
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['role']
     
     # Custom manager
     objects = UserManager()
@@ -127,6 +158,8 @@ class LoginLog(models.Model):
         max_length=20,
         choices=[
             ('student_id', 'Student ID'),
+            ('student_name', 'Student Name'),
+            ('student_username', 'Student Username'),
             ('email', 'Email'),
         ],
         help_text="Method used for login"
@@ -168,3 +201,110 @@ class LoginLog(models.Model):
     def __str__(self):
         status = "Success" if self.success else "Failed"
         return f"{self.user.get_display_name()} - {self.login_method} - {status}"
+
+
+@receiver(post_save, sender=User)
+def create_student_or_teacher_profile(sender, instance, created, **kwargs):
+    """
+    Automatically create Student or Teacher profile when User is created
+    """
+    if created:  # Only when user is first created
+        if instance.role == 'student':
+            # Create Student profile
+            try:
+                from students.models import Student
+                from campus.models import Campus
+                
+                # Get default campus (C01)
+                default_campus = Campus.objects.first()
+                if not default_campus:
+                    print("❌ No campus found! Please create a campus first.")
+                    return
+                
+                # Generate student_id
+                from django.db.models import Max
+                last_student = Student.objects.filter(
+                    campus=default_campus
+                ).exclude(student_id__isnull=True).aggregate(
+                    max_id=Max('student_id')
+                )['max_id']
+                
+                if last_student and '-' in last_student:
+                    try:
+                        last_serial = int(last_student.split('-')[-1])
+                    except:
+                        last_serial = 0
+                else:
+                    last_serial = 0
+                
+                next_serial = last_serial + 1
+                campus_code = f"C{default_campus.id:02d}"
+                student_id = f"{campus_code}-M-G01-A-{next_serial:04d}"
+                
+                # Create Student
+                student = Student.objects.create(
+                    name=f"{instance.first_name} {instance.last_name}".strip(),
+                    father_name="Unknown",
+                    grade='1',
+                    section='A',
+                    campus=default_campus,
+                    password=instance.password or 'student123',
+                    student_id=student_id,
+                    is_active=instance.is_active
+                )
+                
+                # Update User with student_id
+                instance.student_id = student_id
+                instance.save()
+                
+                print(f"✅ Student profile created: {student_id}")
+                
+            except Exception as e:
+                print(f"❌ Error creating student profile: {str(e)}")
+        
+        elif instance.role == 'teacher':
+            # Create Teacher profile
+            try:
+                from teachers.models import Teacher
+                from campus.models import Campus
+                
+                # Get default campus (C01)
+                default_campus = Campus.objects.first()
+                if not default_campus:
+                    print("❌ No campus found! Please create a campus first.")
+                    return
+                
+                # Generate teacher_id
+                from django.db.models import Max
+                last_teacher = Teacher.objects.filter(
+                    campus=default_campus
+                ).exclude(teacher_id__isnull=True).aggregate(
+                    max_id=Max('teacher_id')
+                )['max_id']
+                
+                if last_teacher and '-' in last_teacher:
+                    try:
+                        last_number = int(last_teacher.split('-')[-1])
+                    except:
+                        last_number = 0
+                else:
+                    last_number = 0
+                
+                next_number = last_number + 1
+                campus_code = f"C{default_campus.id:02d}"
+                teacher_id = f"{campus_code}-T-{next_number:03d}"
+                
+                # Create Teacher
+                teacher = Teacher.objects.create(
+                    name=f"{instance.first_name} {instance.last_name}".strip(),
+                    father_name="Unknown",
+                    email=instance.email or f"teacher{next_number}@school.com",
+                    campus=default_campus,
+                    teacher_id=teacher_id,
+                    is_active=instance.is_active
+                )
+                
+                print(f"✅ Teacher profile created: {teacher_id}")
+                
+            except Exception as e:
+                print(f"❌ Error creating teacher profile: {str(e)}")

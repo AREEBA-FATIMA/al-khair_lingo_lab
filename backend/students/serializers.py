@@ -3,10 +3,20 @@ from .models import Student
 
 
 class StudentSerializer(serializers.ModelSerializer):
+    campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
+    class_teacher_name = serializers.CharField(source='class_teacher.name', read_only=True)
+    
     class Meta:
         model = Student
-        fields = '__all__'
-        read_only_fields = ['student_code', 'created_at', 'updated_at', 'deleted_at']
+        fields = [
+            'id', 'name', 'father_name', 'grade', 'section', 
+            'campus', 'campus_name', 'class_teacher', 'class_teacher_name',
+            'password', 'student_id', 'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['student_id', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
     
     def create(self, validated_data):
         """Create a new student"""
@@ -23,43 +33,54 @@ class StudentSerializer(serializers.ModelSerializer):
 
 class StudentListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing students"""
+    campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
+    class_teacher_name = serializers.CharField(source='class_teacher.name', read_only=True)
+    
     class Meta:
         model = Student
         fields = [
-            'id', 'name', 'student_id', 'student_code', 'current_grade', 
-            'current_state', 'is_deleted', 'created_at'
+            'id', 'name', 'father_name', 'grade', 'section', 
+            'campus_name', 'class_teacher_name', 'student_id', 
+            'is_active', 'created_at'
         ]
-
-
-class StudentDetailSerializer(serializers.ModelSerializer):
-    """Detailed serializer for student details"""
-    class Meta:
-        model = Student
-        fields = '__all__'
-        read_only_fields = ['student_code', 'created_at', 'updated_at', 'deleted_at']
 
 
 class StudentCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating new students"""
+    confirm_password = serializers.CharField(write_only=True)
+    
     class Meta:
         model = Student
-        exclude = ['student_code', 'is_deleted', 'deleted_at', 'created_at', 'updated_at']
+        fields = [
+            'name', 'father_name', 'grade', 'section', 'campus', 
+            'class_teacher', 'password', 'confirm_password'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'confirm_password': {'write_only': True}
+        }
     
-    def validate_student_id(self, value):
-        """Validate student ID uniqueness"""
-        if value and Student.objects.filter(student_id=value).exists():
-            raise serializers.ValidationError("Student ID already exists.")
-        return value
+    def validate(self, data):
+        """Validate password confirmation"""
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords don't match.")
+        return data
+    
+    def create(self, validated_data):
+        """Create a new student"""
+        validated_data.pop('confirm_password')
+        student = Student.objects.create(**validated_data)
+        return student
 
 
 class StudentUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating students"""
     class Meta:
         model = Student
-        exclude = ['student_code', 'is_deleted', 'deleted_at', 'created_at', 'updated_at']
-    
-    def validate_student_id(self, value):
-        """Validate student ID uniqueness"""
-        if value and Student.objects.filter(student_id=value).exclude(pk=self.instance.pk).exists():
-            raise serializers.ValidationError("Student ID already exists.")
-        return value
+        fields = [
+            'name', 'father_name', 'grade', 'section', 'campus', 
+            'class_teacher', 'password', 'is_active'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True, 'required': False}
+        }

@@ -1,33 +1,10 @@
 from rest_framework import serializers
-from .models import Level, Grade, ClassRoom
-
-
-class LevelSerializer(serializers.ModelSerializer):
-    """Serializer for Level model"""
-    campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
-    
-    class Meta:
-        model = Level
-        fields = '__all__'
-        read_only_fields = ['code', 'created_at']
-    
-    def create(self, validated_data):
-        """Create a new level"""
-        level = Level.objects.create(**validated_data)
-        return level
-    
-    def update(self, instance, validated_data):
-        """Update an existing level"""
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return instance
+from .models import Grade, ClassRoom
 
 
 class GradeSerializer(serializers.ModelSerializer):
     """Serializer for Grade model"""
-    level_name = serializers.CharField(source='level.name', read_only=True)
-    campus_name = serializers.CharField(source='level.campus.campus_name', read_only=True)
+    campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
     
     class Meta:
         model = Grade
@@ -50,9 +27,8 @@ class GradeSerializer(serializers.ModelSerializer):
 class ClassRoomSerializer(serializers.ModelSerializer):
     """Serializer for ClassRoom model"""
     grade_name = serializers.CharField(source='grade.name', read_only=True)
-    level_name = serializers.CharField(source='grade.level.name', read_only=True)
     campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
-    class_teacher_name = serializers.CharField(source='class_teacher.full_name', read_only=True)
+    class_teacher_name = serializers.CharField(source='class_teacher.name', read_only=True)
     
     class Meta:
         model = ClassRoom
@@ -75,25 +51,23 @@ class ClassRoomSerializer(serializers.ModelSerializer):
 class ClassRoomListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing classrooms"""
     grade_name = serializers.CharField(source='grade.name', read_only=True)
-    level_name = serializers.CharField(source='grade.level.name', read_only=True)
     campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
-    class_teacher_name = serializers.CharField(source='class_teacher.full_name', read_only=True)
+    class_teacher_name = serializers.CharField(source='class_teacher.name', read_only=True)
     
     class Meta:
         model = ClassRoom
         fields = [
             'id', 'grade', 'grade_name', 'section', 'shift', 
             'class_teacher', 'class_teacher_name', 'capacity', 
-            'campus_name', 'level_name', 'code', 'created_at'
+            'campus_name', 'code', 'created_at'
         ]
 
 
 class ClassRoomDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for classroom details"""
     grade_name = serializers.CharField(source='grade.name', read_only=True)
-    level_name = serializers.CharField(source='grade.level.name', read_only=True)
     campus_name = serializers.CharField(source='campus.campus_name', read_only=True)
-    class_teacher_name = serializers.CharField(source='class_teacher.full_name', read_only=True)
+    class_teacher_name = serializers.CharField(source='class_teacher.name', read_only=True)
     students_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -105,7 +79,7 @@ class ClassRoomDetailSerializer(serializers.ModelSerializer):
         """Get count of students in this classroom"""
         try:
             from students.models import Student
-            return Student.objects.filter(classroom=obj).count()
+            return Student.objects.filter(assigned_class=obj).count()
         except:
             return 0
 
