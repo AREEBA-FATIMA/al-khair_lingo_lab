@@ -94,35 +94,19 @@ class SimpleLoginView(APIView):
     
     def post(self, request):
         username = request.data.get('username')
-        password = request.data.get('password')
+        password = request.data.get('password', '')
         
-        if not username or not password:
+        if not username:
             return Response({
-                'error': 'Username and password are required'
+                'error': 'Username is required'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Try to authenticate with email first, then username
-        user = None
-        
-        # First try with email
-        if '@' in username:
-            user = authenticate(
-                request=request,
-                username=username,
-                password=password
-            )
-        
-        # If not found, try with username (need to find user by username and use email for auth)
-        if not user:
-            try:
-                user_obj = User.objects.get(username=username)
-                user = authenticate(
-                    request=request,
-                    username=user_obj.email,
-                    password=password
-                )
-            except User.DoesNotExist:
-                pass
+        # Try to authenticate using the custom authentication backend
+        user = authenticate(
+            request=request,
+            username=username,
+            password=password
+        )
         
         if user and user.is_active:
             # Generate JWT token

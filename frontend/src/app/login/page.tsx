@@ -29,8 +29,16 @@ export default function LoginPage() {
     setError('')
     
     try {
-      console.log('DEBUG - Login page: Starting login process')
-      await login(formData.username, formData.password)
+      console.log('DEBUG - Login page: Starting login process', { 
+        username: formData.username, 
+        role: selectedRole,
+        hasPassword: !!formData.password 
+      })
+      
+      // For students, password is optional
+      const password = selectedRole === 'student' ? '' : formData.password
+      await login(formData.username, password)
+      
       console.log('DEBUG - Login page: Login successful, redirecting...')
       // Redirect to groups page on successful login
       window.location.href = '/groups'
@@ -101,7 +109,7 @@ export default function LoginPage() {
                     onClick={() => handleRoleSelect('student')}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg text-white py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                    className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
                   >
                     <span>Log In as a Student</span>
                     <span>»</span>
@@ -126,7 +134,7 @@ export default function LoginPage() {
                     onClick={() => handleRoleSelect('teacher')}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg text-white py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                    className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
                   >
                     <span>Log In as an Instructor/Admin</span>
                     <span>»</span>
@@ -177,7 +185,7 @@ export default function LoginPage() {
                     transition={{ duration: 0.5, delay: 0.1 }}
                   >
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Username
+                      {selectedRole === 'student' ? 'Student ID / Username / Name' : 'Username / Email'}
                     </label>
                     <input
                       type="text"
@@ -186,7 +194,7 @@ export default function LoginPage() {
                       onChange={handleChange}
                       required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00bfe6] focus:border-transparent transition-all duration-300"
-                      placeholder="Enter your username"
+                      placeholder={selectedRole === 'student' ? 'Enter Student ID, Username, or Name' : 'Enter your username or email'}
                     />
                   </motion.div>
 
@@ -201,24 +209,49 @@ export default function LoginPage() {
                     </motion.div>
                   )}
 
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00bfe6] focus:border-transparent transition-all duration-300"
-                      placeholder="Enter your password"
-                    />
-                  </motion.div>
+                  {selectedRole === 'teacher' && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                    >
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00bfe6] focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your password"
+                      />
+                    </motion.div>
+                  )}
+                  
+                  {selectedRole === 'student' && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                    >
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-700">
+                          <strong>Student Login:</strong> You can login using any of these:
+                        </p>
+                        <ul className="text-xs text-blue-600 mt-2 space-y-1">
+                          <li>• Student ID: C01-M-G01-A-0001</li>
+                          <li>• Username: student123</li>
+                          <li>• First Name: John</li>
+                          <li>• Last Name: Doe</li>
+                        </ul>
+                        <p className="text-xs text-blue-600 mt-2">
+                          No password required for students!
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}

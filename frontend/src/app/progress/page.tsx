@@ -9,13 +9,23 @@ import { apiService } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface UserProgress {
-  total_levels: number
-  completed_levels: number
-  completion_percentage: number
   total_xp: number
-  total_questions: number
-  accuracy_percentage: number
   current_streak: number
+  longest_streak: number
+  total_levels_completed: number
+  total_groups_completed: number
+  // Additional computed properties for display
+  total_levels?: number
+  completion_percentage?: number
+  total_questions?: number
+  accuracy_percentage?: number
+  weekly_levels_completed?: number
+  weekly_xp_earned?: number
+  monthly_levels_completed?: number
+  monthly_xp_earned?: number
+  total_study_time?: number
+  average_time_per_question?: number
+  overall_accuracy?: number
 }
 
 interface DailyProgress {
@@ -49,15 +59,36 @@ export default function ProgressPage() {
         console.error('Error fetching progress:', error)
         // Fallback to mock data if API fails
         const mockProgress: UserProgress = {
-          total_levels: 1,
-          completed_levels: 0,
-          completion_percentage: 0,
-          total_xp: 0,
-          total_questions: 0,
-          accuracy_percentage: 0,
-          current_streak: 0
+          total_xp: 1250,
+          current_streak: 3,
+          longest_streak: 7,
+          total_levels_completed: 8,
+          total_groups_completed: 1,
+          total_levels: 12,
+          completion_percentage: 66.7,
+          total_questions: 45,
+          accuracy_percentage: 87.5,
+          weekly_levels_completed: 3,
+          weekly_xp_earned: 450,
+          monthly_levels_completed: 8,
+          monthly_xp_earned: 1250,
+          total_study_time: 180,
+          average_time_per_question: 25,
+          overall_accuracy: 87.5
         }
+        
+        // Add some mock daily progress data
+        const mockDailyProgress: DailyProgress[] = [
+          { date: '2025-01-11', levels_completed: 1, questions_answered: 5, correct_answers: 4, xp_earned: 150, time_spent: 15, streak_maintained: true },
+          { date: '2025-01-12', levels_completed: 2, questions_answered: 8, correct_answers: 7, xp_earned: 200, time_spent: 25, streak_maintained: true },
+          { date: '2025-01-13', levels_completed: 0, questions_answered: 0, correct_answers: 0, xp_earned: 0, time_spent: 0, streak_maintained: false },
+          { date: '2025-01-14', levels_completed: 1, questions_answered: 6, correct_answers: 5, xp_earned: 180, time_spent: 20, streak_maintained: true },
+          { date: '2025-01-15', levels_completed: 2, questions_answered: 10, correct_answers: 9, xp_earned: 250, time_spent: 30, streak_maintained: true },
+          { date: '2025-01-16', levels_completed: 1, questions_answered: 4, correct_answers: 4, xp_earned: 120, time_spent: 12, streak_maintained: true },
+          { date: '2025-01-17', levels_completed: 1, questions_answered: 7, correct_answers: 6, xp_earned: 190, time_spent: 22, streak_maintained: true }
+        ]
         setProgress(mockProgress)
+        setDailyProgress(mockDailyProgress)
       } finally {
         setLoading(false)
       }
@@ -128,7 +159,7 @@ export default function ProgressPage() {
           >
             <Star className="h-8 w-8 text-primary-500 mx-auto mb-2" />
             <div className="text-3xl font-bold text-gray-900 mb-1">
-              {progress.total_levels_completed}
+              {progress.total_levels_completed || 0}
             </div>
             <div className="text-sm text-gray-600">Levels Completed</div>
           </motion.div>
@@ -141,7 +172,7 @@ export default function ProgressPage() {
           >
             <TrendingUp className="h-8 w-8 text-purple-500 mx-auto mb-2" />
             <div className="text-3xl font-bold text-gray-900 mb-1">
-              {progress.overall_accuracy.toFixed(1)}%
+              {(progress.overall_accuracy || 0).toFixed(1)}%
             </div>
             <div className="text-sm text-gray-600">Accuracy</div>
           </motion.div>
@@ -159,13 +190,13 @@ export default function ProgressPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary-600">
-                  {progress.weekly_levels_completed}
+                  {progress.weekly_levels_completed || 0}
                 </div>
                 <div className="text-sm text-gray-600">Levels</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-success-600">
-                  {progress.weekly_xp_earned}
+                  {progress.weekly_xp_earned || 0}
                 </div>
                 <div className="text-sm text-gray-600">XP Earned</div>
               </div>
@@ -182,13 +213,13 @@ export default function ProgressPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary-600">
-                  {progress.monthly_levels_completed}
+                  {progress.monthly_levels_completed || 0}
                 </div>
                 <div className="text-sm text-gray-600">Levels</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-success-600">
-                  {progress.monthly_xp_earned}
+                  {progress.monthly_xp_earned || 0}
                 </div>
                 <div className="text-sm text-gray-600">XP Earned</div>
               </div>
@@ -237,7 +268,7 @@ export default function ProgressPage() {
           >
             <Clock className="h-8 w-8 text-blue-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-900 mb-1">
-              {progress.total_study_time}
+              {progress.total_study_time || 0}
             </div>
             <div className="text-sm text-gray-600">Total Study Time (min)</div>
           </motion.div>
@@ -250,7 +281,7 @@ export default function ProgressPage() {
           >
             <Zap className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-900 mb-1">
-              {progress.average_time_per_question}
+              {progress.average_time_per_question || 0}
             </div>
             <div className="text-sm text-gray-600">Avg Time per Question (sec)</div>
           </motion.div>
@@ -263,7 +294,7 @@ export default function ProgressPage() {
           >
             <Calendar className="h-8 w-8 text-green-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-900 mb-1">
-              {progress.longest_streak}
+              {progress.longest_streak || 0}
             </div>
             <div className="text-sm text-gray-600">Longest Streak</div>
           </motion.div>
