@@ -35,9 +35,8 @@ export default function LoginPage() {
         hasPassword: !!formData.password 
       })
       
-      // For students, password is optional
-      const password = selectedRole === 'student' ? '' : formData.password
-      await login(formData.username, password)
+      // Use the actual password from form
+      await login(formData.username, formData.password)
       
       console.log('DEBUG - Login page: Login successful, redirecting...')
       // Redirect to groups page on successful login

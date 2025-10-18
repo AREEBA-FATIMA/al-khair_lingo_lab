@@ -47,43 +47,18 @@ export default function RegisterPage() {
     setIsLoading(true)
     
     try {
+      // For now, just simulate successful registration
+      console.log('Registration Data:', {
+        role: selectedRole,
+        formData: formData
+      })
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      if (selectedRole === 'student') {
-        // Student registration logic
-        console.log('Student Registration Data:', {
-          name: formData.name,
-          fatherName: formData.fatherName,
-          class: formData.class,
-          section: formData.section,
-          classTeacher: formData.classTeacher,
-          campusName: formData.campusName,
-          studentId: formData.studentId,
-          email: formData.email,
-          password: formData.password,
-          role: 'student'
-        })
-        
-        // Login student with student ID
-        await login(formData.studentId, formData.password)
-        
-      } else if (selectedRole === 'teacher') {
-        // Teacher registration logic
-        console.log('Teacher Registration Data:', {
-          name: formData.name,
-          fatherName: formData.fatherName,
-          class: formData.class,
-          campusName: formData.campusName,
-          email: formData.email,
-          teacherId: formData.teacherId,
-          password: formData.password,
-          role: 'teacher'
-        })
-        
-        // Login teacher with teacher ID
-        await login(formData.teacherId, formData.password)
-      }
+      // For demo purposes, just redirect to groups
+      // In real implementation, you would call registration API first
+      console.log('Registration successful, redirecting to groups...')
       
       // Redirect to groups page
       window.location.href = '/groups'
