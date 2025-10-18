@@ -13,10 +13,10 @@ interface NavigationProps {
   backLabel?: string
 }
 
-export default function Navigation({ 
-  showBackButton = false, 
-  backHref = '/groups', 
-  backLabel = 'Groups' 
+export default function Navigation({
+  showBackButton = false,
+  backHref = '/groups',
+  backLabel = 'Groups'
 }: NavigationProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -48,8 +48,8 @@ export default function Navigation({
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-4">
             {showBackButton && (
-              <Link 
-                href={backHref} 
+              <Link
+                href={backHref}
                 className="text-gray-600 hover:text-blue-600 transition-colors duration-200"
               >
                 <ArrowLeft className="h-6 w-6" />
@@ -58,27 +58,27 @@ export default function Navigation({
             <div className="flex items-center space-x-2">
               <Leaf className="h-8 w-8 text-blue-600" />
               <h1 className="text-2xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent">
-                Lingo 
+                Lingo
               </h1>
             </div>
           </div>
-          
+
           <div className="hidden md:flex items-center space-x-8">
             <nav className="flex space-x-2">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 text-gray-600 hover:text-[#03045e] hover:bg-gradient-to-r hover:from-[#03045e]/10 hover:to-[#00bfe6]/10 hover:shadow-md"
               >
                 Home
               </Link>
-              <Link 
-                href="/progress" 
+              <Link
+                href="/progress"
                 className="px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 text-gray-600 hover:text-[#03045e] hover:bg-gradient-to-r hover:from-[#03045e]/10 hover:to-[#00bfe6]/10 hover:shadow-md"
               >
                 Progress
               </Link>
             </nav>
-            
+
             {/* Auth Buttons or User Menu */}
             {isLoggedIn ? (
               <div className="relative" ref={dropdownRef}>
@@ -99,7 +99,7 @@ export default function Navigation({
 
                 {/* Profile Dropdown */}
                 {isProfileOpen && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -218,7 +218,7 @@ export default function Navigation({
 
                     {/* Logout Section */}
                     <div className="border-t border-gray-100 pt-2">
-                      <button 
+                      <button
                         onClick={() => {
                           setIsProfileOpen(false)
                           logout()
@@ -239,25 +239,23 @@ export default function Navigation({
               </div>
             ) : (
               <div className="flex space-x-4">
-                <Link 
-                  href="/login" 
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                    pathname === '/login'
+                <Link
+                  href="/login"
+                  className={`px-4 py-2 rounded-lg  bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg font-medium transition-all duration-300 ${pathname === '/login'
                       ? 'bg-[#03045e] text-white'
                       : 'text-[#03045e] border border-[#03045e] hover:bg-[#03045e] hover:text-white'
-                  }`}
+                    }`}
                 >
                   Login
                 </Link>
-                <Link 
-                  href="/register" 
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                    pathname === '/register'
-                      ? 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg'
-                      : 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white hover:shadow-lg'
-                  }`}
+                <Link
+                  href="/register"
+                  className={`px-4 py-2 rounded-lg border-2 border-[#03045e] text-black hover:bg-gradient-to-r from-[#03045e] to-[#00bfe6] hover:text-white shadow-lgfont-medium transition-all duration-300 ${pathname === '/register'
+                      // ? 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg'
+                      // : 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white hover:shadow-lg'
+                    }`}
                 >
-                  Register
+                  Sign Up
                 </Link>
               </div>
             )}
