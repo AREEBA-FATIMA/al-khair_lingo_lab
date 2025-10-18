@@ -405,9 +405,51 @@ def get_group_levels(request, group_id):
         group = Group.objects.get(id=group_id, is_active=True)
         levels = Level.objects.filter(group=group, is_active=True).order_by('level_number')
         serializer = LevelSerializer(levels, many=True)
-        return Response(serializer.data)
+        return Response({
+            'group': {
+                'id': group.id,
+                'name': group.name,
+                'group_number': group.group_number,
+                'difficulty': group.difficulty,
+                'description': group.description
+            },
+            'levels': serializer.data,
+            'total_levels': levels.count()
+        })
     except Group.DoesNotExist:
         return Response(
             {'error': 'Group not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_group_level_detail(request, group_id, level_number):
+    """Get specific level details within a group"""
+    try:
+        group = Group.objects.get(id=group_id, is_active=True)
+        level = Level.objects.get(
+            group=group, 
+            level_number=level_number, 
+            is_active=True
+        )
+        serializer = LevelSerializer(level)
+        return Response({
+            'group': {
+                'id': group.id,
+                'name': group.name,
+                'group_number': group.group_number
+            },
+            'level': serializer.data
+        })
+    except Group.DoesNotExist:
+        return Response(
+            {'error': 'Group not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Level.DoesNotExist:
+        return Response(
+            {'error': 'Level not found in this group'}, 
             status=status.HTTP_404_NOT_FOUND
         )

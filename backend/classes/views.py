@@ -3,44 +3,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .models import Level, Grade, ClassRoom
+from .models import Grade, ClassRoom
 from .serializers import (
-    LevelSerializer, GradeSerializer, ClassRoomSerializer,
+    GradeSerializer, ClassRoomSerializer,
     ClassRoomListSerializer, ClassRoomDetailSerializer,
     ClassRoomCreateSerializer, ClassRoomUpdateSerializer
 )
-
-
-class LevelViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing levels"""
-    queryset = Level.objects.all()
-    serializer_class = LevelSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        """Filter levels based on query parameters"""
-        queryset = Level.objects.all()
-        
-        # Filter by campus
-        campus = self.request.query_params.get('campus', None)
-        if campus:
-            queryset = queryset.filter(campus__id=campus)
-        
-        return queryset.order_by('name')
-    
-    @action(detail=False, methods=['get'])
-    def by_campus(self, request):
-        """Get levels by campus"""
-        campus_id = request.query_params.get('campus_id', None)
-        if not campus_id:
-            return Response(
-                {'error': 'campus_id parameter is required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        levels = Level.objects.filter(campus__id=campus_id)
-        serializer = self.get_serializer(levels, many=True)
-        return Response(serializer.data)
 
 
 class GradeViewSet(viewsets.ModelViewSet):
@@ -53,29 +21,24 @@ class GradeViewSet(viewsets.ModelViewSet):
         """Filter grades based on query parameters"""
         queryset = Grade.objects.all()
         
-        # Filter by level
-        level = self.request.query_params.get('level', None)
-        if level:
-            queryset = queryset.filter(level__id=level)
-        
         # Filter by campus
         campus = self.request.query_params.get('campus', None)
         if campus:
-            queryset = queryset.filter(level__campus__id=campus)
+            queryset = queryset.filter(campus__id=campus)
         
         return queryset.order_by('name')
     
     @action(detail=False, methods=['get'])
-    def by_level(self, request):
-        """Get grades by level"""
-        level_id = request.query_params.get('level_id', None)
-        if not level_id:
+    def by_campus(self, request):
+        """Get grades by campus"""
+        campus_id = request.query_params.get('campus_id', None)
+        if not campus_id:
             return Response(
-                {'error': 'level_id parameter is required'}, 
+                {'error': 'campus_id parameter is required'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        grades = Grade.objects.filter(level__id=level_id)
+        grades = Grade.objects.filter(campus__id=campus_id)
         serializer = self.get_serializer(grades, many=True)
         return Response(serializer.data)
 
@@ -107,15 +70,10 @@ class ClassRoomViewSet(viewsets.ModelViewSet):
         if grade:
             queryset = queryset.filter(grade__id=grade)
         
-        # Filter by level
-        level = self.request.query_params.get('level', None)
-        if level:
-            queryset = queryset.filter(grade__level__id=level)
-        
         # Filter by campus
         campus = self.request.query_params.get('campus', None)
         if campus:
-            queryset = queryset.filter(grade__level__campus__id=campus)
+            queryset = queryset.filter(grade__campus__id=campus)
         
         # Filter by shift
         shift = self.request.query_params.get('shift', None)
@@ -148,7 +106,7 @@ class ClassRoomViewSet(viewsets.ModelViewSet):
             classroom.save()
             
             return Response({
-                'message': f'Teacher {teacher.full_name} assigned to {classroom}'
+                'message': f'Teacher {teacher.name} assigned to {classroom}'
             })
         except Teacher.DoesNotExist:
             return Response(
@@ -174,7 +132,7 @@ class ClassRoomViewSet(viewsets.ModelViewSet):
         
         try:
             from students.models import Student
-            students = Student.objects.filter(classroom=classroom)
+            students = Student.objects.filter(assigned_class=classroom)
             
             from students.serializers import StudentListSerializer
             serializer = StudentListSerializer(students, many=True)
@@ -209,7 +167,7 @@ class ClassRoomViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        classrooms = ClassRoom.objects.filter(grade__level__campus__id=campus_id)
+        classrooms = ClassRoom.objects.filter(grade__campus__id=campus_id)
         serializer = self.get_serializer(classrooms, many=True)
         return Response(serializer.data)
     
@@ -229,7 +187,7 @@ class ClassRoomViewSet(viewsets.ModelViewSet):
             
             # Get classrooms in same campus as teacher
             classrooms = ClassRoom.objects.filter(
-                grade__level__campus=teacher.current_campus,
+                grade__campus=teacher.campus,
                 class_teacher__isnull=True
             )
             

@@ -30,8 +30,9 @@ class StudentLoginSerializer(serializers.Serializer):
     def validate_student_id(self, value):
         """Validate student ID format"""
         import re
-        if not re.match(r'^[A-Z0-9]+$', value.upper()):
-            raise serializers.ValidationError("Invalid student ID format")
+        # Student ID pattern: C01-M-G01-A-0001 (Campus-Shift-Grade-Section-Serial)
+        if not re.match(r'^C\d{2}-M-[A-Z0-9]+-[A-Z]-\d{4}$', value.upper()):
+            raise serializers.ValidationError("Invalid student ID format. Expected format: C01-M-G01-A-0001")
         return value.upper()
     
     def validate(self, attrs):

@@ -26,6 +26,16 @@ class MultiMethodAuthBackend(ModelBackend):
         if self._is_student_id_format(username):
             return self._authenticate_student(username, request)
         
+        # Try student name login (no password required)
+        if self._is_student_name_login(username, password):
+            user = self._authenticate_student_by_name(username, request)
+            if user:
+                return user
+        
+        # Try student username login (no password required)
+        if self._is_student_username_login(username, password):
+            return self._authenticate_student_by_username(username, request)
+        
         # Try email + password login for teachers and admins
         if password:
             return self._authenticate_email_password(username, password, request)
@@ -37,8 +47,73 @@ class MultiMethodAuthBackend(ModelBackend):
         Check if username looks like a student ID
         """
         import re
-        # Student ID pattern: letters and numbers, usually uppercase
-        return bool(re.match(r'^[A-Z0-9]+$', username.upper()))
+        # Student ID pattern: C01-M-G01-A-0001 (Campus-Shift-Grade-Section-Serial)
+        return bool(re.match(r'^C\d{2}-M-[A-Z0-9]+-[A-Z]-\d{4}$', username.upper()))
+    
+    def _is_student_name_login(self, username, password):
+        """
+        Check if this is a student name login (no password provided)
+        """
+        return not password and username and not self._is_student_id_format(username)
+    
+    def _is_student_username_login(self, username, password):
+        """
+        Check if this is a student username login (no password provided)
+        """
+        return not password and username and not self._is_student_id_format(username)
+    
+    def _authenticate_student_by_name(self, name, request):
+        """
+        Authenticate student using name (no password required)
+        """
+        try:
+            # Find student user by name
+            user = User.objects.get(
+                first_name__icontains=name,
+                role='student',
+                is_active=True
+            )
+            
+            self._log_login_attempt(user, 'student_name', request, True)
+            return user
+                
+        except User.DoesNotExist:
+            # Try with full name
+            try:
+                user = User.objects.get(
+                    Q(first_name__icontains=name) | Q(last_name__icontains=name),
+                    role='student',
+                    is_active=True
+                )
+                
+                self._log_login_attempt(user, 'student_name', request, True)
+                return user
+            except User.DoesNotExist:
+                # Log failed attempt
+                if request:
+                    self._log_failed_attempt(name, 'student_name', request)
+                return None
+    
+    def _authenticate_student_by_username(self, username, request):
+        """
+        Authenticate student using username (no password required)
+        """
+        try:
+            # Find student user by username
+            user = User.objects.get(
+                username=username,
+                role='student',
+                is_active=True
+            )
+            
+            self._log_login_attempt(user, 'student_username', request, True)
+            return user
+                
+        except User.DoesNotExist:
+            # Log failed attempt
+            if request:
+                self._log_failed_attempt(username, 'student_username', request)
+            return None
     
     def _authenticate_student(self, student_id, request):
         """

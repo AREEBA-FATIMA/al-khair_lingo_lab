@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Student
 from .serializers import (
-    StudentSerializer, StudentListSerializer, StudentDetailSerializer,
+    StudentSerializer, StudentListSerializer,
     StudentCreateSerializer, StudentUpdateSerializer
 )
 
@@ -17,8 +17,6 @@ class StudentViewSet(viewsets.ModelViewSet):
         """Return appropriate serializer based on action"""
         if self.action == 'list':
             return StudentListSerializer
-        elif self.action == 'retrieve':
-            return StudentDetailSerializer
         elif self.action == 'create':
             return StudentCreateSerializer
         elif self.action in ['update', 'partial_update']:
@@ -29,77 +27,61 @@ class StudentViewSet(viewsets.ModelViewSet):
         """Filter queryset based on query parameters"""
         queryset = Student.objects.all()
         
-        # Filter by current state
-        current_state = self.request.query_params.get('current_state', None)
-        if current_state:
-            queryset = queryset.filter(current_state=current_state)
+        # Filter by active status
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
         
         # Filter by grade
         grade = self.request.query_params.get('grade', None)
         if grade:
-            queryset = queryset.filter(current_grade=grade)
+            queryset = queryset.filter(grade=grade)
+        
+        # Filter by section
+        section = self.request.query_params.get('section', None)
+        if section:
+            queryset = queryset.filter(section=section)
         
         # Filter by campus
         campus = self.request.query_params.get('campus', None)
         if campus:
-            queryset = queryset.filter(campus__icontains=campus)
-        
-        # Filter by deleted status
-        show_deleted = self.request.query_params.get('show_deleted', 'false').lower() == 'true'
-        if not show_deleted:
-            queryset = queryset.filter(is_deleted=False)
+            queryset = queryset.filter(campus_id=campus)
         
         return queryset.order_by('-created_at')
     
     @action(detail=True, methods=['post'])
-    def soft_delete(self, request, pk=None):
-        """Soft delete a student"""
+    def deactivate(self, request, pk=None):
+        """Deactivate a student"""
         student = self.get_object()
-        student.soft_delete()
-        return Response({'message': 'Student soft deleted successfully'})
+        student.is_active = False
+        student.save()
+        return Response({'message': 'Student deactivated successfully'})
     
     @action(detail=True, methods=['post'])
-    def restore(self, request, pk=None):
-        """Restore a soft deleted student"""
+    def activate(self, request, pk=None):
+        """Activate a student"""
         student = self.get_object()
-        if not student.is_deleted:
-            return Response(
-                {'error': 'Student is not deleted'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        student.restore()
-        return Response({'message': 'Student restored successfully'})
-    
-    @action(detail=False, methods=['get'])
-    def deleted(self, request):
-        """Get all soft deleted students"""
-        deleted_students = Student.objects.filter(is_deleted=True)
-        serializer = self.get_serializer(deleted_students, many=True)
-        return Response(serializer.data)
+        student.is_active = True
+        student.save()
+        return Response({'message': 'Student activated successfully'})
     
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Get all active students"""
-        active_students = Student.objects.filter(
-            current_state='active', 
-            is_deleted=False
-        )
+        active_students = Student.objects.filter(is_active=True)
         serializer = self.get_serializer(active_students, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def inactive(self, request):
         """Get all inactive students"""
-        inactive_students = Student.objects.filter(
-            current_state='inactive', 
-            is_deleted=False
-        )
+        inactive_students = Student.objects.filter(is_active=False)
         serializer = self.get_serializer(inactive_students, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['post'])
-    def bulk_soft_delete(self, request):
-        """Bulk soft delete students"""
+    def bulk_deactivate(self, request):
+        """Bulk deactivate students"""
         student_ids = request.data.get('student_ids', [])
         if not student_ids:
             return Response(
@@ -107,19 +89,20 @@ class StudentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        students = Student.objects.filter(id__in=student_ids, is_deleted=False)
+        students = Student.objects.filter(id__in=student_ids, is_active=True)
         count = 0
         for student in students:
-            student.soft_delete()
+            student.is_active = False
+            student.save()
             count += 1
         
         return Response({
-            'message': f'{count} students soft deleted successfully'
+            'message': f'{count} students deactivated successfully'
         })
     
     @action(detail=False, methods=['post'])
-    def bulk_restore(self, request):
-        """Bulk restore students"""
+    def bulk_activate(self, request):
+        """Bulk activate students"""
         student_ids = request.data.get('student_ids', [])
         if not student_ids:
             return Response(
@@ -127,12 +110,13 @@ class StudentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        students = Student.objects.filter(id__in=student_ids, is_deleted=True)
+        students = Student.objects.filter(id__in=student_ids, is_active=False)
         count = 0
         for student in students:
-            student.restore()
+            student.is_active = True
+            student.save()
             count += 1
         
         return Response({
-            'message': f'{count} students restored successfully'
+            'message': f'{count} students activated successfully'
         })

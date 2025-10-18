@@ -8,21 +8,22 @@ router.register(r'admin/levels', views.LevelViewSet, basename='admin-level')
 router.register(r'admin/questions', views.QuestionViewSet, basename='admin-question')
 
 urlpatterns = [
-    # Public API endpoints
-    path('', views.LevelListView.as_view(), name='level-list'),
-    path('<int:level_number>/', views.LevelDetailView.as_view(), name='level-detail'),
-    path('<int:level_number>/questions/', views.LevelQuestionsView.as_view(), name='level-questions'),
-    path('questions/<int:pk>/', views.QuestionDetailView.as_view(), name='question-detail'),
+    # ===== ADMIN/MANAGEMENT ENDPOINTS =====
+    # These are for admin users to manage levels and questions
     
-    # User-specific endpoints
-    path('submit-answer/', views.submit_answer, name='submit-answer'),
-    path('complete-level/', views.complete_level, name='complete-level'),
-    path('completions/', views.LevelCompletionListView.as_view(), name='level-completion-list'),
-    path('completions/<int:pk>/', views.LevelCompletionDetailView.as_view(), name='level-completion-detail'),
-    path('stats/', views.level_stats, name='level-stats'),
-    path('next-level/', views.get_next_level, name='next-level'),
-    path('test-levels/', views.get_test_levels, name='test-levels'),
+    # Level management
+    path('admin/levels/', views.LevelListView.as_view(), name='admin-level-list'),
+    path('admin/levels/<int:level_number>/', views.LevelDetailView.as_view(), name='admin-level-detail'),
+    path('admin/levels/<int:level_number>/questions/', views.LevelQuestionsView.as_view(), name='admin-level-questions'),
     
-    # Admin endpoints
+    # Question management
+    path('admin/questions/<int:pk>/', views.QuestionDetailView.as_view(), name='admin-question-detail'),
+    
+    # User progress management (admin view)
+    path('admin/completions/', views.LevelCompletionListView.as_view(), name='admin-level-completion-list'),
+    path('admin/completions/<int:pk>/', views.LevelCompletionDetailView.as_view(), name='admin-level-completion-detail'),
+    path('admin/stats/', views.level_stats, name='admin-level-stats'),
+    
+    # Include router URLs
     path('', include(router.urls)),
 ]
