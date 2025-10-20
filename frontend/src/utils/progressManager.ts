@@ -221,6 +221,12 @@ class ProgressManager {
     return progress ? progress.percentage : 0
   }
 
+  // Update XP (for penalties)
+  public updateXP(newXP: number) {
+    this.userProgress.totalXP = newXP
+    this.saveToLocalStorage()
+  }
+
   // Regenerate hearts (simplified - regenerate after 1 hour)
   public regenerateHearts() {
     const lastRegen = localStorage.getItem('lingo_last_heart_regen')

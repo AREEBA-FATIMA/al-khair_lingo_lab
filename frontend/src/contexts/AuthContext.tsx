@@ -81,6 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         console.log('DEBUG - Login successful, user set:', response.user)
         console.log('DEBUG - isLoggedIn set to:', true)
+        
+        // Redirect to groups page after successful login
+        window.location.href = '/groups'
       } else {
         console.log('DEBUG - Invalid response structure:', response)
         throw new Error('Invalid response from server')
@@ -118,6 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           progressManager.setCurrentUser(loginResponse.user.id)
           
           console.log('DEBUG - Registration and auto-login successful:', loginResponse.user)
+          
+          // Redirect to groups page after successful registration
+          window.location.href = '/groups'
         }
       } else {
         throw new Error('Registration failed')
@@ -141,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoggedIn(false)
       localStorage.removeItem('user')
       localStorage.removeItem('authToken')
+      // Redirect to home page after logout
       window.location.href = '/'
     }
   }

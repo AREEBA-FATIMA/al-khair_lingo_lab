@@ -13,7 +13,12 @@ export default function HomePage() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    // Redirect to groups if user is already logged in
+    if (isLoggedIn) {
+      window.location.href = '/groups'
+    }
+  }, [isLoggedIn])
 
   if (!mounted) {
     return (

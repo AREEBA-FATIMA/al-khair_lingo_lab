@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const { login } = useAuth()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +33,10 @@ export default function LoginPage() {
 
     try {
       setIsLoading(true)
+      setError('')
+      setSuccess('')
       await login(formData.username, formData.password)
+      setSuccess('Login successful! Redirecting to groups...')
       // Redirect will happen automatically in AuthContext
     } catch (error: any) {
       console.error('Login error:', error)
@@ -132,6 +136,17 @@ export default function LoginPage() {
                 className="bg-red-50 border border-red-200 rounded-lg p-3"
               >
                 <p className="text-red-600 text-sm">{error}</p>
+              </motion.div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-green-50 border border-green-200 rounded-lg p-3"
+              >
+                <p className="text-green-600 text-sm">{success}</p>
               </motion.div>
             )}
 

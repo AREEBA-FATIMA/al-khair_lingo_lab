@@ -181,6 +181,202 @@ export default function QuizGame() {
     passed: boolean
     xpEarned: number
   } | null>(null)
+  const [currentStep, setCurrentStep] = useState<'intro' | 'practice' | 'quiz' | 'result'>('intro')
+  const [practiceStep, setPracticeStep] = useState(0)
+
+  // Initialize voices for consistent speech
+  const initializeVoices = () => {
+    return new Promise((resolve) => {
+      // Force load voices
+      speechSynthesis.getVoices()
+      
+      if (speechSynthesis.getVoices().length > 0) {
+        resolve(speechSynthesis.getVoices())
+      } else {
+        const timeout = setTimeout(() => {
+          resolve(speechSynthesis.getVoices())
+        }, 1000)
+        
+        speechSynthesis.addEventListener('voiceschanged', () => {
+          clearTimeout(timeout)
+          resolve(speechSynthesis.getVoices())
+        }, { once: true })
+      }
+    })
+  }
+
+  // Get consistent English voice
+  const getConsistentVoice = () => {
+    const voices = speechSynthesis.getVoices()
+    console.log('Available voices:', voices.map(v => v.name + ' - ' + v.lang))
+    
+    // Try different voice preferences
+    const preferredVoices = [
+      voices.find(voice => voice.lang.startsWith('en') && voice.name.includes('Female')),
+      voices.find(voice => voice.lang.startsWith('en') && voice.name.includes('Microsoft')),
+      voices.find(voice => voice.lang.startsWith('en') && voice.name.includes('Google')),
+      voices.find(voice => voice.lang.startsWith('en-US')),
+      voices.find(voice => voice.lang.startsWith('en')),
+      voices[0]
+    ].filter(Boolean)
+    
+    const selectedVoice = preferredVoices[0]
+    console.log('Selected voice:', selectedVoice?.name)
+    return selectedVoice
+  }
+
+  // Simple speak function with fallback
+  const speakText = async (text: string, rate: number = 0.7) => {
+    try {
+      // Stop any current speech
+      speechSynthesis.cancel()
+      
+      await initializeVoices()
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = rate
+      utterance.pitch = 1
+      utterance.volume = 1
+      
+      const voice = getConsistentVoice()
+      if (voice) {
+        utterance.voice = voice
+      }
+      
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event.error)
+        // Fallback: try without voice selection
+        const fallbackUtterance = new SpeechSynthesisUtterance(text)
+        fallbackUtterance.rate = rate
+        speechSynthesis.speak(fallbackUtterance)
+      }
+      
+      speechSynthesis.speak(utterance)
+    } catch (error) {
+      console.error('Speech error:', error)
+      // Final fallback
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = rate
+      speechSynthesis.speak(utterance)
+    }
+  }
+
+  // Learning content for different levels
+  const getLearningContent = (levelNumber: number) => {
+    const content = {
+      1: {
+        topic: "Basic Greetings",
+        intro: "Learn essential greetings and polite expressions in English. These are the first words you'll use when meeting someone new!",
+        objectives: [
+          "Say hello and goodbye properly",
+          "Use polite expressions like 'please' and 'thank you'",
+          "Ask 'How are you?' and respond appropriately"
+        ],
+        practice: [
+          {
+            type: "pronunciation",
+            word: "Hello",
+            phonetic: "/həˈloʊ/",
+            meaning: "A friendly greeting",
+            example: "Hello, how are you today?",
+            image: "👋"
+          },
+          {
+            type: "pronunciation", 
+            word: "Thank you",
+            phonetic: "/θæŋk juː/",
+            meaning: "Expression of gratitude",
+            example: "Thank you for your help!",
+            image: "🙏"
+          },
+          {
+            type: "conversation",
+            scenario: "Meeting someone new",
+            dialogue: [
+              "A: Hello! How are you?",
+              "B: Hi! I'm fine, thank you. How about you?",
+              "A: I'm great, thanks for asking!"
+            ],
+            image: "👥"
+          }
+        ]
+      },
+      2: {
+        topic: "Numbers 1-20",
+        intro: "Master counting from 1 to 20. Numbers are everywhere - in addresses, phone numbers, and daily life!",
+        objectives: [
+          "Count from 1 to 20 confidently",
+          "Recognize written numbers",
+          "Use numbers in simple sentences"
+        ],
+        practice: [
+          {
+            type: "pronunciation",
+            word: "One",
+            phonetic: "/wʌn/",
+            meaning: "The number 1",
+            example: "I have one apple.",
+            image: "1️⃣"
+          },
+          {
+            type: "pronunciation",
+            word: "Twenty",
+            phonetic: "/ˈtwenti/",
+            meaning: "The number 20",
+            example: "I am twenty years old.",
+            image: "2️⃣0️⃣"
+          },
+          {
+            type: "counting",
+            numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+            image: "🔢"
+          }
+        ]
+      },
+      3: {
+        topic: "Basic Colors",
+        intro: "Learn the names of common colors. Colors make our world beautiful and help us describe things!",
+        objectives: [
+          "Name basic colors in English",
+          "Use colors to describe objects",
+          "Practice pronunciation of color words"
+        ],
+        practice: [
+          {
+            type: "pronunciation",
+            word: "Red",
+            phonetic: "/red/",
+            meaning: "The color of blood or roses",
+            example: "The apple is red.",
+            image: "🔴"
+          },
+          {
+            type: "pronunciation",
+            word: "Blue",
+            phonetic: "/bluː/",
+            meaning: "The color of the sky",
+            example: "The ocean is blue.",
+            image: "🔵"
+          },
+          {
+            type: "colors",
+            colors: [
+              { name: "Red", color: "#FF0000", emoji: "🔴" },
+              { name: "Blue", color: "#0000FF", emoji: "🔵" },
+              { name: "Green", color: "#00FF00", emoji: "🟢" },
+              { name: "Yellow", color: "#FFFF00", emoji: "🟡" }
+            ]
+          }
+        ]
+      }
+    }
+    
+    return content[levelNumber] || {
+      topic: "English Learning",
+      intro: "Welcome to this English lesson! Let's learn something new today.",
+      objectives: ["Learn new vocabulary", "Practice pronunciation", "Improve your English"],
+      practice: []
+    }
+  }
 
   // Refs
   const infoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -403,6 +599,33 @@ export default function QuizGame() {
     setQuestionFeedback('')
     setShowNext(false)
     setFillBlankAnswer('') // Reset fill blank answer
+    setCurrentStep('intro') // Start with introduction
+  }
+
+  // Start learning flow
+  const startLearning = () => {
+    setCurrentStep('intro')
+  }
+
+  // Move to practice
+  const startPractice = () => {
+    setCurrentStep('practice')
+    setPracticeStep(0)
+  }
+
+  // Move to quiz
+  const startQuiz = () => {
+    setCurrentStep('quiz')
+  }
+
+  // Next practice step
+  const nextPracticeStep = () => {
+    const learningContent = getLearningContent(levelData?.level_number || 1)
+    if (practiceStep < learningContent.practice.length - 1) {
+      setPracticeStep(practiceStep + 1)
+    } else {
+      startQuiz()
+    }
   }
 
   // Handle answer click
@@ -416,16 +639,23 @@ export default function QuizGame() {
 
     if (selectedAnswer === correctAnswer) {
       playTing()
-      setQuestionFeedback('Correct!')
+      setQuestionFeedback('Correct! ✅')
       setCorrectCount(prev => prev + 1)
       setShowNext(true)
     } else {
       playBuzz()
-      setQuestionFeedback('Wrong — try again')
-      setTimeout(() => {
-        setSelectedOption(null)
-        setQuestionFeedback('')
-      }, 900)
+      setQuestionFeedback(`Wrong ❌ — Correct answer: ${correctAnswer}`)
+      setShowNext(true) // Show next button even for wrong answers
+      
+      // Reduce XP for wrong answer (penalty)
+      const progressManager = ProgressManager.getInstance()
+      const userProgress = progressManager.getUserProgress()
+      if (userProgress.totalXP >= 2) {
+        // Reduce 2 XP for wrong answer
+        const newXP = Math.max(0, userProgress.totalXP - 2)
+        progressManager.updateXP(newXP)
+        console.log(`XP reduced by 2 for wrong answer. New XP: ${newXP}`)
+      }
     }
   }
 
@@ -441,17 +671,23 @@ export default function QuizGame() {
 
     if (userAnswer === correctAnswer) {
       playTing()
-      setQuestionFeedback('Correct!')
+      setQuestionFeedback('Correct! ✅')
       setCorrectCount(prev => prev + 1)
       setShowNext(true)
     } else {
       playBuzz()
-      setQuestionFeedback(`Wrong — correct answer: ${currentQuestion.correct_answer}`)
-      setTimeout(() => {
-        setSelectedOption(null)
-        setQuestionFeedback('')
-        setFillBlankAnswer('')
-      }, 2000)
+      setQuestionFeedback(`Wrong ❌ — Correct answer: ${currentQuestion.correct_answer}`)
+      setShowNext(true) // Show next button even for wrong answers
+      
+      // Reduce XP for wrong answer (penalty)
+      const progressManager = ProgressManager.getInstance()
+      const userProgress = progressManager.getUserProgress()
+      if (userProgress.totalXP >= 2) {
+        // Reduce 2 XP for wrong answer
+        const newXP = Math.max(0, userProgress.totalXP - 2)
+        progressManager.updateXP(newXP)
+        console.log(`XP reduced by 2 for wrong answer. New XP: ${newXP}`)
+      }
     }
   }
 
@@ -527,7 +763,6 @@ export default function QuizGame() {
 
   // Finish quiz
   const finishLevelQuiz = async () => {
-    setShowModal(false)
     const total = currentLevelQuestions.length
     const percentage = Math.round((correctCount / total) * 100)
     const passed = percentage >= 80 // 80% pass rate
@@ -543,7 +778,7 @@ export default function QuizGame() {
     }
 
     setQuizResult(result)
-    setShowResult(true)
+    setCurrentStep('result')
 
     // Save progress using ProgressManager
     const progressManager = ProgressManager.getInstance()
@@ -713,7 +948,7 @@ export default function QuizGame() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Start Quiz
+            Start Learning 📚
           </motion.button>
         </div>
 
@@ -812,7 +1047,7 @@ export default function QuizGame() {
         </AnimatePresence>
       </div>
 
-      {/* Quiz Modal */}
+      {/* Learning Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -826,219 +1061,315 @@ export default function QuizGame() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-2xl bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl p-6 border border-white/5 shadow-2xl"
+              className="w-full max-w-4xl bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl p-6 border border-white/5 shadow-2xl"
             >
-              <h3 className="text-xl font-bold text-green-100 mb-2">
-                {levelData?.name} — Question {questionPointer + 1} / {currentLevelQuestions.length}
-              </h3>
-              <p className="text-gray-300 mb-4">
-                {currentLevelQuestions[questionPointer]?.question_text}
-              </p>
-              <div className="text-gray-400 text-sm font-bold mb-4">
-                Question {questionPointer + 1} of {currentLevelQuestions.length}
-              </div>
-
-              <div className="space-y-3 mb-6">
-                {currentLevelQuestions[questionPointer]?.question_type === 'fill_blank' ? (
-                  // Fill in the blank input field
-                  <div className="space-y-4">
-                    <div className="text-gray-300 text-lg leading-relaxed">
-                      {currentLevelQuestions[questionPointer]?.question_text.split('___').map((part, idx, array) => (
-                        <span key={idx}>
-                          {part}
-                          {idx < array.length - 1 && (
-                            <input
-                              type="text"
-                              value={fillBlankAnswer}
-                              onChange={(e) => setFillBlankAnswer(e.target.value)}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter' && fillBlankAnswer.trim()) {
-                                  handleFillBlankSubmit()
-                                }
-                              }}
-                              className="mx-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white/20 transition-all duration-200 min-w-[120px]"
-                              placeholder="Type here..."
-                              disabled={selectedOption !== null}
-                              autoFocus
-                            />
-                          )}
-                        </span>
+              {currentStep === 'intro' && (
+                <div className="text-center">
+                  <div className="text-6xl mb-4">📚</div>
+                  <h3 className="text-2xl font-bold text-green-100 mb-4">
+                    {getLearningContent(levelData?.level_number || 1).topic}
+                  </h3>
+                  <p className="text-gray-300 mb-6 text-lg">
+                    {getLearningContent(levelData?.level_number || 1).intro}
+                  </p>
+                  
+                  <div className="bg-slate-700/50 rounded-lg p-4 mb-6">
+                    <h4 className="text-lg font-semibold text-blue-300 mb-3">What you'll learn:</h4>
+                    <ul className="text-left space-y-2">
+                      {getLearningContent(levelData?.level_number || 1).objectives.map((objective, idx) => (
+                        <li key={idx} className="flex items-center text-gray-300">
+                          <span className="text-green-400 mr-2">✓</span>
+                          {objective}
+                        </li>
                       ))}
-                    </div>
-                    <div className="flex justify-center">
-                      <motion.button
-                        className={`px-8 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                          fillBlankAnswer.trim() && selectedOption === null
-                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                        }`}
-                        onClick={() => handleFillBlankSubmit()}
-                        disabled={!fillBlankAnswer.trim() || selectedOption !== null}
-                        whileHover={{ scale: fillBlankAnswer.trim() && selectedOption === null ? 1.05 : 1 }}
-                        whileTap={{ scale: fillBlankAnswer.trim() && selectedOption === null ? 0.95 : 1 }}
-                      >
-                        Submit Answer
-                      </motion.button>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => speakText("Hello, welcome to English learning!", 0.7)}
+                      className="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+                    >
+                      🔊 Test Voice
+                    </button>
+                    <button
+                      onClick={startPractice}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+                    >
+                      Start Learning 🚀
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 'practice' && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-green-100">
+                      Practice: {getLearningContent(levelData?.level_number || 1).topic}
+                    </h3>
+                    <div className="text-sm text-gray-400">
+                      Step {practiceStep + 1} of {getLearningContent(levelData?.level_number || 1).practice.length}
                     </div>
                   </div>
-                ) : (
-                  // MCQ options
-                  currentLevelQuestions[questionPointer]?.options.map((option, idx) => {
-                    const isCorrect = option === currentLevelQuestions[questionPointer].correct_answer
-                    return (
-                      <motion.button
-                        key={idx}
-                        className={`w-full p-4 rounded-xl text-left font-semibold transition-all duration-200 border ${
-                          selectedOption === idx
-                            ? isCorrect
-                              ? 'bg-green-500/20 border-green-500/30 text-green-100'
-                              : 'bg-red-500/20 border-red-500/30 text-red-100'
-                            : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'
-                        }`}
-                        onClick={() => handleAnswerClick(idx)}
-                        disabled={selectedOption !== null}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-sm font-bold">
-                            {String.fromCharCode(65 + idx)}
+                  
+                  {(() => {
+                    const learningContent = getLearningContent(levelData?.level_number || 1)
+                    const currentPractice = learningContent.practice[practiceStep]
+                    
+                    if (currentPractice?.type === 'pronunciation') {
+                      return (
+                        <div className="text-center space-y-6">
+                          <div className="text-8xl mb-4">{currentPractice.image}</div>
+                          <div className="bg-slate-700/50 rounded-lg p-6">
+                            <h4 className="text-3xl font-bold text-white mb-2">{currentPractice.word}</h4>
+                            <p className="text-2xl text-blue-300 mb-2">{currentPractice.phonetic}</p>
+                            <p className="text-gray-300 mb-4">{currentPractice.meaning}</p>
+                            <p className="text-green-300 italic">"{currentPractice.example}"</p>
                           </div>
-                          {option}
+                          
+                          <div className="flex justify-center space-x-4">
+                            <button
+                              onClick={() => speakText(currentPractice.word, 0.7)}
+                              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                              🔊 Listen
+                            </button>
+                            <button
+                              onClick={() => speakText(currentPractice.word, 0.4)}
+                              className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                              🐌 Slow
+                            </button>
+                          </div>
                         </div>
-                      </motion.button>
-                    )
-                  })
-                )}
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div className={`font-bold ${questionFeedback.includes('Correct') ? 'text-green-400' : 'text-red-400'}`}>
-                  {questionFeedback}
+                      )
+                    }
+                    
+                    if (currentPractice?.type === 'conversation') {
+                      return (
+                        <div className="space-y-6">
+                          <div className="text-center">
+                            <div className="text-6xl mb-4">{currentPractice.image}</div>
+                            <h4 className="text-xl font-semibold text-blue-300 mb-2">{currentPractice.scenario}</h4>
+                          </div>
+                          
+                          <div className="bg-slate-700/50 rounded-lg p-6">
+                            {currentPractice.dialogue.map((line, idx) => (
+                              <div key={idx} className="mb-2 text-gray-300">
+                                {line}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="text-center">
+                            <button
+                              onClick={async () => {
+                                for (let i = 0; i < currentPractice.dialogue.length; i++) {
+                                  setTimeout(() => {
+                                    speakText(currentPractice.dialogue[i], 0.7)
+                                  }, i * 2000)
+                                }
+                              }}
+                              className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors"
+                            >
+                              🎭 Listen to Conversation
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    if (currentPractice?.type === 'colors') {
+                      return (
+                        <div className="space-y-6">
+                          <h4 className="text-xl font-semibold text-center text-blue-300">Learn Colors</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {currentPractice.colors.map((color, idx) => (
+                              <div key={idx} className="text-center">
+                                <div 
+                                  className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-white/20"
+                                  style={{ backgroundColor: color.color }}
+                                ></div>
+                                <p className="text-white font-semibold">{color.name}</p>
+                                <p className="text-2xl">{color.emoji}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    return <div>Practice content</div>
+                  })()}
+                  
+                  <div className="flex justify-between mt-8">
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+                    >
+                      Exit
+                    </button>
+                    <button
+                      onClick={nextPracticeStep}
+                      className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+                    >
+                      {practiceStep < getLearningContent(levelData?.level_number || 1).practice.length - 1 ? 'Next' : 'Start Quiz'}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-3">
+              )}
+
+              {currentStep === 'quiz' && (
+                <div>
+                  <h3 className="text-xl font-bold text-green-100 mb-2">
+                    {levelData?.name} — Question {questionPointer + 1} / {currentLevelQuestions.length}
+                  </h3>
+                  <p className="text-gray-300 mb-4">
+                    {currentLevelQuestions[questionPointer]?.question_text}
+                  </p>
+                  <div className="text-gray-400 text-sm font-bold mb-4">
+                    Question {questionPointer + 1} of {currentLevelQuestions.length}
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    {currentLevelQuestions[questionPointer]?.question_type === 'fill_blank' ? (
+                      // Fill in the blank input field
+                      <div className="space-y-4">
+                        <div className="text-gray-300 text-lg leading-relaxed">
+                          {currentLevelQuestions[questionPointer]?.question_text.split('___').map((part, idx, array) => (
+                            <span key={idx}>
+                              {part}
+                              {idx < array.length - 1 && (
+                                <input
+                                  type="text"
+                                  value={fillBlankAnswer}
+                                  onChange={(e) => setFillBlankAnswer(e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && fillBlankAnswer.trim()) {
+                                      handleFillBlankSubmit()
+                                    }
+                                  }}
+                                  className="mx-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white/20 transition-all duration-200 min-w-[120px]"
+                                  placeholder="Type here..."
+                                  disabled={selectedOption !== null}
+                                  autoFocus
+                                />
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex justify-center">
+                          <motion.button
+                            className={`px-8 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                              fillBlankAnswer.trim() && selectedOption === null
+                                ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            }`}
+                            onClick={() => handleFillBlankSubmit()}
+                            disabled={!fillBlankAnswer.trim() || selectedOption !== null}
+                            whileHover={{ scale: fillBlankAnswer.trim() && selectedOption === null ? 1.05 : 1 }}
+                            whileTap={{ scale: fillBlankAnswer.trim() && selectedOption === null ? 0.95 : 1 }}
+                          >
+                            Submit Answer
+                          </motion.button>
+                        </div>
+                      </div>
+                    ) : (
+                      // MCQ options
+                      currentLevelQuestions[questionPointer]?.options.map((option, idx) => {
+                        const isCorrect = option === currentLevelQuestions[questionPointer].correct_answer
+                        return (
+                          <motion.button
+                            key={idx}
+                            className={`w-full p-4 rounded-xl text-left font-semibold transition-all duration-200 border ${
+                              selectedOption === idx
+                                ? isCorrect
+                                  ? 'bg-green-500/20 border-green-500/30 text-green-100'
+                                  : 'bg-red-500/20 border-red-500/30 text-red-100'
+                                : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'
+                            }`}
+                            onClick={() => handleAnswerClick(idx)}
+                            disabled={selectedOption !== null}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-sm font-bold">
+                                {String.fromCharCode(65 + idx)}
+                              </div>
+                              {option}
+                            </div>
+                          </motion.button>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div className={`font-bold ${questionFeedback.includes('Correct') ? 'text-green-400' : 'text-red-400'}`}>
+                      {questionFeedback}
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowModal(false)}
+                        className="px-4 py-2 rounded-lg bg-transparent text-gray-400 border border-white/10 hover:bg-white/5 transition-colors"
+                      >
+                        Close
+                      </button>
+                      {showNext && (
+                        <button
+                          onClick={handleNext}
+                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-green-900 font-bold hover:from-green-400 hover:to-green-500 transition-all"
+                        >
+                          Next
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 'result' && quizResult && (
+                <div className="text-center">
+                  <div className="text-6xl mb-4">
+                    {quizResult.passed ? '🎉' : '😔'}
+                  </div>
+                  <h2 className={`text-2xl font-bold mb-2 ${
+                    quizResult.passed ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {quizResult.passed ? 'Congratulations!' : 'Try Again!'}
+                  </h2>
+                  <div className="text-4xl font-bold text-white mb-2">
+                    {quizResult.score}/{quizResult.total}
+                  </div>
+                  <div className={`text-xl font-semibold mb-4 ${
+                    quizResult.passed ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {quizResult.percentage}%
+                  </div>
+                  {quizResult.passed ? (
+                    <div className="text-yellow-400 text-lg mb-4">
+                      +{quizResult.xpEarned} XP Earned! ⭐
+                    </div>
+                  ) : (
+                    <div className="text-red-400 text-lg mb-4">
+                      Level Failed - Try Again! 💪
+                    </div>
+                  )}
                   <button
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 rounded-lg bg-transparent text-gray-400 border border-white/10 hover:bg-white/5 transition-colors"
+                    className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
                   >
-                    Close
+                    Continue Learning
                   </button>
-                  {showNext && (
-                    <button
-                      onClick={handleNext}
-                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-green-900 font-bold hover:from-green-400 hover:to-green-500 transition-all"
-                    >
-                      Next
-                    </button>
-                  )}
                 </div>
-              </div>
+              )}
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Quiz Result Modal */}
-      <AnimatePresence>
-        {showResult && quizResult && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-5"
-            onClick={(e) => e.target === e.currentTarget && setShowResult(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl p-6 border border-white/5 shadow-2xl text-center"
-            >
-              {/* Result Icon */}
-              <div className="text-6xl mb-4">
-                {quizResult.passed ? '🎉' : '😔'}
-              </div>
-
-              {/* Result Title */}
-              <h2 className={`text-2xl font-bold mb-2 ${
-                quizResult.passed ? 'text-green-400' : 'text-red-400'
-              }`}>
-                {quizResult.passed ? 'Congratulations!' : 'Try Again!'}
-              </h2>
-
-              {/* Score */}
-              <div className="text-4xl font-bold text-white mb-2">
-                {quizResult.score}/{quizResult.total}
-              </div>
-
-              {/* Percentage */}
-              <div className={`text-xl font-semibold mb-4 ${
-                quizResult.passed ? 'text-green-400' : 'text-red-400'
-              }`}>
-                {quizResult.percentage}%
-              </div>
-
-              {/* XP Earned */}
-              {quizResult.passed && (
-                <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-lg mb-4">
-                  +{quizResult.xpEarned} XP Earned!
-                </div>
-              )}
-
-              {/* Progress Update */}
-              {quizResult.passed && (
-                <div className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg mb-4">
-                  Level {levelData?.level_number} Completed!
-                </div>
-              )}
-
-              {/* Tree Growth Animation */}
-              <div className="mb-6">
-                <div className="text-lg font-semibold text-green-100 mb-2">Your Tree Grows!</div>
-                <div className="flex justify-center items-end gap-1">
-                  {Array.from({ length: 5 }, (_, i) => {
-                    const stage = Math.min(Math.floor((highestUnlocked / 10) * 5), 4)
-                    const isActive = i <= stage
-                    return (
-                      <motion.div
-                        key={i}
-                        className={`w-8 h-10 rounded-t-full flex items-center justify-center text-lg ${
-                          isActive ? 'bg-green-500' : 'bg-gray-600'
-                        }`}
-                        animate={isActive ? { scale: [1, 1.2, 1] } : {}}
-                        transition={{ duration: 0.5, delay: i * 0.1 }}
-                      >
-                        {i === 0 ? '🌱' : i === 1 ? '🌿' : i === 2 ? '🌳' : i === 3 ? '🌲' : '🌳'}
-                      </motion.div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowResult(false)}
-                  className="flex-1 px-4 py-2 rounded-lg bg-transparent text-gray-400 border border-white/10 hover:bg-white/5 transition-colors"
-                >
-                  Continue
-                </button>
-                {!quizResult.passed && (
-                  <button
-                    onClick={() => {
-                      setShowResult(false)
-                      startLevelQuiz()
-                    }}
-                    className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-green-900 font-bold hover:from-green-400 hover:to-green-500 transition-all"
-                  >
-                    Retry
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
