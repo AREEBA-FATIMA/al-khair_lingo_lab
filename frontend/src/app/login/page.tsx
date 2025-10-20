@@ -5,313 +5,157 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { X, GraduationCap, Users, LogIn, ArrowLeft } from 'lucide-react'
+import { User, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
-  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher' | null>(null)
   const [formData, setFormData] = useState({
     username: '',
-    password: '',
-    role: ''
+    password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const { login } = useAuth()
 
-  const handleRoleSelect = (role: 'student' | 'teacher') => {
-    setSelectedRole(role)
-    setFormData(prev => ({ ...prev, role }))
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    setError('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError('')
-    
+
     try {
-      console.log('DEBUG - Login page: Starting login process', { 
-        username: formData.username, 
-        role: selectedRole,
-        hasPassword: !!formData.password 
-      })
-      
-      // For students, password is optional
-      const password = selectedRole === 'student' ? '' : formData.password
-      await login(formData.username, password)
-      
-      console.log('DEBUG - Login page: Login successful, redirecting...')
-      // Redirect to groups page on successful login
-      window.location.href = '/groups'
+      setIsLoading(true)
+      await login(formData.username, formData.password)
+      // Redirect will happen automatically in AuthContext
     } catch (error: any) {
-      console.error('DEBUG - Login page error:', error)
-      console.error('DEBUG - Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      })
-      setError(error.response?.data?.error || 'Login failed. Please try again.')
+      console.error('Login error:', error)
+      setError(error.response?.data?.message || error.message || 'Login failed')
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navigation />
       
-      <div className="flex items-center justify-center py-20 px-4">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="w-full max-w-4xl"
+          transition={{ duration: 0.5 }}
+          className="max-w-md w-full space-y-8"
         >
-          <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-8"></div>
-                <h1 className="text-3xl font-bold text-gray-900">Log In</h1>
-                <Link 
-                  href="/"
-                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-600" />
-                </Link>
+          {/* Header */}
+          <div className="text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="mx-auto h-16 w-16 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full flex items-center justify-center mb-4"
+            >
+              <User className="h-8 w-8 text-white" />
+            </motion.div>
+            <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+            <p className="mt-2 text-gray-600">Sign in to continue your learning journey</p>
+          </div>
+
+          {/* Form */}
+          <motion.form
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-8 space-y-6"
+            onSubmit={handleSubmit}
+          >
+            <div className="space-y-4">
+              {/* Username */}
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  Username
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    required
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03045e] focus:border-transparent"
+                    placeholder="Enter your username"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03045e] focus:border-transparent"
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {!selectedRole ? (
-              /* Role Selection */
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Student Option */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="text-center"
-                >
-                  <div className="mb-6">
-                    <div className="w-32 h-32 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <div className="text-6xl">🎓</div>
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Student</h3>
-                    <p className="text-gray-600 text-sm">Access your learning dashboard and continue your progress</p>
-                  </div>
-                  <motion.button
-                    onClick={() => handleRoleSelect('student')}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
-                  >
-                    <span>Log In as a Student</span>
-                    <span>»</span>
-                  </motion.button>
-                </motion.div>
-
-                {/* Teacher Option */}
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="text-center"
-                >
-                  <div className="mb-6">
-                    <div className="w-32 h-32 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <div className="text-6xl">👩‍🏫</div>
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Instructor/Admin</h3>
-                    <p className="text-gray-600 text-sm">Access your teaching dashboard and manage courses</p>
-                  </div>
-                  <motion.button
-                    onClick={() => handleRoleSelect('teacher')}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white shadow-lg py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
-                  >
-                    <span>Log In as an Instructor/Admin</span>
-                    <span>»</span>
-                  </motion.button>
-                </motion.div>
-              </div>
-            ) : (
-              /* Login Form */
+            {/* Error Message */}
+            {error && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
+                className="bg-red-50 border border-red-200 rounded-lg p-3"
               >
-                <div className="text-center mb-8">
-                  <div className="flex items-center justify-center space-x-4 mb-4">
-                    <button
-                      onClick={() => setSelectedRole(null)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ArrowLeft className="h-5 w-5 text-gray-600" />
-                    </button>
-                    <div className="flex items-center space-x-2">
-                      {selectedRole === 'student' ? (
-                        <>
-                          <GraduationCap className="h-6 w-6 text-blue-500" />
-                          <h2 className="text-2xl font-bold text-gray-900">Student Login</h2>
-                        </>
-                      ) : (
-                        <>
-                          <Users className="h-6 w-6 text-purple-500" />
-                          <h2 className="text-2xl font-bold text-gray-900">Teacher Login</h2>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-gray-600">
-                    {selectedRole === 'student' 
-                      ? 'Welcome back! Continue your learning journey' 
-                      : 'Welcome back! Access your teaching dashboard'
-                    }
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {selectedRole === 'student' ? 'Student ID / Username / Name' : 'Username / Email'}
-                    </label>
-                    <input
-                      type="text"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00bfe6] focus:border-transparent transition-all duration-300"
-                      placeholder={selectedRole === 'student' ? 'Enter Student ID, Username, or Name' : 'Enter your username or email'}
-                    />
-                  </motion.div>
-
-                  {/* Error Message */}
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm"
-                    >
-                      {error}
-                    </motion.div>
-                  )}
-
-                  {selectedRole === 'teacher' && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
-                    >
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Password
-                      </label>
-                      <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00bfe6] focus:border-transparent transition-all duration-300"
-                        placeholder="Enter your password"
-                      />
-                    </motion.div>
-                  )}
-                  
-                  {selectedRole === 'student' && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
-                    >
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-sm text-blue-700">
-                          <strong>Student Login:</strong> You can login using any of these:
-                        </p>
-                        <ul className="text-xs text-blue-600 mt-2 space-y-1">
-                          <li>• Student ID: C01-M-G01-A-0001</li>
-                          <li>• Username: student123</li>
-                          <li>• First Name: John</li>
-                          <li>• Last Name: Doe</li>
-                        </ul>
-                        <p className="text-xs text-blue-600 mt-2">
-                          No password required for students!
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                    className="flex items-center justify-between"
-                  >
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-[#00bfe6] focus:ring-[#00bfe6]" />
-                      <span className="ml-2 text-sm text-gray-600">Remember me</span>
-                    </label>
-                    <Link 
-                      href="/forgot-password" 
-                      className="text-sm text-[#00bfe6] hover:text-[#03045e] transition-colors duration-300"
-                    >
-                      Forgot password?
-                    </Link>
-                  </motion.div>
-
-                  <motion.button
-                    type="submit"
-                    disabled={isLoading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white py-4 px-6 rounded-lg font-bold text-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Signing In...</span>
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="h-5 w-5" />
-                        <span>Log In</span>
-                      </>
-                    )}
-                  </motion.button>
-                </form>
+                <p className="text-red-600 text-sm">{error}</p>
               </motion.div>
             )}
 
-            {/* Register Link */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
-              className="text-center mt-6"
+            {/* Submit Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white py-3 px-4 rounded-lg font-medium hover:from-[#02033a] hover:to-[#0099cc] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </motion.button>
+
+            {/* Register Link */}
+            <div className="text-center">
               <p className="text-gray-600">
                 Don't have an account?{' '}
-                <Link 
-                  href="/register" 
-                  className="text-[#00bfe6] hover:text-[#03045e] font-semibold transition-colors duration-300"
-                >
-                  Create Account
+                <Link href="/register" className="text-[#03045e] hover:text-[#02033a] font-medium">
+                  Create one
                 </Link>
               </p>
-            </motion.div>
-          </div>
+            </div>
+          </motion.form>
         </motion.div>
       </div>
     </div>

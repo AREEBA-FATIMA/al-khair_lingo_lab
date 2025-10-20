@@ -32,8 +32,8 @@ urlpatterns = [
     
     # API URLs
     path('api/users/', include('users.urls')),
-    path('api/learning/', include('groups.urls')),  # Main learning endpoint
-    path('api/levels/', include('levels.urls')),    # Keep for admin/management
+    path('api/groups/', include('groups.urls')),    # Groups and levels
+    path('api/levels/', include('levels.urls')),    # Level management
     path('api/tests/', include('tests.urls')),
     path('api/plants/', include('plants.urls')),
     path('api/progress/', include('progress.urls')),

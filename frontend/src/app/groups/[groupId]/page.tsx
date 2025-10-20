@@ -42,131 +42,179 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState<Group | null>(null)
   const [levels, setLevels] = useState<Level[]>([])
   const [loading, setLoading] = useState(true)
+  const [userProgress, setUserProgress] = useState({
+    highestLevel: 0,
+    completedLevels: 0,
+    totalXP: 0
+  })
 
-  useEffect(() => {
-    const fetchGroupData = async () => {
-      try {
-        // Fetch all groups first
-        const response = await fetch(`http://127.0.0.1:8000/api/groups/`)
+  // Load user progress from database
+  const loadUserProgress = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/progress/load/')
+      if (response.ok) {
+        const data = await response.json()
+        setUserProgress({
+          highestLevel: data.highest_level,
+          completedLevels: data.completed_levels,
+          totalXP: data.total_xp
+        })
+        console.log('User progress loaded:', data)
+      }
+    } catch (error) {
+      console.error('Error loading user progress:', error)
+    }
+  }
+
+  // Fetch group data function
+  const fetchGroupData = async () => {
+    try {
+      // Fetch all groups first
+      const response = await fetch(`http://127.0.0.1:8000/api/learning/`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const groupsResponse = await response.json()
+      console.log('Groups API Response:', groupsResponse)
+      
+      // Handle paginated response - data is in 'results' field
+      const groupsData = groupsResponse.results || groupsResponse
+      console.log('Groups data:', groupsData)
+      
+      // Check if groupsData is an array
+      if (!Array.isArray(groupsData)) {
+        throw new Error('Groups data is not an array')
+      }
+      
+      // Find the group by group_number
+      console.log('Looking for group_number:', parseInt(groupId))
+      console.log('Available groups:', groupsData.map((g: any) => ({ id: g.id, group_number: g.group_number, name: g.name })))
+      
+      const groupData = groupsData.find((g: any) => g.group_number === parseInt(groupId))
+      console.log('Found group data:', groupData)
+      
+      if (!groupData) {
+        throw new Error('Group not found')
+      }
+      
+      // Get levels for this group
+      const levelsResponse = await fetch(`http://127.0.0.1:8000/api/learning/${groupData.id}/levels/`)
+      
+      if (!levelsResponse.ok) {
+        throw new Error(`Levels API error! status: ${levelsResponse.status}`)
+      }
+      
+      const levelsResponseData = await levelsResponse.json()
+      console.log('Levels API Response:', levelsResponseData)
+      
+      // Handle paginated response - data is in 'results' field
+      const levelsData = levelsResponseData.results || levelsResponseData
+      console.log('Levels data:', levelsData)
+      
+      // Check if levelsData is an array
+      if (!Array.isArray(levelsData)) {
+        throw new Error('Levels data is not an array')
+      }
+      
+      // Transform API data to match our interface
+      const transformedGroup: Group = {
+        id: groupData.id,
+        group_number: groupData.group_number,
+        name: groupData.name,
+        description: groupData.description,
+        level_count: levelsData.length,
+        plant_type: groupData.group_number === 0 ? 'basic_seed' : 
+                   groupData.group_number === 1 ? 'flower_seed' :
+                   groupData.group_number === 2 ? 'herb_seed' :
+                   groupData.group_number === 3 ? 'vegetable_seed' :
+                   groupData.group_number === 4 ? 'fruit_seed' :
+                   groupData.group_number === 5 ? 'tree_seed' :
+                   groupData.group_number === 6 ? 'exotic_seed' : 'legendary_seed',
+        completion_percentage: 0, // Will be updated with user progress later
+        levels_completed: 0, // Will be updated with user progress later
+        current_stage: 'seed', // Will be updated with user progress later
+        is_wilting: false // Will be updated with user progress later
+      }
+      
+      // Transform levels data with proper unlocking logic
+      const transformedLevels: Level[] = levelsData.map((level: any) => {
+        // Level is unlocked if it's the first level (level 1) or if previous level is completed
+        const isUnlocked = level.level_number === 1 || level.level_number <= (userProgress.highestLevel || 0) + 1
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        
-        const groupsResponse = await response.json()
-        console.log('Groups API Response:', groupsResponse)
-        
-        // Handle paginated response - data is in 'results' field
-        const groupsData = groupsResponse.results || groupsResponse
-        console.log('Groups data:', groupsData)
-        
-        // Check if groupsData is an array
-        if (!Array.isArray(groupsData)) {
-          throw new Error('Groups data is not an array')
-        }
-        
-        // Find the group by group_number
-        console.log('Looking for group_number:', parseInt(groupId))
-        console.log('Available groups:', groupsData.map((g: any) => ({ id: g.id, group_number: g.group_number, name: g.name })))
-        
-        const groupData = groupsData.find((g: any) => g.group_number === parseInt(groupId))
-        console.log('Found group data:', groupData)
-        
-        if (!groupData) {
-          throw new Error('Group not found')
-        }
-        
-        // Get levels for this group
-        const levelsResponse = await fetch(`http://127.0.0.1:8000/api/groups/${groupData.id}/levels/`)
-        
-        if (!levelsResponse.ok) {
-          throw new Error(`Levels API error! status: ${levelsResponse.status}`)
-        }
-        
-        const levelsResponseData = await levelsResponse.json()
-        console.log('Levels API Response:', levelsResponseData)
-        
-        // Handle paginated response - data is in 'results' field
-        const levelsData = levelsResponseData.results || levelsResponseData
-        console.log('Levels data:', levelsData)
-        
-        // Check if levelsData is an array
-        if (!Array.isArray(levelsData)) {
-          throw new Error('Levels data is not an array')
-        }
-        
-        // Transform API data to match our interface
-        const transformedGroup: Group = {
-          id: groupData.id,
-          group_number: groupData.group_number,
-          name: groupData.name,
-          description: groupData.description,
-          level_count: levelsData.length,
-          plant_type: groupData.plant_type,
-          completion_percentage: 0, // Mock data for now
-          levels_completed: 0, // Mock data for now
-          current_stage: 'seed', // Mock data for now
-          is_wilting: false // Mock data for now
-        }
-        
-        // Transform levels data
-        const transformedLevels: Level[] = levelsData.map((level: any) => ({
+        return {
           id: level.id,
           level_number: level.level_number,
           name: level.name,
           description: level.description,
-          questions_count: level.questions_count,
+          questions_count: level.is_test_level ? level.test_questions_count : 6,
           xp_reward: level.xp_reward,
-          is_unlocked: level.is_unlocked,
-          plant_growth_stage: level.plant_growth_stage,
-          completion_percentage: 0, // Mock data for now
-          questions_answered: 0, // Mock data for now
-          correct_answers: 0, // Mock data for now
-          is_completed: false // Mock data for now
-        }))
-        
-        setGroup(transformedGroup)
-        setLevels(transformedLevels)
-      } catch (error) {
-        console.error('Error fetching group data:', error)
-        // Fallback to mock data
-        const mockGroup: Group = {
-          id: parseInt(groupId),
-          group_number: parseInt(groupId),
-          name: `Group ${groupId} - ${groupId === '0' ? 'Basic English' : 'Advanced English'}`,
-          description: `Level ${groupId} English learning with plant-based progression`,
-          level_count: groupId === '0' ? 20 : 50,
-          plant_type: 'basic_seed',
-          completion_percentage: 0,
-          levels_completed: 0,
-          current_stage: 'seed',
-          is_wilting: false
+          is_unlocked: isUnlocked,
+          plant_growth_stage: 'seed', // Will be updated with user progress later
+          completion_percentage: 0, // Will be updated with user progress later
+          questions_answered: 0, // Will be updated with user progress later
+          correct_answers: 0, // Will be updated with user progress later
+          is_completed: level.level_number <= (userProgress.highestLevel || 0) // Completed if level number <= highest completed
         }
-
-        const mockLevels: Level[] = Array.from({ length: mockGroup.level_count }, (_, i) => ({
-          id: i + 1,
-          level_number: i + 1,
-          name: `Level ${i + 1}`,
-          description: `Complete 6 questions to advance to the next level`,
-          questions_count: 6,
-          xp_reward: 10 + (i * 2),
-          is_unlocked: i === 0, // Only first level unlocked initially
-          plant_growth_stage: 'seed',
-          completion_percentage: 0,
-          questions_answered: 0,
-          correct_answers: 0,
-          is_completed: false
-        }))
-
-        setGroup(mockGroup)
-        setLevels(mockLevels)
-      } finally {
-        setLoading(false)
+      })
+      
+      setGroup(transformedGroup)
+      setLevels(transformedLevels)
+    } catch (error) {
+      console.error('Error fetching group data:', error)
+      // Fallback to mock data
+      const mockGroup: Group = {
+        id: parseInt(groupId),
+        group_number: parseInt(groupId),
+        name: `Group ${groupId} - ${groupId === '0' ? 'Basic English' : 'Advanced English'}`,
+        description: `Level ${groupId} English learning with plant-based progression`,
+        level_count: 10,
+        plant_type: 'basic_seed',
+        completion_percentage: 0,
+        levels_completed: 0,
+        current_stage: 'seed',
+        is_wilting: false
       }
-    }
 
+      const mockLevels: Level[] = Array.from({ length: mockGroup.level_count }, (_, i) => ({
+        id: i + 1,
+        level_number: i + 1,
+        name: `Level ${i + 1}`,
+        description: `Complete 6 questions to advance to the next level`,
+        questions_count: 6,
+        xp_reward: 10 + (i * 2),
+        is_unlocked: i === 0, // Only first level unlocked initially
+        plant_growth_stage: 'seed',
+        completion_percentage: 0,
+        questions_answered: 0,
+        correct_answers: 0,
+        is_completed: false
+      }))
+
+      setGroup(mockGroup)
+      setLevels(mockLevels)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchGroupData()
   }, [groupId])
+
+  useEffect(() => {
+    // Load user progress first
+    loadUserProgress()
+  }, [])
+
+  // Reload progress when userProgress changes
+  useEffect(() => {
+    if (userProgress.highestLevel > 0) {
+      // Re-fetch group data to update level unlocking
+      fetchGroupData()
+    }
+  }, [userProgress])
 
   const getPlantEmoji = (stage: string) => {
     const stageEmojis: { [key: string]: string } = {

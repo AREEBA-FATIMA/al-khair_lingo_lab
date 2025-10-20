@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { apiService } from '@/services/api'
+import ProgressManager from '@/utils/progressManager'
 
 interface User {
   id: number
@@ -17,6 +18,7 @@ interface AuthContextType {
   user: User | null
   isLoggedIn: boolean
   login: (username: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string, firstName: string, lastName: string) => Promise<void>
   logout: () => void
   loading: boolean
 }
@@ -41,6 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('DEBUG - Parsed user data:', userData)
         setUser(userData)
         setIsLoggedIn(true)
+        
+        // Set user in ProgressManager
+        const progressManager = ProgressManager.getInstance()
+        progressManager.setCurrentUser(userData.id)
+        
         console.log('DEBUG - User logged in from localStorage')
       } catch (error) {
         console.error('Error parsing saved user data:', error)
@@ -68,6 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(response.user)
         setIsLoggedIn(true)
         
+        // Set user in ProgressManager
+        const progressManager = ProgressManager.getInstance()
+        progressManager.setCurrentUser(response.user.id)
+        
         console.log('DEBUG - Login successful, user set:', response.user)
         console.log('DEBUG - isLoggedIn set to:', true)
       } else {
@@ -76,6 +87,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('DEBUG - Login error:', error)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const register = async (username: string, email: string, password: string, firstName: string, lastName: string) => {
+    try {
+      console.log('DEBUG - Starting registration process:', { username, email })
+      setLoading(true)
+      const response = await apiService.register(username, email, password, firstName, lastName)
+      console.log('DEBUG - Registration API response:', response)
+      
+      if (response.user) {
+        // Auto-login after successful registration
+        console.log('DEBUG - Starting auto-login after registration')
+        const loginResponse = await apiService.login(username, password)
+        console.log('DEBUG - Auto-login response:', loginResponse)
+        
+        if (loginResponse.tokens && loginResponse.user) {
+          localStorage.setItem('authToken', loginResponse.tokens.access)
+          localStorage.setItem('user', JSON.stringify(loginResponse.user))
+          
+          setUser(loginResponse.user)
+          setIsLoggedIn(true)
+          
+          // Set user in ProgressManager
+          const progressManager = ProgressManager.getInstance()
+          progressManager.setCurrentUser(loginResponse.user.id)
+          
+          console.log('DEBUG - Registration and auto-login successful:', loginResponse.user)
+        }
+      } else {
+        throw new Error('Registration failed')
+      }
+    } catch (error) {
+      console.error('DEBUG - Registration error:', error)
+      console.error('DEBUG - Error details:', error.response?.data)
       throw error
     } finally {
       setLoading(false)
@@ -97,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, isLoggedIn, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   )

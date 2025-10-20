@@ -94,11 +94,11 @@ class SimpleLoginView(APIView):
     
     def post(self, request):
         username = request.data.get('username')
-        password = request.data.get('password', '')
+        password = request.data.get('password')
         
-        if not username:
+        if not username or not password:
             return Response({
-                'error': 'Username is required'
+                'error': 'Username and password are required'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Try to authenticate using the custom authentication backend
@@ -165,13 +165,18 @@ class UserRegistrationView(APIView):
     permission_classes = [permissions.AllowAny]
     
     def post(self, request):
+        print(f"DEBUG - Registration request data: {request.data}")
+        print(f"DEBUG - Registration request headers: {request.headers}")
+        print(f"DEBUG - Registration request method: {request.method}")
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            print(f"DEBUG - User created successfully: {user.username}")
             return Response({
                 'message': 'User created successfully',
                 'user': UserSerializer(user).data
             }, status=status.HTTP_201_CREATED)
+        print(f"DEBUG - Registration validation errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -1,342 +1,237 @@
-from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
-from django.db.models import Q, Sum, Count, Avg
+from rest_framework import status, permissions
 from django.utils import timezone
-from datetime import datetime, timedelta
-from .models import LevelProgress, QuestionProgress, DailyProgress
-from .serializers import LevelProgressSerializer, QuestionProgressSerializer, DailyProgressSerializer
-from levels.models import Level
-from groups.models import Group
-from plants.models import UserPlant, PlantStage
+from django.db.models import Sum, Avg
+from .models import LevelProgress
+from levels.models import Level, Question
+from groups.models import Group, GroupProgress
+from .serializers import LevelProgressSerializer, ProgressOverviewSerializer, RecentActivitySerializer, AchievementSerializer
 
-class ProgressOverviewView(generics.GenericAPIView):
-    """Progress overview with real data"""
-    permission_classes = [IsAuthenticated]
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def progress_overview(request):
+    """Get user's overall progress overview"""
+    user = request.user
     
-    def get(self, request):
-        user = request.user
-        
-        # Get user's level progress
-        level_progress = LevelProgress.objects.filter(user=user)
-        
-        # Calculate statistics
-        total_levels = Level.objects.filter(is_active=True).count()
-        completed_levels = level_progress.filter(is_completed=True).count()
-        total_xp = level_progress.aggregate(total=Sum('xp_earned'))['total'] or 0
-        total_questions = level_progress.aggregate(total=Sum('questions_answered'))['total'] or 0
-        correct_answers = level_progress.aggregate(total=Sum('correct_answers'))['total'] or 0
-        
-        # Calculate accuracy
-        accuracy = (correct_answers / total_questions * 100) if total_questions > 0 else 0
-        
-        # Get current streak
-        today = timezone.now().date()
-        streak = 0
-        current_date = today
-        
-        while True:
-            daily_progress = DailyProgress.objects.filter(
-                user=user, 
-                date=current_date,
-                levels_completed__gt=0
-            ).first()
+    # Get user's actual progress
+    total_levels = Level.objects.filter(is_active=True).count()
+    user_progress = LevelProgress.objects.filter(user=user)
+    completed_levels = user_progress.filter(is_completed=True).count()
+    total_xp = user_progress.aggregate(total=Sum('xp_earned'))['total'] or 0
+    
+    # Calculate streaks and other stats
+    current_streak = 0  # TODO: Implement streak calculation
+    longest_streak = 0  # TODO: Implement streak calculation
+    average_score = user_progress.aggregate(avg=Avg('completion_percentage'))['avg'] or 0
+    time_spent_minutes = user_progress.aggregate(total=Sum('time_spent'))['total'] or 0
+    total_groups_completed = 0  # TODO: Implement group completion tracking
+    
+    # Calculate overall completion percentage
+    total_possible_xp = total_levels * 10  # Assuming 10 XP per level
+    completion_percentage = (total_xp / total_possible_xp * 100) if total_possible_xp > 0 else 0
+    
+    # Determine plant stage
+    plant_stage = "Seed"
+    if completion_percentage >= 80:
+        plant_stage = "Fruit Tree"
+    elif completion_percentage >= 60:
+        plant_stage = "Tree"
+    elif completion_percentage >= 40:
+        plant_stage = "Sapling"
+    elif completion_percentage >= 20:
+        plant_stage = "Sprout"
+    
+    # Default current level
+    current_level = user_progress.order_by('-level__level_number').first().level.level_number + 1 if completed_levels > 0 else 1
+    
+    overview = {
+        'total_xp': total_xp,
+        'current_streak': current_streak,
+        'longest_streak': longest_streak,
+        'hearts': 5, # TODO: Implement hearts system
+        'daily_goal': 50, # Default daily goal
+        'total_levels_completed': completed_levels,
+        'total_groups_completed': total_groups_completed,
+        'average_score': round(average_score, 2),
+        'time_spent_minutes': time_spent_minutes,
+        'current_level': current_level,
+        'plant_stage': plant_stage,
+        'completion_percentage': round(completion_percentage, 2)
+    }
+    
+    serializer = ProgressOverviewSerializer(overview)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def save_progress(request):
+    """Save level completion progress"""
+    user = request.user
+    level_id = request.data.get('level_id')
+    score = request.data.get('score', 0)
+    total = request.data.get('total', 6)
+    xp_earned = request.data.get('xp_earned', 0)
+    passed = request.data.get('passed', False)
+    time_spent = request.data.get('time_spent', 0)
             
-            if daily_progress:
-                streak += 1
-                current_date -= timedelta(days=1)
-            else:
-                break
-        
-        # Get recent activity
-        recent_progress = level_progress.order_by('-last_attempted')[:5]
-        
-        return Response({
-            'overview': {
-                'total_levels': total_levels,
-                'completed_levels': completed_levels,
-                'completion_percentage': (completed_levels / total_levels * 100) if total_levels > 0 else 0,
-                'total_xp': total_xp,
-                'total_questions': total_questions,
-                'accuracy_percentage': round(accuracy, 1),
-                'current_streak': streak,
-            },
-            'recent_activity': LevelProgressSerializer(recent_progress, many=True).data
-        })
-
-class ProgressSummaryView(generics.GenericAPIView):
-    """Progress summary"""
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        return Response({'message': 'Progress summary endpoint'})
-
-class GroupProgressListView(generics.ListAPIView):
-    """Group progress list"""
-    serializer_class = None
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return GroupProgress.objects.filter(user=self.request.user)
-
-class GroupProgressDetailView(generics.RetrieveAPIView):
-    """Group progress detail"""
-    serializer_class = None
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return GroupProgress.objects.filter(user=self.request.user)
-
-class LevelProgressListView(generics.ListAPIView):
-    """Level progress list"""
-    serializer_class = None
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return LevelProgress.objects.filter(user=self.request.user)
-
-class LevelProgressDetailView(generics.RetrieveAPIView):
-    """Level progress detail"""
-    serializer_class = None
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return LevelProgress.objects.filter(user=self.request.user)
-
-class DailyProgressListView(generics.ListAPIView):
-    """Daily progress list"""
-    serializer_class = None
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return DailyProgress.objects.filter(user=self.request.user)
-
-class TodayProgressView(generics.GenericAPIView):
-    """Today's progress"""
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        return Response({'message': 'Today progress endpoint'})
-
-class WeeklyProgressView(generics.GenericAPIView):
-    """Weekly progress"""
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        return Response({'message': 'Weekly progress endpoint'})
-
-class MonthlyProgressView(generics.GenericAPIView):
-    """Monthly progress"""
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        return Response({'message': 'Monthly progress endpoint'})
-
-class StreakAnalyticsView(generics.GenericAPIView):
-    """Streak analytics"""
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        return Response({'message': 'Streak analytics endpoint'})
-
-class PerformanceAnalyticsView(generics.GenericAPIView):
-    """Performance analytics"""
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        return Response({'message': 'Performance analytics endpoint'})
-
-class LevelProgressViewSet(ModelViewSet):
-    """Level progress viewset"""
-    queryset = LevelProgress.objects.all()
-    serializer_class = LevelProgressSerializer
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return LevelProgress.objects.filter(user=self.request.user)
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-class LevelCompletionView(generics.GenericAPIView):
-    """Submit level completion with answers"""
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request):
-        user = request.user
-        level_id = request.data.get('level_id')
-        answers = request.data.get('answers', [])  # List of question answers
-        
-        try:
-            level = Level.objects.get(id=level_id)
-        except Level.DoesNotExist:
-            return Response({'error': 'Level not found'}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Get or create level progress
-        level_progress, created = LevelProgress.objects.get_or_create(
-            user=user,
-            level=level,
-            defaults={'attempts': 0}
+    if not level_id:
+        return Response(
+            {'error': 'level_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
         )
-        
-        # Update progress
-        level_progress.attempts += 1
-        level_progress.questions_answered = len(answers)
-        
-        # Calculate correct answers
-        correct_count = 0
-        total_xp = 0
-        
-        for answer_data in answers:
-            question_id = answer_data.get('question_id')
-            user_answer = answer_data.get('answer')
-            time_spent = answer_data.get('time_spent', 0)
-            
-            try:
-                question = level.questions.get(id=question_id)
-                
-                # Check if answer is correct
-                is_correct = self.check_answer(question, user_answer)
-                
-                if is_correct:
-                    correct_count += 1
-                    total_xp += question.xp_value
-                
-                # Create or update question progress
-                question_progress, _ = QuestionProgress.objects.get_or_create(
-                    user=user,
-                    question=question,
-                    defaults={'attempts': 0}
-                )
-                
-                question_progress.attempts += 1
-                question_progress.is_answered = True
-                question_progress.is_correct = is_correct
-                question_progress.time_spent = time_spent
-                question_progress.answered_at = timezone.now()
-                question_progress.save()
-                
-            except Exception as e:
-                print(f"Error processing question {question_id}: {e}")
-                continue
-        
-        # Update level progress
-        level_progress.correct_answers = correct_count
-        level_progress.wrong_answers = len(answers) - correct_count
-        level_progress.xp_earned += total_xp
-        level_progress.update_completion_percentage()
-        
-        # Update daily progress
-        today = timezone.now().date()
-        daily_progress, _ = DailyProgress.objects.get_or_create(
-            user=user,
-            date=today,
-            defaults={
-                'levels_completed': 0,
-                'questions_answered': 0,
-                'correct_answers': 0,
-                'wrong_answers': 0,
-                'xp_earned': 0,
-                'time_spent': 0,
-                'streak_count': 0,
-                'daily_goal_met': False
-            }
+    
+    try:
+        level = Level.objects.get(id=level_id, is_active=True)
+    except Level.DoesNotExist:
+        return Response(
+            {'error': 'Level not found'},
+            status=status.HTTP_404_NOT_FOUND
         )
-        
-        if level_progress.is_completed:
-            daily_progress.levels_completed += 1
-        
-        daily_progress.questions_answered += len(answers)
-        daily_progress.correct_answers += correct_count
-        daily_progress.wrong_answers += (len(answers) - correct_count)
-        daily_progress.xp_earned += total_xp
-        daily_progress.save()
-        
-        # Update plant growth
-        self.update_plant_growth(user, total_xp)
-        
-        return Response({
-            'message': 'Level progress updated successfully',
-            'level_progress': LevelProgressSerializer(level_progress).data,
-            'correct_answers': correct_count,
-            'total_questions': len(answers),
-            'xp_earned': total_xp,
-            'is_completed': level_progress.is_completed
+    
+    # Calculate completion percentage
+    completion_percentage = (score / total * 100) if total > 0 else 0
+    
+    # Create or update level progress
+    level_progress, created = LevelProgress.objects.get_or_create(
+        user=user,
+        level=level,
+        defaults={
+            'is_completed': passed,
+            'completion_percentage': completion_percentage,
+            'questions_answered': total,
+            'correct_answers': score,
+            'xp_earned': xp_earned if passed else 0,
+            'time_spent': time_spent,
+            'completed_at': timezone.now() if passed else None
+        }
+    )
+    
+    if not created:
+        # Update existing progress
+        level_progress.is_completed = passed
+        level_progress.completion_percentage = completion_percentage
+        level_progress.questions_answered = total
+        level_progress.correct_answers = score
+        level_progress.xp_earned = xp_earned if passed else 0
+        level_progress.time_spent = time_spent
+        if passed:
+            level_progress.completed_at = timezone.now()
+        level_progress.save()
+    
+    return Response({
+        'success': True,
+        'message': 'Progress saved successfully',
+        'level_id': level_id,
+        'score': score,
+        'total': total,
+        'passed': passed,
+        'xp_earned': xp_earned,
+        'completion_percentage': completion_percentage
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def load_progress(request):
+    """Load user's progress for specific levels"""
+    user = request.user
+    level_ids = request.GET.getlist('level_ids')
+    
+    if not level_ids:
+        return Response({'error': 'level_ids parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    level_progress = LevelProgress.objects.filter(user=user, level_id__in=level_ids)
+    serializer = LevelProgressSerializer(level_progress, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def recent_activity(request):
+    """Get user's recent learning activity"""
+    user = request.user
+    
+    # Get recent completed levels
+    recent_levels = LevelProgress.objects.filter(
+        user=user,
+        is_completed=True
+    ).order_by('-completed_at')[:10]
+    
+    activities = []
+    for progress in recent_levels:
+        activities.append({
+            'type': 'level_completed',
+            'level_name': progress.level.name,
+            'level_number': progress.level.level_number,
+            'xp_earned': progress.xp_earned,
+            'completion_percentage': progress.completion_percentage,
+            'completed_at': progress.completed_at
         })
     
-    def check_answer(self, question, user_answer):
-        """Check if user answer is correct"""
-        correct_answer = question.correct_answer
-        
-        if question.question_type == 'mcq':
-            return str(user_answer).strip().lower() == str(correct_answer).strip().lower()
-        elif question.question_type == 'fill_blank':
-            return str(user_answer).strip().lower() == str(correct_answer).strip().lower()
-        elif question.question_type == 'text_to_speech':
-            # For now, always return True for speech questions
-            return True
-        else:
-            # For other types, simple string comparison
-            return str(user_answer).strip().lower() == str(correct_answer).strip().lower()
-    
-    def update_plant_growth(self, user, xp_earned):
-        """Update user's plant growth based on XP earned"""
-        try:
-            # Get user's active plant
-            user_plant = UserPlant.objects.filter(user=user, is_active=True).first()
-            
-            if not user_plant:
-                # Create a default plant if user doesn't have one
-                from plants.models import PlantType
-                default_plant_type = PlantType.objects.filter(is_active=True).first()
-                if default_plant_type:
-                    user_plant = UserPlant.objects.create(
-                        user=user,
-                        plant_type=default_plant_type,
-                        current_stage=PlantStage.objects.filter(
-                            plant_type=default_plant_type,
-                            stage_order=1
-                        ).first(),
-                        is_active=True
-                    )
-                else:
-                    return  # No plant types available
-            
-            # Add XP to plant
-            user_plant.total_xp += xp_earned
-            user_plant.save()
-            
-            # Check if plant can grow to next stage
-            current_stage = user_plant.current_stage
-            if current_stage:
-                next_stage = PlantStage.objects.filter(
-                    plant_type=user_plant.plant_type,
-                    stage_order=current_stage.stage_order + 1
-                ).first()
-                
-                if next_stage and user_plant.total_xp >= next_stage.xp_required:
-                    user_plant.current_stage = next_stage
-                    user_plant.current_stage_number = next_stage.stage_order
-                    user_plant.last_growth_at = timezone.now()
-                    user_plant.save()
-                    
-                    # Log growth event
-                    print(f"Plant grew to stage {next_stage.stage_name} for user {user.username}")
-            
-        except Exception as e:
-            print(f"Error updating plant growth: {e}")
+    serializer = RecentActivitySerializer(activities, many=True)
+    return Response(serializer.data)
 
 
-class DailyProgressViewSet(ModelViewSet):
-    """Daily progress viewset"""
-    queryset = DailyProgress.objects.all()
-    serializer_class = DailyProgressSerializer
-    permission_classes = [IsAuthenticated]
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def achievements(request):
+    """Get user's achievements"""
+    user = request.user
     
-    def get_queryset(self):
-        return DailyProgress.objects.filter(user=self.request.user)
+    # Calculate achievements based on progress
+    achievements = []
     
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    # Level completion achievements
+    completed_levels = LevelProgress.objects.filter(user=user, is_completed=True).count()
+    if completed_levels >= 1:
+        achievements.append({
+            'id': 'first_level',
+            'name': 'First Steps',
+            'description': 'Complete your first level',
+            'icon': '🎯',
+            'earned_at': timezone.now()
+        })
+    
+    if completed_levels >= 10:
+        achievements.append({
+            'id': 'level_10',
+            'name': 'Getting Started',
+            'description': 'Complete 10 levels',
+            'icon': '🌟',
+            'earned_at': timezone.now()
+        })
+    
+    if completed_levels >= 50:
+        achievements.append({
+            'id': 'level_50',
+            'name': 'Halfway There',
+            'description': 'Complete 50 levels',
+            'icon': '🏆',
+            'earned_at': timezone.now()
+        })
+    
+    # XP achievements
+    total_xp = LevelProgress.objects.filter(user=user).aggregate(total=Sum('xp_earned'))['total'] or 0
+    if total_xp >= 100:
+        achievements.append({
+            'id': 'xp_100',
+            'name': 'XP Collector',
+            'description': 'Earn 100 XP',
+            'icon': '⚡',
+            'earned_at': timezone.now()
+        })
+    
+    if total_xp >= 500:
+        achievements.append({
+            'id': 'xp_500',
+            'name': 'XP Master',
+            'description': 'Earn 500 XP',
+            'icon': '🔥',
+            'earned_at': timezone.now()
+        })
+    
+    serializer = AchievementSerializer(achievements, many=True)
+    return Response(serializer.data)

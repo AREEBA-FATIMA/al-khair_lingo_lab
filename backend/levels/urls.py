@@ -24,6 +24,14 @@ urlpatterns = [
     path('admin/completions/<int:pk>/', views.LevelCompletionDetailView.as_view(), name='admin-level-completion-detail'),
     path('admin/stats/', views.level_stats, name='admin-level-stats'),
     
+    # ===== USER ENDPOINTS =====
+    # These are for regular users to access levels and questions
+    
+    # Level access
+    path('levels/', views.LevelListView.as_view(), name='level-list'),
+    path('levels/<int:level_number>/', views.LevelDetailView.as_view(), name='level-detail'),
+    path('levels/<int:level_number>/questions/', views.LevelQuestionsView.as_view(), name='level-questions'),
+    
     # Include router URLs
     path('', include(router.urls)),
 ]

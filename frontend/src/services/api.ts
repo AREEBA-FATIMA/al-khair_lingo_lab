@@ -105,6 +105,32 @@ export const apiService = {
     }
   },
 
+  register: async (username: string, email: string, password: string, firstName: string, lastName: string) => {
+    console.log('DEBUG - API Service: Making registration request', { username, email })
+    try {
+      const requestData = {
+        username,
+        email,
+        password,
+        password_confirm: password, // Add password confirmation
+        first_name: firstName,
+        last_name: lastName
+      }
+      console.log('DEBUG - API Service: Request data:', requestData)
+      console.log('DEBUG - API Service: Request URL:', `${API_BASE_URL}/users/auth/register/`)
+      
+      const response = await api.post('/users/auth/register/', requestData)
+      console.log('DEBUG - API Service: Registration response received', response.data)
+      return response.data
+    } catch (error) {
+      console.error('DEBUG - API Service: Registration error', error)
+      console.error('DEBUG - API Service: Error response:', error.response?.data)
+      console.error('DEBUG - API Service: Error status:', error.response?.status)
+      console.error('DEBUG - API Service: Error headers:', error.response?.headers)
+      throw error
+    }
+  },
+
   logout: async () => {
     const response = await api.post('/users/auth/logout/')
     return response.data

@@ -4,19 +4,33 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Volume2, VolumeX, Trophy, Star } from 'lucide-react'
+import ProgressManager from '@/utils/progressManager'
 
 // Types
 interface Question {
-  question: string
+  id: number
+  question_text: string
+  question_type: string
   options: string[]
-  correctIndex: number
+  correct_answer: string
+  hint: string
+  explanation: string
+  difficulty: number
+  xp_value: number
+  question_order: number
+  time_limit_seconds: number
+  is_active: boolean
 }
 
 interface LevelData {
   id: number
-  title: string
+  level_number: number
+  name: string
   description: string
-  xp: number
+  xp_reward: number
+  is_unlocked: boolean
+  is_test_level: boolean
+  test_questions_count: number
   questions: Question[]
 }
 
@@ -138,6 +152,12 @@ export default function QuizGame() {
   // State
   const [highestUnlocked, setHighestUnlocked] = useState(0)
   const [xpTotal, setXpTotal] = useState(0)
+  const [userProgress, setUserProgress] = useState({
+    totalLevels: 0,
+    completedLevels: 0,
+    totalXP: 0,
+    highestLevel: 0
+  })
   const [soundOn, setSoundOn] = useState(true)
   const [currentLevelQuestions, setCurrentLevelQuestions] = useState<Question[]>([])
   const [currentLevelIndex, setCurrentLevelIndex] = useState<number | null>(null)
@@ -149,11 +169,23 @@ export default function QuizGame() {
   const [questionFeedback, setQuestionFeedback] = useState('')
   const [showNext, setShowNext] = useState(false)
   const [hintMessage, setHintMessage] = useState('')
+  const [fillBlankAnswer, setFillBlankAnswer] = useState('')
+  const [levelData, setLevelData] = useState<LevelData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showResult, setShowResult] = useState(false)
+  const [quizResult, setQuizResult] = useState<{
+    score: number
+    total: number
+    percentage: number
+    passed: boolean
+    xpEarned: number
+  } | null>(null)
 
   // Refs
   const infoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Load from localStorage on mount
+  // Load from localStorage and database on mount
   useEffect(() => {
     const savedUnlocked = localStorage.getItem('snake_highestUnlocked_v1')
     const savedXp = localStorage.getItem('snake_xp_v1')
@@ -162,7 +194,116 @@ export default function QuizGame() {
     if (savedUnlocked) setHighestUnlocked(Number(savedUnlocked))
     if (savedXp) setXpTotal(Number(savedXp))
     if (savedSound !== null) setSoundOn(savedSound === 'true')
+    
+    // Load progress from database
+    loadProgressFromDatabase()
   }, [])
+
+  // Fetch level data from API
+  useEffect(() => {
+    const fetchLevelData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Fetch level details
+        const levelResponse = await fetch(`http://127.0.0.1:8000/api/levels/levels/${levelId}/`)
+        if (!levelResponse.ok) {
+          throw new Error(`Level not found: ${levelResponse.status}`)
+        }
+        const levelData = await levelResponse.json()
+        
+        // Fetch questions for this level
+        const questionsResponse = await fetch(`http://127.0.0.1:8000/api/levels/levels/${levelId}/questions/`)
+        if (!questionsResponse.ok) {
+          throw new Error(`Questions not found: ${questionsResponse.status}`)
+        }
+        const questionsData = await questionsResponse.json()
+        
+        // Transform API data
+        const questionsArray = questionsData.results || questionsData || []
+        const transformedLevel: LevelData = {
+          id: levelData.id,
+          level_number: levelData.level_number,
+          name: levelData.name,
+          description: levelData.description,
+          xp_reward: levelData.xp_reward,
+          is_unlocked: levelData.is_unlocked,
+          is_test_level: levelData.is_test_level,
+          test_questions_count: levelData.test_questions_count,
+          questions: questionsArray.map((q: any) => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options: q.options || ['Option A', 'Option B', 'Option C', 'Option D'],
+            correct_answer: q.correct_answer,
+            hint: q.hint,
+            explanation: q.explanation,
+            difficulty: q.difficulty,
+            xp_value: q.xp_value,
+            question_order: q.question_order,
+            time_limit_seconds: q.time_limit_seconds,
+            is_active: q.is_active
+          }))
+        }
+        
+        setLevelData(transformedLevel)
+        setCurrentLevelQuestions(transformedLevel.questions)
+        
+      } catch (err) {
+        console.error('Error fetching level data:', err)
+        setError(err instanceof Error ? err.message : 'Failed to fetch level data')
+        
+        // Fallback to mock data
+        setLevelData({
+          id: parseInt(levelId as string),
+          level_number: parseInt(levelId as string),
+          name: `Level ${levelId}`,
+          description: `Level ${levelId} English learning`,
+          xp_reward: 10,
+          is_unlocked: true,
+          is_test_level: false,
+          test_questions_count: 0,
+          questions: localLevels[0]?.questions.map((q, idx) => ({
+            id: idx + 1,
+            question_text: q.question,
+            question_type: 'mcq',
+            options: q.options,
+            correct_answer: q.options[q.correctIndex],
+            hint: `Hint for question ${idx + 1}`,
+            explanation: `Explanation for question ${idx + 1}`,
+            difficulty: 1,
+            xp_value: 2,
+            question_order: idx + 1,
+            time_limit_seconds: 30,
+            is_active: true
+          })) || []
+        })
+        const fallbackQuestions = localLevels[0]?.questions.map((q, idx) => ({
+          id: idx + 1,
+          question_text: q.question,
+          question_type: 'mcq',
+          options: q.options,
+          correct_answer: q.options[q.correctIndex],
+          hint: `Hint for question ${idx + 1}`,
+          explanation: `Explanation for question ${idx + 1}`,
+          difficulty: 1,
+          xp_value: 2,
+          question_order: idx + 1,
+          time_limit_seconds: 30,
+          is_active: true
+        })) || []
+        
+        setCurrentLevelQuestions(fallbackQuestions)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (levelId) {
+      fetchLevelData()
+    }
+  }, [levelId])
 
   // Save to localStorage
   const persistState = () => {
@@ -250,15 +391,18 @@ export default function QuizGame() {
   }
 
   // Start level quiz
-  const startLevelQuiz = (levelIndex: number) => {
-    setCurrentLevelIndex(levelIndex)
+  const startLevelQuiz = () => {
+    if (!levelData) return
+    
+    setCurrentLevelIndex(0)
     setQuestionPointer(0)
     setCorrectCount(0)
-    setCurrentLevelQuestions(localLevels[levelIndex].questions)
+    setCurrentLevelQuestions(levelData.questions)
     setShowModal(true)
     setSelectedOption(null)
     setQuestionFeedback('')
     setShowNext(false)
+    setFillBlankAnswer('') // Reset fill blank answer
   }
 
   // Handle answer click
@@ -267,9 +411,10 @@ export default function QuizGame() {
 
     setSelectedOption(choiceIdx)
     const currentQuestion = currentLevelQuestions[questionPointer]
-    const correctIndex = currentQuestion.correctIndex
+    const selectedAnswer = currentQuestion.options[choiceIdx]
+    const correctAnswer = currentQuestion.correct_answer
 
-    if (choiceIdx === correctIndex) {
+    if (selectedAnswer === correctAnswer) {
       playTing()
       setQuestionFeedback('Correct!')
       setCorrectCount(prev => prev + 1)
@@ -284,6 +429,32 @@ export default function QuizGame() {
     }
   }
 
+  // Handle fill in the blank submit
+  const handleFillBlankSubmit = () => {
+    if (selectedOption !== null) return // Already answered
+
+    const currentQuestion = currentLevelQuestions[questionPointer]
+    const userAnswer = fillBlankAnswer.trim().toLowerCase()
+    const correctAnswer = currentQuestion.correct_answer.toLowerCase()
+
+    setSelectedOption(0) // Mark as answered
+
+    if (userAnswer === correctAnswer) {
+      playTing()
+      setQuestionFeedback('Correct!')
+      setCorrectCount(prev => prev + 1)
+      setShowNext(true)
+    } else {
+      playBuzz()
+      setQuestionFeedback(`Wrong — correct answer: ${currentQuestion.correct_answer}`)
+      setTimeout(() => {
+        setSelectedOption(null)
+        setQuestionFeedback('')
+        setFillBlankAnswer('')
+      }, 2000)
+    }
+  }
+
   // Next question
   const handleNext = () => {
     if (questionPointer < currentLevelQuestions.length - 1) {
@@ -291,40 +462,125 @@ export default function QuizGame() {
       setSelectedOption(null)
       setQuestionFeedback('')
       setShowNext(false)
+      setFillBlankAnswer('') // Reset fill blank answer
     } else {
       finishLevelQuiz()
     }
   }
 
-  // Finish quiz
-  const finishLevelQuiz = () => {
-    setShowModal(false)
-    const levelIdx = currentLevelIndex!
-    const total = currentLevelQuestions.length
+  // Save progress to database
+  const saveProgressToDatabase = async (result: any) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/progress/save/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          level_id: levelData?.id,
+          score: result.score,
+          total: result.total,
+          xp_earned: result.xpEarned,
+          passed: result.passed
+        })
+      })
+      
+      if (response.ok) {
+        console.log('Progress saved to database')
+      } else {
+        console.error('Failed to save progress to database')
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error)
+    }
+  }
 
-    if (correctCount === total) {
-      if (levelIdx === highestUnlocked + 1) {
-        setHighestUnlocked(levelIdx)
-        const metaXP = levelMeta[levelIdx] && /\d+/.test(levelMeta[levelIdx].xp) 
-          ? parseInt(levelMeta[levelIdx].xp.replace('+', '')) 
-          : 10
-        setXpTotal(prev => prev + (metaXP || 10))
+  // Load progress from database
+  const loadProgressFromDatabase = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/progress/load/')
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUserProgress({
+          totalLevels: data.total_levels,
+          completedLevels: data.completed_levels,
+          totalXP: data.total_xp,
+          currentLevel: data.highest_level + 1
+        })
+        
+        // Update local state
+        setHighestUnlocked(data.highest_level)
+        setXpTotal(data.total_xp)
         persistState()
         
-        // Confetti effect
-        const rect = document.querySelector(`[data-level="${levelIdx}"]`)?.getBoundingClientRect()
-        if (rect) {
-          spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2)
-        }
-        
-        playTing()
-        flashHint('All correct — Level unlocked!')
-      } else {
-        flashHint('All correct — good review!')
-        playTing()
+        console.log('Progress loaded from database:', {
+          highestLevel: data.highest_level,
+          completedLevels: data.completed_levels,
+          totalXP: data.total_xp
+        })
       }
+    } catch (error) {
+      console.error('Error loading progress:', error)
+    }
+  }
+
+  // Finish quiz
+  const finishLevelQuiz = async () => {
+    setShowModal(false)
+    const total = currentLevelQuestions.length
+    const percentage = Math.round((correctCount / total) * 100)
+    const passed = percentage >= 80 // 80% pass rate
+    const xpEarned = passed ? levelData?.xp_reward || 10 : 0
+
+    // Calculate result
+    const result = {
+      score: correctCount,
+      total: total,
+      percentage: percentage,
+      passed: passed,
+      xpEarned: xpEarned
+    }
+
+    setQuizResult(result)
+    setShowResult(true)
+
+    // Save progress using ProgressManager
+    const progressManager = ProgressManager.getInstance()
+    const levelProgress = await progressManager.completeLevel(
+      levelData?.level_number || 1, // Use level_number instead of id
+      correctCount,
+      total,
+      xpEarned
+    )
+
+    // Update local state
+    const userProgress = progressManager.getUserProgress()
+    setXpTotal(userProgress.totalXP)
+    setUserProgress({
+      totalLevels: 0, // This will be updated from backend
+      completedLevels: userProgress.completedLevels.length,
+      totalXP: userProgress.totalXP,
+      highestLevel: userProgress.highestUnlockedLevel
+    })
+
+    // Trigger a page refresh to update progress on other pages
+    if (passed) {
+      // Dispatch a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('levelCompleted', { 
+        detail: { levelId: levelData?.id, xpEarned } 
+      }))
+    }
+
+    // Save to database
+    await saveProgressToDatabase(result)
+
+    if (passed) {
+      // Confetti effect
+      spawnConfetti(window.innerWidth / 2, window.innerHeight / 2)
+      playTing()
     } else {
-      flashHint(`You answered ${correctCount}/${total} correct. Try again to unlock.`)
+      playBuzz()
     }
   }
 
@@ -360,6 +616,49 @@ export default function QuizGame() {
     persistState()
   }, [highestUnlocked, xpTotal, soundOn])
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-green-100">Loading level...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Error: {error}</p>
+          <button 
+            onClick={() => router.back()}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!levelData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-400 mb-4">Level not found</p>
+          <button 
+            onClick={() => router.back()}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white overflow-auto p-7">
       {/* Top Bar */}
@@ -386,60 +685,98 @@ export default function QuizGame() {
       </button>
 
       {/* Main Content */}
-      <div className="max-w-md mx-auto relative">
-        {/* Level Path SVG */}
-        <svg className="absolute inset-0 w-full h-[1100px] z-0" viewBox="0 0 420 1100" preserveAspectRatio="xMidYMid meet">
-          <path
-            d="M210 60 C90 150, 330 240, 190 330 C70 420, 340 520, 190 620 C70 720, 350 800, 190 930"
-            stroke="rgba(255,255,255,0.12)"
-            strokeWidth="6"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M210 60 C90 150, 330 240, 190 330 C70 420, 340 520, 190 620 C70 720, 350 800, 190 930"
-            stroke="#00ff88"
-            strokeWidth="6"
-            strokeLinecap="round"
-            fill="none"
-            filter="drop-shadow(0 0 12px rgba(0,255,136,0.25))"
-            style={{
-              strokeDasharray: '1000 1000',
-              strokeDashoffset: Math.max(0, 1000 - (1000 * highestUnlocked) / 4)
-            }}
-          />
-        </svg>
+      <div className="max-w-4xl mx-auto relative">
+        {/* Level Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-green-100 mb-2">{levelData.name}</h1>
+          <p className="text-gray-300 text-lg mb-4">{levelData.description}</p>
+          <div className="flex justify-center gap-4 text-sm">
+            <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-lg font-bold">
+              +{levelData.xp_reward} XP
+            </div>
+            <div className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-lg font-bold">
+              {levelData.questions.length} Questions
+            </div>
+            {levelData.is_test_level && (
+              <div className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-lg font-bold">
+                Test Level
+              </div>
+            )}
+          </div>
+        </div>
 
-        {/* Levels */}
-        {localLevels.map((level, idx) => (
-          <motion.div
-            key={level.id}
-            data-level={idx}
-            className={`absolute w-[74px] h-[74px] rounded-full flex items-center justify-center z-10 cursor-pointer transition-all duration-300 ${
-              idx <= highestUnlocked
-                ? 'bg-gradient-to-br from-green-400 to-green-600 text-green-900 shadow-lg hover:scale-110'
-                : 'bg-gradient-to-br from-gray-500 to-gray-700 text-gray-400'
-            }`}
-            style={{
-              top: `${26 + idx * 100}px`,
-              left: idx % 2 === 0 ? '175px' : '60px',
-              transform: idx % 2 === 1 ? 'translateX(-50%)' : 'none'
-            }}
-            onClick={() => handleLevelClick(idx)}
-            onMouseEnter={() => showInfoFor(idx)}
-            onMouseLeave={hideInfo}
-            whileHover={{ scale: idx <= highestUnlocked ? 1.1 : 1 }}
-            animate={idx <= highestUnlocked ? { y: [0, -8, 0] } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        {/* Start Quiz Button */}
+        <div className="text-center mb-8">
+          <motion.button
+            onClick={startLevelQuiz}
+            className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-green-900 font-bold text-xl rounded-xl hover:from-green-400 hover:to-green-500 transition-all shadow-lg hover:shadow-xl"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <div className="w-8 h-8">
-              {svgIcons[idx] || svgIcons[0]}
+            Start Quiz
+          </motion.button>
+        </div>
+
+        {/* Questions Preview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {levelData.questions.map((question, idx) => (
+            <motion.div
+              key={question.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="bg-slate-800/50 rounded-lg p-4 border border-white/10"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 bg-green-500 text-green-900 rounded-full flex items-center justify-center text-sm font-bold">
+                  {idx + 1}
+                </div>
+                <span className="text-green-100 font-semibold">Question {idx + 1}</span>
+              </div>
+              <p className="text-gray-300 text-sm mb-2">{question.question_text}</p>
+              <div className="flex gap-2 text-xs">
+                <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
+                  {question.question_type}
+                </span>
+                <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded">
+                  +{question.xp_value} XP
+                </span>
+                <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded">
+                  {question.time_limit_seconds}s
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Progress Tree */}
+        <div className="text-center mb-8">
+          <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-green-100 mb-4">Your Learning Tree</h3>
+            <div className="flex justify-center items-end gap-2 mb-4">
+              {/* Tree stages based on progress */}
+              {Array.from({ length: 5 }, (_, i) => {
+                const stage = Math.min(Math.floor((highestUnlocked / 10) * 5), 4)
+                const isActive = i <= stage
+                return (
+                  <motion.div
+                    key={i}
+                    className={`w-12 h-16 rounded-t-full flex items-center justify-center text-2xl ${
+                      isActive ? 'bg-green-500' : 'bg-gray-600'
+                    }`}
+                    animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                  >
+                    {i === 0 ? '🌱' : i === 1 ? '🌿' : i === 2 ? '🌳' : i === 3 ? '🌲' : '🌳'}
+                  </motion.div>
+                )
+              })}
             </div>
-            <div className="absolute left-1/2 transform -translate-x-1/2 top-20 text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-400 font-bold">
-              {levelMeta[idx]?.xp || '+0'}
+            <div className="text-sm text-gray-300">
+              Level {highestUnlocked} completed • {Math.round((highestUnlocked / 50) * 100)}% Progress
             </div>
-          </motion.div>
-        ))}
+          </div>
+        </div>
 
         {/* Info Panel */}
         <AnimatePresence>
@@ -492,34 +829,87 @@ export default function QuizGame() {
               className="w-full max-w-2xl bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl p-6 border border-white/5 shadow-2xl"
             >
               <h3 className="text-xl font-bold text-green-100 mb-2">
-                {localLevels[currentLevelIndex!]?.title} — Question {questionPointer + 1} / {currentLevelQuestions.length}
+                {levelData?.name} — Question {questionPointer + 1} / {currentLevelQuestions.length}
               </h3>
               <p className="text-gray-300 mb-4">
-                {currentLevelQuestions[questionPointer]?.question}
+                {currentLevelQuestions[questionPointer]?.question_text}
               </p>
               <div className="text-gray-400 text-sm font-bold mb-4">
                 Question {questionPointer + 1} of {currentLevelQuestions.length}
               </div>
 
               <div className="space-y-3 mb-6">
-                {currentLevelQuestions[questionPointer]?.options.map((option, idx) => (
-                  <motion.button
-                    key={idx}
-                    className={`w-full p-4 rounded-xl text-left font-semibold transition-all duration-200 ${
-                      selectedOption === idx
-                        ? idx === currentLevelQuestions[questionPointer].correctIndex
-                          ? 'bg-green-500/20 border-green-500/30 text-green-100'
-                          : 'bg-red-500/20 border-red-500/30 text-red-100'
-                        : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'
-                    }`}
-                    onClick={() => handleAnswerClick(idx)}
-                    disabled={selectedOption !== null}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {option}
-                  </motion.button>
-                ))}
+                {currentLevelQuestions[questionPointer]?.question_type === 'fill_blank' ? (
+                  // Fill in the blank input field
+                  <div className="space-y-4">
+                    <div className="text-gray-300 text-lg leading-relaxed">
+                      {currentLevelQuestions[questionPointer]?.question_text.split('___').map((part, idx, array) => (
+                        <span key={idx}>
+                          {part}
+                          {idx < array.length - 1 && (
+                            <input
+                              type="text"
+                              value={fillBlankAnswer}
+                              onChange={(e) => setFillBlankAnswer(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter' && fillBlankAnswer.trim()) {
+                                  handleFillBlankSubmit()
+                                }
+                              }}
+                              className="mx-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white/20 transition-all duration-200 min-w-[120px]"
+                              placeholder="Type here..."
+                              disabled={selectedOption !== null}
+                              autoFocus
+                            />
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex justify-center">
+                      <motion.button
+                        className={`px-8 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                          fillBlankAnswer.trim() && selectedOption === null
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        }`}
+                        onClick={() => handleFillBlankSubmit()}
+                        disabled={!fillBlankAnswer.trim() || selectedOption !== null}
+                        whileHover={{ scale: fillBlankAnswer.trim() && selectedOption === null ? 1.05 : 1 }}
+                        whileTap={{ scale: fillBlankAnswer.trim() && selectedOption === null ? 0.95 : 1 }}
+                      >
+                        Submit Answer
+                      </motion.button>
+                    </div>
+                  </div>
+                ) : (
+                  // MCQ options
+                  currentLevelQuestions[questionPointer]?.options.map((option, idx) => {
+                    const isCorrect = option === currentLevelQuestions[questionPointer].correct_answer
+                    return (
+                      <motion.button
+                        key={idx}
+                        className={`w-full p-4 rounded-xl text-left font-semibold transition-all duration-200 border ${
+                          selectedOption === idx
+                            ? isCorrect
+                              ? 'bg-green-500/20 border-green-500/30 text-green-100'
+                              : 'bg-red-500/20 border-red-500/30 text-red-100'
+                            : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'
+                        }`}
+                        onClick={() => handleAnswerClick(idx)}
+                        disabled={selectedOption !== null}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-sm font-bold">
+                            {String.fromCharCode(65 + idx)}
+                          </div>
+                          {option}
+                        </div>
+                      </motion.button>
+                    )
+                  })
+                )}
               </div>
 
               <div className="flex justify-between items-center">
@@ -542,6 +932,108 @@ export default function QuizGame() {
                     </button>
                   )}
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Quiz Result Modal */}
+      <AnimatePresence>
+        {showResult && quizResult && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-5"
+            onClick={(e) => e.target === e.currentTarget && setShowResult(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-md bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl p-6 border border-white/5 shadow-2xl text-center"
+            >
+              {/* Result Icon */}
+              <div className="text-6xl mb-4">
+                {quizResult.passed ? '🎉' : '😔'}
+              </div>
+
+              {/* Result Title */}
+              <h2 className={`text-2xl font-bold mb-2 ${
+                quizResult.passed ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {quizResult.passed ? 'Congratulations!' : 'Try Again!'}
+              </h2>
+
+              {/* Score */}
+              <div className="text-4xl font-bold text-white mb-2">
+                {quizResult.score}/{quizResult.total}
+              </div>
+
+              {/* Percentage */}
+              <div className={`text-xl font-semibold mb-4 ${
+                quizResult.passed ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {quizResult.percentage}%
+              </div>
+
+              {/* XP Earned */}
+              {quizResult.passed && (
+                <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-lg mb-4">
+                  +{quizResult.xpEarned} XP Earned!
+                </div>
+              )}
+
+              {/* Progress Update */}
+              {quizResult.passed && (
+                <div className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg mb-4">
+                  Level {levelData?.level_number} Completed!
+                </div>
+              )}
+
+              {/* Tree Growth Animation */}
+              <div className="mb-6">
+                <div className="text-lg font-semibold text-green-100 mb-2">Your Tree Grows!</div>
+                <div className="flex justify-center items-end gap-1">
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const stage = Math.min(Math.floor((highestUnlocked / 10) * 5), 4)
+                    const isActive = i <= stage
+                    return (
+                      <motion.div
+                        key={i}
+                        className={`w-8 h-10 rounded-t-full flex items-center justify-center text-lg ${
+                          isActive ? 'bg-green-500' : 'bg-gray-600'
+                        }`}
+                        animate={isActive ? { scale: [1, 1.2, 1] } : {}}
+                        transition={{ duration: 0.5, delay: i * 0.1 }}
+                      >
+                        {i === 0 ? '🌱' : i === 1 ? '🌿' : i === 2 ? '🌳' : i === 3 ? '🌲' : '🌳'}
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowResult(false)}
+                  className="flex-1 px-4 py-2 rounded-lg bg-transparent text-gray-400 border border-white/10 hover:bg-white/5 transition-colors"
+                >
+                  Continue
+                </button>
+                {!quizResult.passed && (
+                  <button
+                    onClick={() => {
+                      setShowResult(false)
+                      startLevelQuiz()
+                    }}
+                    className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-green-900 font-bold hover:from-green-400 hover:to-green-500 transition-all"
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>

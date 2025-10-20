@@ -94,31 +94,67 @@ class TeacherAdminLoginSerializer(serializers.Serializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for admin user registration"""
-    password = serializers.CharField(write_only=True, validators=[validate_password])
+    """Serializer for user registration"""
+    password = serializers.CharField(write_only=True, min_length=6)
     password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
     
     class Meta:
         model = User
         fields = [
-            'email', 'full_name', 'phone_number', 'password', 'password_confirm',
-            'bio', 'is_public_profile', 'notifications_enabled', 'email_notifications'
+            'username', 'email', 'first_name', 'last_name', 'password', 'password_confirm'
         ]
     
+    def validate_password(self, value):
+        """Custom password validation"""
+        if len(value) < 6:
+            raise serializers.ValidationError("Password must be at least 6 characters long.")
+        
+        # Check if password is too common
+        common_passwords = ['123456', 'password', '123456789', '12345678', '12345', '1234567', '1234567890']
+        if value.lower() in common_passwords:
+            raise serializers.ValidationError("This password is too common. Please choose a stronger password.")
+        
+        # Check if password is mostly numeric
+        if value.isdigit():
+            raise serializers.ValidationError("Password cannot be entirely numeric.")
+        
+        return value
+
     def validate(self, attrs):
         """Validate registration data"""
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords don't match")
+        
+        # Check if username already exists
+        if User.objects.filter(username=attrs['username']).exists():
+            raise serializers.ValidationError({
+                'username': ['A user with this username already exists.']
+            })
+        
+        # Check if email already exists
+        if User.objects.filter(email=attrs['email']).exists():
+            raise serializers.ValidationError({
+                'email': ['A user with this email already exists.']
+            })
+        
         return attrs
     
     def create(self, validated_data):
-        """Create new admin user"""
+        """Create new user"""
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
         
-        # Force user_type to admin
-        validated_data['user_type'] = 'admin'
-        validated_data['is_verified'] = True  # Auto-verify admin users
+        # Set default role to student
+        validated_data['role'] = 'student'
+        validated_data['is_verified'] = True  # Auto-verify users
+        
+        # Remove any unexpected fields
+        if 'user_type' in validated_data:
+            validated_data.pop('user_type')
+        
+        print(f"DEBUG - Creating user with data: {validated_data}")
         
         user = User.objects.create_user(
             password=password,

@@ -2,391 +2,518 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Leaf, Trophy, Target, Clock, Star, TrendingUp, Calendar, Zap } from 'lucide-react'
+import { 
+  Trophy, 
+  Star, 
+  Target, 
+  Clock, 
+  Zap, 
+  Flame,
+  TrendingUp,
+  Calendar,
+  Award,
+  BookOpen,
+  Leaf,
+  BarChart3,
+  Activity
+} from 'lucide-react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
-import { apiService } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
+import ProgressManager from '@/utils/progressManager'
 
-interface UserProgress {
+interface UserStats {
   total_xp: number
   current_streak: number
   longest_streak: number
+  hearts: number
+  daily_goal: number
   total_levels_completed: number
   total_groups_completed: number
-  // Additional computed properties for display
-  total_levels?: number
-  completion_percentage?: number
-  total_questions?: number
-  accuracy_percentage?: number
-  weekly_levels_completed?: number
-  weekly_xp_earned?: number
-  monthly_levels_completed?: number
-  monthly_xp_earned?: number
-  total_study_time?: number
-  average_time_per_question?: number
-  overall_accuracy?: number
+  average_score: number
+  time_spent_minutes: number
+  current_level: number
+  plant_stage: string
+  completion_percentage: number
 }
 
-interface DailyProgress {
-  date: string
-  levels_completed: number
-  questions_answered: number
-  correct_answers: number
+interface RecentActivity {
+  id: number
+  type: string
+  level_name: string
   xp_earned: number
-  time_spent: number
-  streak_maintained: boolean
+  completed_at: string
+  score: number
+}
+
+interface Achievement {
+  id: number
+  name: string
+  description: string
+  icon: string
+  unlocked: boolean
+  unlocked_at?: string
 }
 
 export default function ProgressPage() {
-  const [progress, setProgress] = useState<UserProgress | null>(null)
-  const [dailyProgress, setDailyProgress] = useState<DailyProgress[]>([])
+  const [userStats, setUserStats] = useState<UserStats | null>(null)
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [achievements, setAchievements] = useState<Achievement[]>([])
   const [loading, setLoading] = useState(true)
   const { isLoggedIn } = useAuth()
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      setLoading(false)
-      return
+    fetchUserStats()
+    fetchRecentActivity()
+    fetchAchievements()
+    loadProgressFromLocalStorage()
+
+    // Listen for level completion events
+    const handleLevelCompleted = () => {
+      loadProgressFromLocalStorage()
     }
 
-    const fetchProgress = async () => {
-      try {
-        const response = await apiService.getProgressOverview()
-        setProgress(response.overview)
-        setDailyProgress(response.recent_activity || [])
-      } catch (error) {
-        console.error('Error fetching progress:', error)
-        // Fallback to mock data if API fails
-        const mockProgress: UserProgress = {
-          total_xp: 1250,
-          current_streak: 3,
-          longest_streak: 7,
-          total_levels_completed: 8,
-          total_groups_completed: 1,
-          total_levels: 12,
-          completion_percentage: 66.7,
-          total_questions: 45,
-          accuracy_percentage: 87.5,
-          weekly_levels_completed: 3,
-          weekly_xp_earned: 450,
-          monthly_levels_completed: 8,
-          monthly_xp_earned: 1250,
-          total_study_time: 180,
-          average_time_per_question: 25,
-          overall_accuracy: 87.5
-        }
-        
-        // Add some mock daily progress data
-        const mockDailyProgress: DailyProgress[] = [
-          { date: '2025-01-11', levels_completed: 1, questions_answered: 5, correct_answers: 4, xp_earned: 150, time_spent: 15, streak_maintained: true },
-          { date: '2025-01-12', levels_completed: 2, questions_answered: 8, correct_answers: 7, xp_earned: 200, time_spent: 25, streak_maintained: true },
-          { date: '2025-01-13', levels_completed: 0, questions_answered: 0, correct_answers: 0, xp_earned: 0, time_spent: 0, streak_maintained: false },
-          { date: '2025-01-14', levels_completed: 1, questions_answered: 6, correct_answers: 5, xp_earned: 180, time_spent: 20, streak_maintained: true },
-          { date: '2025-01-15', levels_completed: 2, questions_answered: 10, correct_answers: 9, xp_earned: 250, time_spent: 30, streak_maintained: true },
-          { date: '2025-01-16', levels_completed: 1, questions_answered: 4, correct_answers: 4, xp_earned: 120, time_spent: 12, streak_maintained: true },
-          { date: '2025-01-17', levels_completed: 1, questions_answered: 7, correct_answers: 6, xp_earned: 190, time_spent: 22, streak_maintained: true }
-        ]
-        setProgress(mockProgress)
-        setDailyProgress(mockDailyProgress)
-      } finally {
-        setLoading(false)
+    window.addEventListener('levelCompleted', handleLevelCompleted)
+    return () => window.removeEventListener('levelCompleted', handleLevelCompleted)
+  }, [])
+
+  const loadProgressFromLocalStorage = () => {
+    const progressManager = ProgressManager.getInstance()
+    const userProgress = progressManager.getUserProgress()
+    
+    // Calculate proper completion percentage based on total levels
+    const totalLevels = 370 // Total levels in the system
+    const completionPercentage = totalLevels > 0 ? (userProgress.completedLevels.length / totalLevels) * 100 : 0
+    
+    // Calculate plant stage based on completion
+    let plantStage = "Seed"
+    let plantEmoji = "🌱"
+    if (completionPercentage >= 80) {
+      plantStage = "Fruit Tree"
+      plantEmoji = "🌳"
+    } else if (completionPercentage >= 60) {
+      plantStage = "Tree"
+      plantEmoji = "🌲"
+    } else if (completionPercentage >= 40) {
+      plantStage = "Sapling"
+      plantEmoji = "🌿"
+    } else if (completionPercentage >= 20) {
+      plantStage = "Sprout"
+      plantEmoji = "🌱"
+    }
+    
+    setUserStats(prev => ({
+      ...prev,
+      total_xp: userProgress.totalXP,
+      current_streak: userProgress.currentStreak,
+      hearts: userProgress.hearts,
+      total_levels_completed: userProgress.completedLevels.length,
+      completion_percentage: Math.round(completionPercentage),
+      plant_stage: plantStage,
+      current_level: userProgress.highestUnlockedLevel,
+      average_score: userProgress.completedLevels.length > 0 ? 85 : 0, // Default average score
+      daily_goal: 50,
+      time_spent_minutes: userProgress.completedLevels.length * 5, // Estimate 5 minutes per level
+      total_groups_completed: Math.floor(userProgress.completedLevels.length / 20), // Assuming 20 levels per group
+      longest_streak: userProgress.currentStreak // Use current streak as longest for now
+    }))
+  }
+
+  const fetchUserStats = async () => {
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        console.log('No auth token found, using local progress')
+        return
       }
-    }
 
-    fetchProgress()
-  }, [isLoggedIn])
+      const response = await fetch('http://127.0.0.1:8000/api/progress/overview/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUserStats(data)
+        console.log('Progress loaded from backend:', data)
+      } else {
+        console.error('Failed to load progress from backend:', response.status)
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchRecentActivity = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/progress/recent/')
+      const data = await response.json()
+      setRecentActivity(data)
+    } catch (error) {
+      console.error('Error fetching recent activity:', error)
+    }
+  }
+
+  const fetchAchievements = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/progress/achievements/')
+      const data = await response.json()
+      setAchievements(data)
+    } catch (error) {
+      console.error('Error fetching achievements:', error)
+    }
+  }
+
+  const getPlantStage = (completionPercentage: number) => {
+    if (completionPercentage >= 80) return { emoji: '🍎', name: 'Fruit Tree', color: 'from-green-400 to-green-600' }
+    if (completionPercentage >= 60) return { emoji: '🌲', name: 'Tree', color: 'from-green-500 to-green-700' }
+    if (completionPercentage >= 40) return { emoji: '🌳', name: 'Sapling', color: 'from-green-600 to-green-800' }
+    if (completionPercentage >= 20) return { emoji: '🌿', name: 'Sprout', color: 'from-green-700 to-green-900' }
+    return { emoji: '🌱', name: 'Seed', color: 'from-yellow-400 to-green-600' }
+  }
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0) {
+      return `${hours}h ${mins}m`
+    }
+    return `${mins}m`
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
-
-  if (!progress) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Progress not found</h1>
-          <Link href="/groups" className="btn-primary">Start Learning</Link>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-[#00bfe6] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     )
   }
+
+  if (!userStats) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <p className="text-red-500">Failed to load progress data</p>
+        </div>
+      </div>
+    )
+  }
+
+  const plantStage = getPlantStage(userStats.completion_percentage)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navigation */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navigation />
+      
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Your Progress</h1>
+              <p className="text-gray-600">Track your learning journey</p>
+              
+              {/* Overall Progress Bar */}
+              <div className="mt-3 w-full max-w-md">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+                  <span>Overall Progress</span>
+                  <span>{Math.round(userStats.completion_percentage)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <motion.div
+                    className="bg-gradient-to-r from-[#03045e] to-[#00bfe6] h-2 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, userStats.completion_percentage)}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <Link
+              href="/groups"
+              className="bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300"
+            >
+              Continue Learning
+            </Link>
+          </div>
+        </div>
+      </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Progress Overview */}
+        {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* XP Card */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="card text-center"
+            className="bg-white rounded-2xl p-6 shadow-lg"
           >
-            <Trophy className="h-8 w-8 text-warning-500 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-gray-900 mb-1">
-              {progress.total_xp}
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{userStats.total_xp}</span>
             </div>
-            <div className="text-sm text-gray-600">Total XP</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Total XP</h3>
+            <p className="text-gray-600 text-sm">Experience points earned</p>
           </motion.div>
 
+          {/* Streak Card */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="card text-center"
+            className="bg-white rounded-2xl p-6 shadow-lg"
           >
-            <Target className="h-8 w-8 text-success-500 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-gray-900 mb-1">
-              {progress.current_streak}
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl">
+                <Flame className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{userStats.current_streak}</span>
             </div>
-            <div className="text-sm text-gray-600">Current Streak</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Current Streak</h3>
+            <p className="text-gray-600 text-sm">Days in a row</p>
           </motion.div>
 
+          {/* Levels Completed Card */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="card text-center"
+            className="bg-white rounded-2xl p-6 shadow-lg"
           >
-            <Star className="h-8 w-8 text-primary-500 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-gray-900 mb-1">
-              {progress.total_levels_completed || 0}
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-r from-blue-400 to-blue-600 rounded-xl">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{userStats.total_levels_completed}</span>
             </div>
-            <div className="text-sm text-gray-600">Levels Completed</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Levels Completed</h3>
+            <p className="text-gray-600 text-sm">Total levels finished</p>
           </motion.div>
 
+          {/* Average Score Card */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="card text-center"
+            className="bg-white rounded-2xl p-6 shadow-lg"
           >
-            <TrendingUp className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-gray-900 mb-1">
-              {(progress.overall_accuracy || 0).toFixed(1)}%
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-r from-green-400 to-green-600 rounded-xl">
+                <Target className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{userStats.average_score}%</span>
             </div>
-            <div className="text-sm text-gray-600">Accuracy</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Average Score</h3>
+            <p className="text-gray-600 text-sm">Overall accuracy</p>
           </motion.div>
         </div>
 
-        {/* Weekly and Monthly Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Plant Growth & Daily Goal */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Plant Growth */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="card"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl p-6 shadow-lg"
           >
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">This Week</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary-600">
-                  {progress.weekly_levels_completed || 0}
-                </div>
-                <div className="text-sm text-gray-600">Levels</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-success-600">
-                  {progress.weekly_xp_earned || 0}
-                </div>
-                <div className="text-sm text-gray-600">XP Earned</div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="card"
-          >
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">This Month</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary-600">
-                  {progress.monthly_levels_completed || 0}
-                </div>
-                <div className="text-sm text-gray-600">Levels</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-success-600">
-                  {progress.monthly_xp_earned || 0}
-                </div>
-                <div className="text-sm text-gray-600">XP Earned</div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Daily Progress Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="card mb-8"
-        >
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Daily Progress (Last 7 Days)</h3>
-          <div className="grid grid-cols-7 gap-2">
-            {dailyProgress.map((day, index) => (
-              <div key={day.date} className="text-center">
-                <div className="text-xs text-gray-600 mb-2">
-                  {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                </div>
-                <div className={`w-full h-16 rounded-lg flex items-end justify-center ${
-                  day.levels_completed > 0 
-                    ? 'bg-gradient-to-t from-success-400 to-success-500' 
-                    : 'bg-gray-200'
-                }`}>
-                  <div className="text-white text-xs font-bold mb-1">
-                    {day.levels_completed}
-                  </div>
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {day.levels_completed} level{day.levels_completed !== 1 ? 's' : ''}
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Study Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            className="card text-center"
-          >
-            <Clock className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {progress.total_study_time || 0}
-            </div>
-            <div className="text-sm text-gray-600">Total Study Time (min)</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-            className="card text-center"
-          >
-            <Zap className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {progress.average_time_per_question || 0}
-            </div>
-            <div className="text-sm text-gray-600">Avg Time per Question (sec)</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.9 }}
-            className="card text-center"
-          >
-            <Calendar className="h-8 w-8 text-green-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {progress.longest_streak || 0}
-            </div>
-            <div className="text-sm text-gray-600">Longest Streak</div>
-          </motion.div>
-        </div>
-
-        {/* Achievements */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.0 }}
-          className="card"
-        >
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Achievements</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {achievements.map((achievement, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-lg border-2 ${
-                  achievement.unlocked 
-                    ? 'border-success-200 bg-success-50' 
-                    : 'border-gray-200 bg-gray-50'
-                }`}
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Leaf className="h-5 w-5 text-green-500" />
+              Your Plant
+            </h3>
+            
+            <div className="text-center mb-6">
+              <motion.div
+                className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-4xl mx-auto shadow-lg"
+                animate={{ 
+                  y: [0, -5, 0],
+                  rotate: [0, 2, -2, 0]
+                }}
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
               >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    achievement.unlocked 
-                      ? 'bg-success-100' 
-                      : 'bg-gray-100'
-                  }`}>
-                    <span className={`text-xl ${
-                      achievement.unlocked ? 'text-success-600' : 'text-gray-400'
-                    }`}>
-                      {achievement.emoji}
-                    </span>
-                  </div>
-                  <div>
-                    <h4 className={`font-semibold ${
-                      achievement.unlocked ? 'text-gray-900' : 'text-gray-500'
-                    }`}>
-                      {achievement.title}
-                    </h4>
-                    <p className={`text-sm ${
-                      achievement.unlocked ? 'text-gray-600' : 'text-gray-400'
-                    }`}>
-                      {achievement.description}
-                    </p>
-                  </div>
-                </div>
+                {userStats.plant_stage === "Fruit Tree" ? "🌳" : 
+                 userStats.plant_stage === "Tree" ? "🌲" : 
+                 userStats.plant_stage === "Sapling" ? "🌿" : 
+                 userStats.plant_stage === "Sprout" ? "🌱" : "🌱"}
+              </motion.div>
+              <h4 className="text-lg font-semibold text-gray-900 mt-3">{userStats.plant_stage}</h4>
+              <p className="text-gray-600 text-sm">Current stage</p>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Overall Progress</span>
+                <span className="font-semibold">{Math.round(userStats.completion_percentage)}%</span>
               </div>
-            ))}
-          </div>
-        </motion.div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <motion.div
+                  className={`h-2 bg-gradient-to-r ${plantStage.color} rounded-full`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${userStats.completion_percentage}%` }}
+                  transition={{ duration: 1 }}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Daily Goal */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl p-6 shadow-lg"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-[#00bfe6]" />
+              Daily Goal
+            </h3>
+            
+            <div className="text-center mb-6">
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {userStats.total_xp} / {userStats.daily_goal}
+              </div>
+              <p className="text-gray-600">XP Today</p>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Progress</span>
+                <span className="font-semibold">
+                  {Math.round((userStats.total_xp / userStats.daily_goal) * 100)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <motion.div
+                  className="h-2 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min((userStats.total_xp / userStats.daily_goal) * 100, 100)}%` }}
+                  transition={{ duration: 1 }}
+                />
+              </div>
+              
+              {userStats.total_xp >= userStats.daily_goal ? (
+                <p className="text-green-600 text-sm font-medium text-center mt-2">
+                  🎉 Daily goal completed!
+                </p>
+              ) : (
+                <p className="text-gray-600 text-sm text-center mt-2">
+                  {userStats.daily_goal - userStats.total_xp} XP needed
+                </p>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Recent Activity & Achievements */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Activity */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white rounded-2xl p-6 shadow-lg"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Activity className="h-5 w-5 text-blue-500" />
+              Recent Activity
+            </h3>
+            
+            <div className="space-y-4">
+              {recentActivity && recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        {activity.type === 'level' ? 'L' : 'T'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{activity.level_name}</p>
+                        <p className="text-sm text-gray-600">{formatDate(activity.completed_at)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">+{activity.xp_earned} XP</p>
+                      <p className="text-sm text-gray-600">{activity.score}%</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">No recent activity</p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Achievements */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="bg-white rounded-2xl p-6 shadow-lg"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5 text-yellow-500" />
+              Achievements
+            </h3>
+            
+            <div className="space-y-3">
+              {achievements && achievements.length > 0 ? (
+                achievements.map((achievement) => (
+                  <div key={achievement.id} className={`flex items-center space-x-3 p-3 rounded-lg ${
+                    achievement.unlocked ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                  }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                      achievement.unlocked 
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
+                        : 'bg-gray-300'
+                    }`}>
+                      {achievement.unlocked ? '🏆' : '🔒'}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-medium ${
+                        achievement.unlocked ? 'text-gray-900' : 'text-gray-500'
+                      }`}>
+                        {achievement.name}
+                      </p>
+                      <p className={`text-sm ${
+                        achievement.unlocked ? 'text-gray-600' : 'text-gray-400'
+                      }`}>
+                        {achievement.description}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">No achievements yet</p>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   )
 }
-
-const achievements = [
-  {
-    title: 'First Steps',
-    description: 'Complete your first level',
-    emoji: '🌱',
-    unlocked: true
-  },
-  {
-    title: 'Streak Master',
-    description: 'Maintain a 7-day streak',
-    emoji: '🔥',
-    unlocked: true
-  },
-  {
-    title: 'XP Collector',
-    description: 'Earn 1000 XP',
-    emoji: '⭐',
-    unlocked: true
-  },
-  {
-    title: 'Speed Demon',
-    description: 'Complete a level in under 5 minutes',
-    emoji: '⚡',
-    unlocked: false
-  },
-  {
-    title: 'Perfectionist',
-    description: 'Get 100% accuracy on a level',
-    emoji: '🎯',
-    unlocked: false
-  },
-  {
-    title: 'Group Master',
-    description: 'Complete an entire group',
-    emoji: '🏆',
-    unlocked: false
-  }
-]
