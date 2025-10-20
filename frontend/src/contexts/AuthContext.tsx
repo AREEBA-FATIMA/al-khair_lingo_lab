@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('DEBUG - Invalid response structure:', response)
         throw new Error('Invalid response from server')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('DEBUG - Login error:', error)
       throw error
     } finally {
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         throw new Error('Registration failed')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('DEBUG - Registration error:', error)
       console.error('DEBUG - Error details:', error.response?.data)
       throw error
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await apiService.logout()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Logout error:', error)
     } finally {
       setUser(null)
