@@ -144,55 +144,62 @@ export default function GroupsPage() {
       <Navigation />
 
       {/* Header with User Stats */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Learning Groups</h1>
-              <p className="text-gray-600">Choose your learning path</p>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-2">
+                Learning Groups
+              </h1>
+              <p className="text-gray-600 text-lg">Choose your learning path and grow your English skills</p>
               
               {/* Overall Progress Bar */}
-              <div className="mt-3 w-full max-w-md">
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                  <span>Overall Progress</span>
-                  <span>{userStats.completion_percentage}%</span>
+              <div className="mt-4 w-full max-w-md">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                  <span className="font-medium">Overall Progress</span>
+                  <span className="font-bold text-[#03045e]">{userStats.completion_percentage}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
                   <motion.div
-                    className="bg-gradient-to-r from-[#03045e] to-[#00bfe6] h-2 rounded-full"
+                    className="bg-gradient-to-r from-[#03045e] to-[#00bfe6] h-3 rounded-full shadow-lg"
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, userStats.completion_percentage)}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    transition={{ duration: 1, ease: "easeOut" }}
                   />
                 </div>
               </div>
           </div>
           
             {/* User Stats */}
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <Zap className="h-5 w-5 text-yellow-500" />
-                <span className="font-bold text-gray-900">{userStats.total_xp}</span>
-                <span className="text-gray-600">XP</span>
-        </div>
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-3 bg-gradient-to-r from-yellow-50 to-orange-50 px-4 py-3 rounded-xl border border-yellow-200">
+                <Zap className="h-6 w-6 text-yellow-500" />
+                <div>
+                  <span className="font-bold text-2xl text-gray-900">{userStats.total_xp}</span>
+                  <span className="text-gray-600 ml-1">XP</span>
+                </div>
+              </div>
 
-              <div className="flex items-center space-x-2">
-                <Flame className="h-5 w-5 text-orange-500" />
-                <span className="font-bold text-gray-900">{userStats.current_streak}</span>
-                <span className="text-gray-600">day streak</span>
-                      </div>
+              <div className="flex items-center space-x-3 bg-gradient-to-r from-orange-50 to-red-50 px-4 py-3 rounded-xl border border-orange-200">
+                <Flame className="h-6 w-6 text-orange-500" />
+                <div>
+                  <span className="font-bold text-2xl text-gray-900">{userStats.current_streak}</span>
+                  <span className="text-gray-600 ml-1">day streak</span>
+                </div>
+              </div>
                       
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3 bg-gradient-to-r from-red-50 to-pink-50 px-4 py-3 rounded-xl border border-red-200">
                 <div className="flex space-x-1">
                   {[...Array(5)].map((_, i) => (
-                          <div
-                            key={i}
-                      className={`w-4 h-4 rounded-full ${
-                        i < userStats.hearts ? 'bg-red-500' : 'bg-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
+                    <div
+                      key={i}
+                      className={`w-5 h-5 rounded-full ${
+                        i < userStats.hearts ? 'bg-red-500 shadow-lg' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-gray-600 font-medium">Hearts</span>
               </div>
             </div>
           </div>
@@ -222,9 +229,13 @@ export default function GroupsPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={`group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 ${
-                  isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-2 hover:scale-105'
+                className={`group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-100 ${
+                  isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-3 hover:scale-105'
                 }`}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.8) 100%)',
+                  backdropFilter: 'blur(10px)'
+                }}
               >
                 {/* Lock Icon for locked groups */}
                 {isLocked && (
@@ -234,96 +245,107 @@ export default function GroupsPage() {
                 )}
 
                 {/* Plant Stage */}
-                <div className="text-center mb-4">
+                <div className="text-center mb-6">
                   <motion.div
-                    className={`w-20 h-20 bg-gradient-to-br ${plantStage.color} rounded-full flex items-center justify-center text-4xl mx-auto shadow-lg`}
+                    className={`w-24 h-24 bg-gradient-to-br ${plantStage.color} rounded-full flex items-center justify-center text-5xl mx-auto shadow-2xl border-4 border-white`}
                     animate={!isLocked ? { 
-                      y: [0, -5, 0],
-                      rotate: [0, 2, -2, 0]
+                      y: [0, -8, 0],
+                      rotate: [0, 3, -3, 0],
+                      scale: [1, 1.05, 1]
                     } : {}}
                     transition={{ 
-                      duration: 3, 
+                      duration: 4, 
                       repeat: Infinity,
                       ease: "easeInOut"
+                    }}
+                    style={{
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.1)'
                     }}
                   >
                     {plantStage.emoji}
                   </motion.div>
-                  <p className="text-sm text-gray-600 mt-2">{plantStage.name}</p>
-                            </div>
+                  <p className="text-sm font-semibold text-gray-700 mt-3 bg-gray-100 px-3 py-1 rounded-full inline-block">
+                    {plantStage.name}
+                  </p>
+                </div>
 
                 {/* Group Info */}
-                <div className="text-center mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                              Group {group.group_number}
-                            </h3>
-                  <p className="text-gray-600 text-sm mb-2">{group.name}</p>
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-2">
+                    Group {group.group_number}
+                  </h3>
+                  <p className="text-gray-700 text-base mb-4 font-medium">{group.name}</p>
                   
                   {/* Difficulty Badge */}
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r ${difficultyColor}`}>
+                  <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold text-white bg-gradient-to-r ${difficultyColor} shadow-lg`}>
+                    <Trophy className="h-4 w-4 mr-2" />
                     {getDifficultyName(group.difficulty)}
-                          </div>
-                        </div>
+                  </div>
+                </div>
                         
                 {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <div className="mb-6">
+                  <div className="flex justify-between text-sm font-semibold text-gray-700 mb-3">
                     <span>Progress</span>
-                    <span>{Math.round(groupProgress)}%</span>
+                    <span className="text-[#03045e]">{Math.round(groupProgress)}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
                     <motion.div
-                      className={`h-2 bg-gradient-to-r ${plantStage.color} rounded-full`}
+                      className={`h-3 bg-gradient-to-r ${plantStage.color} rounded-full shadow-lg`}
                       initial={{ width: 0 }}
                       animate={{ width: `${groupProgress}%` }}
-                      transition={{ duration: 1, delay: index * 0.1 }}
+                      transition={{ duration: 1.2, delay: index * 0.1 }}
                     />
-                        </div>
-                      </div>
+                  </div>
+                </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-4 text-center">
-                  <div>
-                    <div className="text-lg font-bold text-gray-900">{group.levels_completed}</div>
-                    <div className="text-xs text-gray-600">of {group.total_levels} levels</div>
+                <div className="grid grid-cols-2 gap-4 mb-6 text-center">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                    <div className="text-2xl font-bold text-[#03045e]">{group.levels_completed}</div>
+                    <div className="text-sm text-gray-600 font-medium">of {group.total_levels} levels</div>
                   </div>
-                  <div>
-                    <div className="text-lg font-bold text-gray-900">{group.xp_earned}</div>
-                    <div className="text-xs text-gray-600">XP earned</div>
+                  <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-xl border border-yellow-100">
+                    <div className="text-2xl font-bold text-[#00bfe6]">{group.xp_earned}</div>
+                    <div className="text-sm text-gray-600 font-medium">XP earned</div>
                   </div>
-                        </div>
+                </div>
                         
-                        {/* Action Button */}
+                {/* Action Button */}
                 <div className="text-center">
                   {isLocked ? (
-                    <div className="bg-gray-100 text-gray-500 py-3 px-4 rounded-lg font-medium">
+                    <div className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-500 py-4 px-6 rounded-2xl font-semibold border border-gray-200 shadow-inner">
+                      <Lock className="h-5 w-5 inline mr-2" />
                       Complete previous group
-                        </div>
+                    </div>
                   ) : (
                     <Link
                       href={`/groups/${group.group_number}/levels`}
-                      className="group/btn relative inline-block w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white py-3 px-4 rounded-lg font-bold transition-all duration-300 hover:shadow-xl hover:scale-105"
+                      className="group/btn relative inline-block w-full bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white py-4 px-6 rounded-2xl font-bold transition-all duration-300 hover:shadow-2xl hover:scale-105 shadow-lg"
+                      style={{
+                        boxShadow: '0 8px 25px rgba(3, 4, 94, 0.3), 0 4px 12px rgba(0, 191, 230, 0.2)'
+                      }}
                     >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        {group.completion_percentage > 0 ? 'Continue' : 'Start'}
-                        <BookOpen className="h-4 w-4" />
+                      <span className="relative z-10 flex items-center justify-center gap-3 text-lg">
+                        {group.completion_percentage > 0 ? 'Continue Learning' : 'Start Learning'}
+                        <BookOpen className="h-5 w-5" />
                       </span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
                     </Link>
                   )}
-                      </div>
+                </div>
 
                 {/* Completion Badge */}
                 {group.completion_percentage === 100 && (
-                  <div className="absolute -top-2 -right-2">
-                    <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                      <Trophy className="h-4 w-4" />
+                  <div className="absolute -top-3 -right-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white shadow-2xl border-2 border-white">
+                      <Trophy className="h-5 w-5" />
                     </div>
                   </div>
                 )}
 
                 {/* Hover Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/5 to-[#00bfe6]/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/5 to-[#00bfe6]/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </motion.div>
                 )
           }) : (
@@ -335,30 +357,44 @@ export default function GroupsPage() {
               </div>
 
         {/* Daily Goal Progress */}
-        <div className="mt-12 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900">Daily Goal</h3>
-            <div className="flex items-center space-x-2">
-              <Target className="h-5 w-5 text-[#00bfe6]" />
-              <span className="text-sm text-gray-600">{userStats.total_xp} / {userStats.daily_goal} XP</span>
+        <div className="mt-16 bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-2">
+                Daily Goal
+              </h3>
+              <p className="text-gray-600">Keep your learning streak alive!</p>
+            </div>
+            <div className="flex items-center space-x-3 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 rounded-xl border border-blue-200">
+              <Target className="h-6 w-6 text-[#00bfe6]" />
+              <div className="text-right">
+                <div className="text-2xl font-bold text-[#03045e]">{userStats.total_xp}</div>
+                <div className="text-sm text-gray-600">/ {userStats.daily_goal} XP</div>
+              </div>
             </div>
           </div>
           
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
             <motion.div
-              className="h-3 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full"
+              className="h-4 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full shadow-lg"
               initial={{ width: 0 }}
               animate={{ width: `${Math.min((userStats.total_xp / userStats.daily_goal) * 100, 100)}%` }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
             />
           </div>
           
-          <p className="text-sm text-gray-600 mt-2">
-            {userStats.total_xp >= userStats.daily_goal 
-              ? "🎉 Daily goal completed! Great job!" 
-              : `${userStats.daily_goal - userStats.total_xp} XP needed to complete daily goal`
-            }
-          </p>
+          <div className="mt-4 text-center">
+            <p className={`text-lg font-semibold ${
+              userStats.total_xp >= userStats.daily_goal 
+                ? "text-green-600" 
+                : "text-gray-600"
+            }`}>
+              {userStats.total_xp >= userStats.daily_goal 
+                ? "🎉 Daily goal completed! Great job!" 
+                : `${userStats.daily_goal - userStats.total_xp} XP needed to complete daily goal`
+              }
+            </p>
+          </div>
         </div>
       </div>
     </div>

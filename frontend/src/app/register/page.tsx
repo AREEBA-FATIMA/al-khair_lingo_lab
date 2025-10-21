@@ -20,7 +20,6 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const { register } = useAuth()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,8 +53,6 @@ export default function RegisterPage() {
 
     try {
       setIsLoading(true)
-      setError('')
-      setSuccess('')
       console.log('DEBUG - Form data:', formData)
       await register(
         formData.username,
@@ -64,7 +61,6 @@ export default function RegisterPage() {
         formData.firstName,
         formData.lastName
       )
-      setSuccess('Registration successful! Redirecting to groups...')
       // Redirect will happen automatically in AuthContext
     } catch (error: any) {
       console.error('Registration error:', error)
@@ -255,25 +251,14 @@ export default function RegisterPage() {
 
             {/* Error Message */}
             {error && (
-              <motion.div
+                        <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-red-50 border border-red-200 rounded-lg p-3"
               >
                 <p className="text-red-600 text-sm">{error}</p>
-              </motion.div>
-            )}
-
-            {/* Success Message */}
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-green-50 border border-green-200 rounded-lg p-3"
-              >
-                <p className="text-green-600 text-sm">{success}</p>
-              </motion.div>
-            )}
+                        </motion.div>
+                  )}
 
             {/* Submit Button */}
                   <motion.button

@@ -82,8 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('DEBUG - Login successful, user set:', response.user)
         console.log('DEBUG - isLoggedIn set to:', true)
         
-        // Redirect to groups page after successful login
-        window.location.href = '/groups'
+        // Redirect to home page after successful login
+        window.location.href = '/'
       } else {
         console.log('DEBUG - Invalid response structure:', response)
         throw new Error('Invalid response from server')
@@ -122,8 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           console.log('DEBUG - Registration and auto-login successful:', loginResponse.user)
           
-          // Redirect to groups page after successful registration
-          window.location.href = '/groups'
+          // Redirect to home page after successful registration
+          window.location.href = '/'
         }
       } else {
         throw new Error('Registration failed')

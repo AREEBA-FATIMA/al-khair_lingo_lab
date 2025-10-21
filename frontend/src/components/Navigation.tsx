@@ -24,12 +24,18 @@ export default function Navigation({
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [profileImage, setProfileImage] = useState<string | null>(null)
 
   // Debug logging
   console.log('Navigation - isLoggedIn:', isLoggedIn, 'user:', user)
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside + load local avatar
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem('profilePictureDataUrl')
+      if (stored) setProfileImage(stored)
+    } catch (e) {}
+
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false)
@@ -40,6 +46,38 @@ export default function Navigation({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
+  }, [])
+
+  const handleLocalImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setProfileImage(dataUrl)
+      try {
+        localStorage.setItem('profilePictureDataUrl', dataUrl)
+        // Notify other parts of the app (e.g., Profile page)
+        try {
+          window.dispatchEvent(new CustomEvent('profilePictureUpdated', { detail: dataUrl }))
+        } catch (_) {}
+      } catch (err) {
+        console.error('Failed to save profile image locally:', err)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Listen for avatar updates from elsewhere (e.g., Profile page)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<string>
+      if (typeof custom.detail === 'string') {
+        setProfileImage(custom.detail)
+      }
+    }
+    window.addEventListener('profilePictureUpdated', handler as EventListener)
+    return () => window.removeEventListener('profilePictureUpdated', handler as EventListener)
   }, [])
 
   return (
@@ -90,9 +128,14 @@ export default function Navigation({
                   }}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-[#03045e] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#00bfe6] focus:ring-opacity-50 rounded-lg"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </div>
+                  {profileImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={profileImage} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-blue-200" />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      {user?.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="font-medium">{user?.username}</span>
                   <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -107,15 +150,21 @@ export default function Navigation({
                     className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 py-3 z-50"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* User Info Header */}
+                    {/* User Info Header with change photo */}
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full flex items-center justify-center text-white font-bold text-lg">
-                          {user?.username?.charAt(0).toUpperCase()}
-                        </div>
+                        <label className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-[#00bfe6] bg-gradient-to-r from-[#03045e] to-[#00bfe6] flex items-center justify-center cursor-pointer" title="Change photo">
+                          {profileImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-white font-bold text-lg">{user?.username?.charAt(0).toUpperCase()}</span>
+                          )}
+                          <input type="file" accept="image/*" className="hidden" onChange={handleLocalImageChange} />
+                          <span className="absolute -bottom-1 right-0 bg-white/90 text-[#03045e] text-[9px] px-1.5 py-0.5 rounded-full border border-[#00bfe6]/40">Edit</span>
+                        </label>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-gray-900 text-lg truncate">{user?.username}</p>
-                          <p className="text-sm text-gray-500 truncate">{user?.campusName}</p>
                         </div>
                       </div>
                     </div>
@@ -124,15 +173,15 @@ export default function Navigation({
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="grid grid-cols-3 gap-3 text-center">
                         <div className="bg-gray-50 rounded-lg p-2">
-                          <p className="text-xl font-bold text-[#03045e]">{user?.level}</p>
+                          <p className="text-xl font-bold text-[#03045e]">--</p>
                           <p className="text-xs text-gray-500">Level</p>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-2">
-                          <p className="text-xl font-bold text-[#00bfe6]">{user?.groupsCompleted}</p>
+                          <p className="text-xl font-bold text-[#00bfe6]">--</p>
                           <p className="text-xs text-gray-500">Groups</p>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-2">
-                          <p className="text-xl font-bold text-green-500">{user?.streak}</p>
+                          <p className="text-xl font-bold text-green-500">--</p>
                           <p className="text-xs text-gray-500">Streak</p>
                         </div>
                       </div>

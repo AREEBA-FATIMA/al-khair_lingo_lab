@@ -895,56 +895,63 @@ export default function QuizGame() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white overflow-auto p-7">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-900 overflow-auto p-7">
       {/* Top Bar */}
       <div className="fixed right-6 top-5 flex gap-3 items-center z-50">
-        <div className="bg-gradient-to-b from-slate-800 to-slate-900 px-3 py-2 rounded-xl flex gap-2 items-center border border-white/5 shadow-lg">
-          <Trophy className="h-4 w-4 text-green-400" />
-          <span className="font-bold text-green-100">XP: {xpTotal}</span>
+        <div className="bg-white/95 backdrop-blur-sm px-4 py-3 rounded-2xl flex gap-3 items-center border border-gray-200 shadow-xl">
+          <Trophy className="h-5 w-5 text-[#00bfe6]" />
+          <span className="font-bold text-[#03045e] text-lg">XP: {xpTotal}</span>
         </div>
         <button
           onClick={toggleSound}
-          className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-b from-slate-800 to-slate-900 border border-white/5 cursor-pointer hover:bg-slate-700 transition-colors"
+          className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/95 backdrop-blur-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors shadow-xl"
           title="Toggle sound"
         >
-          {soundOn ? <Volume2 className="h-5 w-5 text-green-100" /> : <VolumeX className="h-5 w-5 text-gray-400" />}
+          {soundOn ? <Volume2 className="h-6 w-6 text-[#00bfe6]" /> : <VolumeX className="h-6 w-6 text-gray-400" />}
         </button>
       </div>
 
       {/* Back Button */}
       <button
         onClick={() => router.back()}
-        className="fixed left-6 top-5 z-50 p-2 hover:bg-white/10 rounded-lg transition-colors"
+        className="fixed left-6 top-5 z-50 p-3 hover:bg-white/80 rounded-2xl transition-colors bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl"
       >
-        <ArrowLeft className="h-6 w-6 text-white" />
+        <ArrowLeft className="h-6 w-6 text-[#03045e]" />
       </button>
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto relative">
         {/* Level Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-green-100 mb-2">{levelData.name}</h1>
-          <p className="text-gray-300 text-lg mb-4">{levelData.description}</p>
-          <div className="flex justify-center gap-4 text-sm">
-            <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-lg font-bold">
-              +{levelData.xp_reward} XP
-            </div>
-            <div className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-lg font-bold">
-              {levelData.questions.length} Questions
-            </div>
-            {levelData.is_test_level && (
-              <div className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-lg font-bold">
-                Test Level
+        <div className="text-center mb-12">
+          <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-gray-100 mb-8">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-4">
+              {levelData.name}
+            </h1>
+            <p className="text-gray-700 text-xl mb-6 font-medium">{levelData.description}</p>
+            <div className="flex justify-center gap-4 text-sm">
+              <div className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-4 py-2 rounded-xl font-bold border border-green-200">
+                +{levelData.xp_reward} XP
               </div>
-            )}
+              <div className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-4 py-2 rounded-xl font-bold border border-blue-200">
+                {levelData.questions.length} Questions
+              </div>
+              {levelData.is_test_level && (
+                <div className="bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 px-4 py-2 rounded-xl font-bold border border-yellow-200">
+                  Test Level
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Start Quiz Button */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-12">
           <motion.button
             onClick={startLevelQuiz}
-            className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-green-900 font-bold text-xl rounded-xl hover:from-green-400 hover:to-green-500 transition-all shadow-lg hover:shadow-xl"
+            className="px-12 py-6 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white font-bold text-2xl rounded-2xl hover:from-[#02033a] hover:to-[#0099cc] transition-all shadow-2xl hover:shadow-3xl transform hover:scale-105"
+            style={{
+              boxShadow: '0 15px 35px rgba(3, 4, 94, 0.4), 0 8px 20px rgba(0, 191, 230, 0.3)'
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -953,30 +960,30 @@ export default function QuizGame() {
         </div>
 
         {/* Questions Preview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {levelData.questions.map((question, idx) => (
             <motion.div
               key={question.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className="bg-slate-800/50 rounded-lg p-4 border border-white/10"
+              className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 bg-green-500 text-green-900 rounded-full flex items-center justify-center text-sm font-bold">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                   {idx + 1}
                 </div>
-                <span className="text-green-100 font-semibold">Question {idx + 1}</span>
+                <span className="text-[#03045e] font-bold text-lg">Question {idx + 1}</span>
               </div>
-              <p className="text-gray-300 text-sm mb-2">{question.question_text}</p>
+              <p className="text-gray-700 text-base mb-4 font-medium leading-relaxed">{question.question_text}</p>
               <div className="flex gap-2 text-xs">
-                <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
+                <span className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-3 py-2 rounded-lg font-semibold border border-blue-200">
                   {question.question_type}
                 </span>
-                <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded">
+                <span className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-3 py-2 rounded-lg font-semibold border border-purple-200">
                   +{question.xp_value} XP
                 </span>
-                <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded">
+                <span className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-3 py-2 rounded-lg font-semibold border border-orange-200">
                   {question.time_limit_seconds}s
                 </span>
               </div>
@@ -985,10 +992,12 @@ export default function QuizGame() {
         </div>
 
         {/* Progress Tree */}
-        <div className="text-center mb-8">
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-            <h3 className="text-xl font-bold text-green-100 mb-4">Your Learning Tree</h3>
-            <div className="flex justify-center items-end gap-2 mb-4">
+        <div className="text-center mb-12">
+          <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-2xl">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-6">
+              Your Learning Tree
+            </h3>
+            <div className="flex justify-center items-end gap-3 mb-6">
               {/* Tree stages based on progress */}
               {Array.from({ length: 5 }, (_, i) => {
                 const stage = Math.min(Math.floor((highestUnlocked / 10) * 5), 4)
@@ -996,18 +1005,21 @@ export default function QuizGame() {
                 return (
                   <motion.div
                     key={i}
-                    className={`w-12 h-16 rounded-t-full flex items-center justify-center text-2xl ${
-                      isActive ? 'bg-green-500' : 'bg-gray-600'
+                    className={`w-16 h-20 rounded-t-full flex items-center justify-center text-3xl border-4 border-white shadow-lg ${
+                      isActive ? 'bg-gradient-to-b from-green-400 to-green-600' : 'bg-gradient-to-b from-gray-300 to-gray-500'
                     }`}
                     animate={isActive ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                    style={{
+                      boxShadow: isActive ? '0 8px 20px rgba(34, 197, 94, 0.3)' : '0 4px 10px rgba(0,0,0,0.1)'
+                    }}
                   >
                     {i === 0 ? '🌱' : i === 1 ? '🌿' : i === 2 ? '🌳' : i === 3 ? '🌲' : '🌳'}
                   </motion.div>
                 )
               })}
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-lg text-gray-700 font-semibold">
               Level {highestUnlocked} completed • {Math.round((highestUnlocked / 50) * 100)}% Progress
             </div>
           </div>
@@ -1020,13 +1032,13 @@ export default function QuizGame() {
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
-              className="fixed right-5 top-24 w-64 bg-slate-800/95 rounded-xl p-4 z-40 border border-white/5 shadow-xl"
+              className="fixed right-5 top-24 w-72 bg-white/95 backdrop-blur-sm rounded-2xl p-6 z-40 border border-gray-200 shadow-2xl"
             >
-              <h4 className="text-green-100 font-semibold text-lg mb-2">Level 1</h4>
-              <p className="text-gray-300 text-sm mb-3">Short description about this level goes here.</p>
+              <h4 className="text-[#03045e] font-bold text-xl mb-3">Level 1</h4>
+              <p className="text-gray-700 text-sm mb-4 leading-relaxed">Short description about this level goes here.</p>
               <div className="flex justify-between items-center">
-                <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-lg font-bold text-sm">+10</div>
-                <div className="text-xs text-gray-400">Click to start quiz</div>
+                <div className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-4 py-2 rounded-xl font-bold text-sm border border-green-200">+10</div>
+                <div className="text-xs text-gray-500 font-medium">Click to start quiz</div>
               </div>
             </motion.div>
           )}
@@ -1039,7 +1051,7 @@ export default function QuizGame() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="fixed left-4 bottom-5 bg-slate-800/60 px-3 py-2 rounded-lg border border-white/5 text-green-100 font-semibold text-sm z-50"
+              className="fixed left-4 bottom-5 bg-white/95 backdrop-blur-sm px-4 py-3 rounded-2xl border border-gray-200 text-[#03045e] font-semibold text-sm z-50 shadow-xl"
             >
               {hintMessage}
             </motion.div>
