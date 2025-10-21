@@ -9,7 +9,7 @@ TEACHER_MODEL = "teachers.Teacher"
 # ----------------------
 class Grade(models.Model):
     """
-    Top-level grade (e.g., Grade 1, Grade 2)
+    Grade with English teacher assignment (e.g., Grade 1, Grade 2)
     """
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=25, unique=True, blank=True, null=True, editable=False)
@@ -21,12 +21,35 @@ class Grade(models.Model):
         related_name='grades',
         help_text="Campus this grade belongs to"
     )
+    
+    # Shift information
+    shift = models.CharField(
+        max_length=20,
+        choices=[
+            ('morning', 'Morning'),
+            ('afternoon', 'Afternoon'),
+        ],
+        default='morning',
+        help_text="Shift for this grade"
+    )
+    
+    # English teacher assignment
+    english_teacher = models.ForeignKey(
+        'teachers.Teacher', 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL,
+        related_name='english_teacher_grades',
+        help_text="English teacher for this grade"
+    )
 
     def save(self, *args, **kwargs):
         if not self.code:
             # Generate campus code: C01, C02, C03, etc.
-            campus_id = self.campus.id if self.campus else 1
-            campus_code = f"C{campus_id:02d}"
+            if self.campus:
+                campus_code = self.campus.campus_code
+            else:
+                campus_code = "C01"  # Default fallback
             
             # Grade mapping
             grade_name = self.name.replace("Grade", "").strip()
@@ -63,7 +86,7 @@ class Grade(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ("campus", "name")
+        unique_together = ("campus", "name", "shift")
         verbose_name = "Grade"
         verbose_name_plural = "Grades"
         ordering = ['name']
@@ -71,173 +94,4 @@ class Grade(models.Model):
     def __str__(self):
         return f"{self.name} ({self.campus.campus_name})"
 
-# ----------------------
-class ClassRoom(models.Model):
-    """
-    Represents a specific class (Grade + Section)
-    Example: "Grade 1 - A"
-    """
-    SECTION_CHOICES = [(c, c) for c in ("A", "B", "C", "D", "E")]
-
-    grade = models.ForeignKey(Grade, related_name="classrooms", on_delete=models.CASCADE)
-    section = models.CharField(max_length=3, choices=SECTION_CHOICES)
-    
-    # Shift information
-    shift = models.CharField(
-        max_length=20,
-        choices=[
-            ('morning', 'Morning'),
-            ('afternoon', 'Afternoon'),
-            ('evening', 'Evening'),
-            ('both', 'Morning + Afternoon'),
-            ('all', 'All Shifts')
-        ],
-        default='morning',
-        help_text="Shift for this classroom"
-    )
-    
-    # FIXED: Changed to OneToOneField to ensure one teacher per classroom
-    class_teacher = models.OneToOneField(
-        'teachers.Teacher', 
-        null=True, 
-        blank=True, 
-        on_delete=models.SET_NULL,
-        related_name='assigned_classroom_teacher',
-        help_text="Class teacher for this classroom (one teacher per classroom only)"
-    )
-    capacity = models.PositiveIntegerField(default=30)
-    code = models.CharField(max_length=30, unique=True, editable=False)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ("grade", "section", "shift")
-        ordering = ("grade__name", "section", "shift")
-        verbose_name = "Class Room"
-        verbose_name_plural = "Class Rooms"
-
-    def __str__(self):
-        return f"{self.grade.name} - {self.section}"
-
-    def get_display_code_components(self):
-        # Use grade code if available, otherwise generate from name
-        if self.grade and self.grade.code:
-            grade_code = self.grade.code
-        else:
-            grade_code = "".join(self.grade.name.split()).upper()
-        return grade_code, self.section
-
-
-    def clean(self):
-        """
-        Validate that teacher is not already assigned to another classroom
-        """
-        if self.class_teacher:
-            # Check if this teacher is already assigned to another classroom
-            existing_classroom = ClassRoom.objects.filter(
-                class_teacher=self.class_teacher
-            ).exclude(pk=self.pk).first()
-            
-            if existing_classroom:
-                warning_msg = (
-                    f"Teacher {self.class_teacher.name} is already assigned to {existing_classroom}. "
-                    "Reassigning will remove them from the previous classroom. Continue?"
-                )
-                raise ValidationError(warning_msg)
-
-    def save(self, *args, **kwargs):
-        # Run validation
-        self.clean()
-        
-        if not self.code:
-            # Generate campus code: C01, C02, C03, etc.
-            campus_id = self.grade.campus.id if self.grade and self.grade.campus else 1
-            campus_code = f"C{campus_id:02d}"
-            
-            # Get shift code from classroom shift field
-            shift_map = {
-                'morning': 'M',
-                'afternoon': 'A', 
-                'evening': 'E',
-                'both': 'B',
-                'all': 'ALL'
-            }
-            shift_code = shift_map.get(self.shift.lower(), 'M')
-            
-            grade_name = self.grade.name.replace("Grade", "").strip()
-            
-            # Extract grade number
-            import re
-            numbers = re.findall(r'\d+', grade_name)
-            if numbers:
-                grade_num = numbers[0].zfill(2)
-            else:
-                # If no number found, try to extract from name patterns
-                if "nursery" in grade_name.lower():
-                    grade_num = "00"
-                elif "kg" in grade_name.lower():
-                    # Extract KG number
-                    kg_match = re.search(r'kg[-\s]*(\d+)', grade_name.lower())
-                    if kg_match:
-                        grade_num = f"0{kg_match.group(1)}"
-                    else:
-                        grade_num = "01"
-                else:
-                    grade_num = "01"
-            
-            # Generate class code: C01-M-G1-A, C01-M-G1-B, C01-M-G1-C
-            self.code = f"{campus_code}-{shift_code}-G{grade_num}-{self.section}"
-            
-            # Ensure uniqueness
-            original_code = self.code
-            suffix = 1
-            while ClassRoom.objects.filter(code=self.code).exists():
-                self.code = f"{original_code}-{suffix:02d}"
-                suffix += 1
-        super().save(*args, **kwargs)
-    
-    # Properties for easy access
-    @property
-    def campus(self):
-        return self.grade.campus if self.grade else None
-    
-    def get_students_for_teacher(self, teacher):
-        """
-        Get students assigned to this classroom for a specific teacher
-        Only returns students from the same campus as the teacher
-        """
-        if not teacher or not teacher.campus:
-            return self.students.none()
-        
-        return self.students.filter(
-            campus=teacher.campus,
-            is_active=True
-        )
-    
-    def get_available_students_for_assignment(self):
-        """
-        Get students from same campus and grade who can be assigned to this classroom
-        """
-        if not self.campus or not self.grade:
-            return Student.objects.none()
-        
-        from students.models import Student
-        
-        # Normalize grade names for matching
-        grade_name_variations = [
-            self.grade.name,
-            self.grade.name.replace('-', ' '),  # Grade-4 -> Grade 4
-            self.grade.name.replace(' ', '-'),  # Grade 4 -> Grade-4
-        ]
-        
-        grade_query = Q()
-        for grade_var in grade_name_variations:
-            grade_query |= Q(grade__icontains=grade_var)
-        
-        return Student.objects.filter(
-            campus=self.campus,
-            is_active=True
-        ).filter(grade_query).filter(
-            Q(assigned_class__isnull=True) | Q(assigned_class=self)
-        )
+# ClassRoom model removed - using Grade model directly

@@ -5,11 +5,11 @@ from .models import Teacher
 @admin.register(Teacher)
 class TeacherAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'father_name', 'assigned_class', 'campus', 
+        'name', 'father_name', 'shift', 'campus', 
         'email', 'teacher_id', 'is_active', 'created_at'
     ]
     list_filter = [
-        'is_active', 'campus', 'created_at'
+        'is_active', 'shift', 'campus', 'created_at'
     ]
     search_fields = [
         'name', 'father_name', 'email', 'teacher_id'
@@ -19,17 +19,17 @@ class TeacherAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Basic Information', {
             'fields': (
-                'name', 'father_name'
+                'name', 'father_name', 'shift'
             )
         }),
-        ('Academic Assignment', {
+        ('Campus Assignment', {
             'fields': (
-                'assigned_class', 'campus'
+                'campus',
             )
         }),
         ('Contact Information', {
             'fields': (
-                'email',
+                'email', 'password'
             )
         }),
         ('System Information', {
@@ -52,3 +52,4 @@ class TeacherAdmin(admin.ModelAdmin):
         count = queryset.update(is_active=False)
         self.message_user(request, f'{count} teachers deactivated successfully.')
     deactivate_teachers.short_description = "Deactivate selected teachers"
+    

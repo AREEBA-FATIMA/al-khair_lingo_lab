@@ -61,13 +61,16 @@ def progress_overview(request):
         longest_streak = max(longest_streak, streak)
     average_score = user_progress.aggregate(avg=Avg('completion_percentage'))['avg'] or 0
     time_spent_minutes = user_progress.aggregate(total=Sum('time_spent'))['total'] or 0
-    total_groups_completed = 0  # TODO: Implement group completion tracking
+    
+    # Calculate group completion
+    from groups.models import GroupProgress
+    total_groups_completed = GroupProgress.objects.filter(user=user, is_completed=True).count()
     
     # Calculate overall completion percentage
     total_possible_xp = total_levels * 10  # Assuming 10 XP per level
     completion_percentage = (total_xp / total_possible_xp * 100) if total_possible_xp > 0 else 0
     
-    # Determine plant stage
+    # Determine plant stage based on completion percentage
     plant_stage = "Seed"
     if completion_percentage >= 80:
         plant_stage = "Fruit Tree"
@@ -78,8 +81,19 @@ def progress_overview(request):
     elif completion_percentage >= 20:
         plant_stage = "Sprout"
     
-    # Default current level
-    current_level = user_progress.order_by('-level__level_number').first().level.level_number + 1 if completed_levels > 0 else 1
+    # Get current level (next level to complete)
+    last_completed = user_progress.filter(is_completed=True).order_by('-level__level_number').first()
+    if last_completed:
+        current_level = last_completed.level.level_number + 1
+    else:
+        current_level = 1
+    
+    # Calculate hearts (lives) - starts with 5, loses 1 for each failed level
+    failed_levels = user_progress.filter(is_completed=False).count()
+    hearts = max(0, 5 - failed_levels)
+    
+    # Daily goal (default 50 XP, can be customized)
+    daily_goal = 50
     
     overview = {
         'total_xp': total_xp,

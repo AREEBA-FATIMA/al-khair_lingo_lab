@@ -268,15 +268,81 @@ class Question(models.Model):
         return type_names.get(self.question_type, self.question_type)
     
     def validate_answer(self, user_answer):
-        """Validate user's answer"""
-        if not self.correct_answer:
+        """Validate user's answer based on question type"""
+        if not self.correct_answer or not user_answer:
             return False
         
-        # Handle different answer types
-        if isinstance(self.correct_answer, list):
-            return user_answer.lower().strip() in [ans.lower().strip() for ans in self.correct_answer]
+        user_answer = str(user_answer).strip()
+        correct_answer = self.correct_answer
+        
+        # Handle different question types
+        if self.question_type == 'mcq':
+            # Multiple choice - exact match
+            return user_answer.lower() == str(correct_answer).lower()
+        
+        elif self.question_type == 'fill_blank':
+            # Fill in the blank - case insensitive, handle multiple correct answers
+            if isinstance(correct_answer, list):
+                return user_answer.lower() in [ans.lower().strip() for ans in correct_answer]
+            else:
+                return user_answer.lower() == str(correct_answer).lower()
+        
+        elif self.question_type == 'synonyms':
+            # Synonyms - check if user answer is in synonyms list
+            if isinstance(correct_answer, list):
+                return user_answer.lower() in [ans.lower().strip() for ans in correct_answer]
+            else:
+                return user_answer.lower() == str(correct_answer).lower()
+        
+        elif self.question_type == 'antonyms':
+            # Antonyms - check if user answer is in antonyms list
+            if isinstance(correct_answer, list):
+                return user_answer.lower() in [ans.lower().strip() for ans in correct_answer]
+            else:
+                return user_answer.lower() == str(correct_answer).lower()
+        
+        elif self.question_type == 'sentence_completion':
+            # Sentence completion - check word order
+            if isinstance(correct_answer, list):
+                # Compare word by word (case insensitive)
+                user_words = [word.lower().strip() for word in user_answer.split()]
+                correct_words = [word.lower().strip() for word in correct_answer]
+                return user_words == correct_words
+            else:
+                # Compare as strings
+                return user_answer.lower() == str(correct_answer).lower()
+        
+        elif self.question_type == 'text_to_speech':
+            # Text to speech - for now, accept any non-empty answer
+            # In future, integrate with speech recognition
+            return len(user_answer) > 0
+        
+        elif self.question_type == 'listening':
+            # Listening comprehension - similar to MCQ
+            return user_answer.lower() == str(correct_answer).lower()
+        
+        elif self.question_type == 'reading':
+            # Reading comprehension - similar to MCQ
+            return user_answer.lower() == str(correct_answer).lower()
+        
+        elif self.question_type == 'writing':
+            # Writing exercise - for now, accept any non-empty answer
+            # In future, implement more sophisticated checking
+            return len(user_answer) > 10  # Minimum length requirement
+        
+        elif self.question_type == 'grammar':
+            # Grammar exercise - similar to fill in blank
+            if isinstance(correct_answer, list):
+                return user_answer.lower() in [ans.lower().strip() for ans in correct_answer]
+            else:
+                return user_answer.lower() == str(correct_answer).lower()
+        
         else:
-            return user_answer.lower().strip() == str(self.correct_answer).lower().strip()
+            # Default validation - case insensitive string comparison
+            if isinstance(correct_answer, list):
+                return user_answer.lower() in [ans.lower().strip() for ans in correct_answer]
+            else:
+                return user_answer.lower() == str(correct_answer).lower()
 
 
 class LevelCompletion(models.Model):

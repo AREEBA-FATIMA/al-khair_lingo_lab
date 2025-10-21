@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 
 class Student(models.Model):
@@ -9,36 +11,34 @@ class Student(models.Model):
     father_name = models.CharField(max_length=200, default="Unknown", help_text="Father's name")
     
     # --- Academic Details ---
+    # Static shift choices for code generation only
+    SHIFT_CHOICES = [
+        ('morning', 'Morning'),
+        ('afternoon', 'Afternoon'),
+    ]
+    
+    # Static grade choices
     GRADE_CHOICES = [
-        ('nursery', 'Nursery'),
-        ('kg1', 'KG-1'),
-        ('kg2', 'KG-2'),
-        ('1', 'Grade 1'),
-        ('2', 'Grade 2'),
-        ('3', 'Grade 3'),
-        ('4', 'Grade 4'),
-        ('5', 'Grade 5'),
-        ('6', 'Grade 6'),
-        ('7', 'Grade 7'),
-        ('8', 'Grade 8'),
-        ('9', 'Grade 9'),
-        ('10', 'Grade 10'),
-        ('11', 'Grade 11'),
-        ('12', 'Grade 12'),
+        ('Nursery', 'Nursery'),
+        ('KG-I', 'KG-I'),
+        ('KG-II', 'KG-II'),
+        ('Grade 1', 'Grade 1'),
+        ('Grade 2', 'Grade 2'),
+        ('Grade 3', 'Grade 3'),
+        ('Grade 4', 'Grade 4'),
+        ('Grade 5', 'Grade 5'),
+        ('Grade 6', 'Grade 6'),
+        ('Grade 7', 'Grade 7'),
+        ('Grade 8', 'Grade 8'),
+        ('Grade 9', 'Grade 9'),
+        ('Grade 10', 'Grade 10'),
     ]
     
-    SECTION_CHOICES = [
-        ('A', 'A'),
-        ('B', 'B'),
-        ('C', 'C'),
-        ('D', 'D'),
-        ('E', 'E'),
-    ]
+    # Static choices - no dynamic fields
+    grade = models.CharField(max_length=50, choices=GRADE_CHOICES, help_text="Student's grade")
+    shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='morning', help_text="Student's shift (Morning/Afternoon)")
     
-    grade = models.CharField(max_length=10, choices=GRADE_CHOICES, default='1', help_text="Student's grade")
-    section = models.CharField(max_length=1, choices=SECTION_CHOICES, default='A', help_text="Student's section")
-    
-    # --- Campus and Class Teacher ---
+    # --- Campus and Class Assignment ---
     campus = models.ForeignKey(
         'campus.Campus',
         on_delete=models.CASCADE,
@@ -52,7 +52,7 @@ class Student(models.Model):
         null=True,
         blank=True,
         related_name='assigned_students',
-        help_text="Class teacher (auto-assigned based on grade and section)"
+        help_text="Class teacher (auto-assigned from campus and grade)"
     )
     
     # --- Authentication ---
@@ -80,31 +80,28 @@ class Student(models.Model):
         if not self.student_id or self.student_id == "TEMP-ID":
             try:
                 # Get campus code (C01, C02, etc.)
-                campus_code = f"C{self.campus.id:02d}" if self.campus else "C01"
+                campus_code = self.campus.campus_code if self.campus else "C01"
                 
-                # Default to morning shift
-                shift_code = "M"
+                # Get shift code
+                shift_code = self.shift[0].upper() if self.shift else 'M'  # M for morning, A for afternoon
                 
-                # Get grade code
-                grade_code = self.grade.replace('grade', '').replace('kg', 'KG').upper()
-                if grade_code == 'NURSERY':
+                # Get grade code from static grade field
+                grade_code = self.grade.replace('Grade', '').replace('grade', '').strip()
+                if grade_code.lower() == 'nursery':
                     grade_code = 'NUR'
-                elif grade_code == 'KG-1':
-                    grade_code = 'KG1'
-                elif grade_code == 'KG-2':
-                    grade_code = 'KG2'
+                elif 'kg' in grade_code.lower():
+                    grade_code = grade_code.upper()
                 elif grade_code.isdigit():
                     grade_code = f"G{grade_code.zfill(2)}"
-                
-                # Get section code
-                section_code = self.section
+                else:
+                    grade_code = f"G{grade_code.zfill(2)}"
                 
                 # Get next serial number for this combination
                 from django.db.models import Max
                 last_student = Student.objects.filter(
                     campus=self.campus,
                     grade=self.grade,
-                    section=self.section
+                    shift=self.shift
                 ).exclude(student_id__isnull=True).aggregate(
                     max_id=Max('student_id')
                 )['max_id']
@@ -119,8 +116,8 @@ class Student(models.Model):
                 
                 next_serial = last_serial + 1
                 
-                # Generate student ID: C01-M-G01-A-0001
-                self.student_id = f"{campus_code}-{shift_code}-{grade_code}-{section_code}-{next_serial:04d}"
+                # Generate student ID: C01-M-G01-0001 (no section)
+                self.student_id = f"{campus_code}-{shift_code}-{grade_code}-{next_serial:04d}"
                 
             except Exception as e:
                 print(f"Error generating student ID: {str(e)}")
@@ -130,23 +127,35 @@ class Student(models.Model):
         # Save the student first
         super().save(*args, **kwargs)
         
+        # Auto-assign English teacher based on campus and grade
+        self._assign_english_teacher()
+        
         # Create or update User account for student
         self._create_or_update_user_account()
-        
-        # Auto-assign class teacher based on grade and section
-        if not self.class_teacher and self.campus:
-            try:
-                from classes.models import ClassRoom
-                classroom = ClassRoom.objects.filter(
-                    grade__name__icontains=self.grade,
-                    section=self.section,
-                    grade__campus=self.campus
-                ).first()
+    
+    def _assign_english_teacher(self):
+        """Auto-assign English teacher based on campus and grade"""
+        try:
+            from classes.models import Grade
+            
+            # Find matching grade in the same campus
+            grade_obj = Grade.objects.filter(
+                campus=self.campus,
+                name=self.grade,
+                shift=self.shift
+            ).first()
+            
+            if grade_obj and grade_obj.english_teacher:
+                # Assign the English teacher from the grade
+                self.class_teacher = grade_obj.english_teacher
+                self.save(update_fields=['class_teacher'])
+                print(f"Assigned English teacher {grade_obj.english_teacher.name} to student {self.student_id}")
+            else:
+                print(f"No English teacher assigned to {self.grade} in {self.campus.campus_name} ({self.shift})")
+                print(f"Please assign an English teacher to this grade first.")
                 
-                if classroom and classroom.class_teacher:
-                    self.class_teacher = classroom.class_teacher
-            except Exception as e:
-                print(f"Error auto-assigning class teacher: {str(e)}")
+        except Exception as e:
+            print(f"Error assigning English teacher: {str(e)}")
     
     def _create_or_update_user_account(self):
         """Create or update User account for student"""
@@ -156,17 +165,19 @@ class Student(models.Model):
             # Create username from student_id
             username = f"student_{self.student_id}"
             
-            # Create or update user
+            # Create or update user with flag to prevent signal loop
+            user_data = {
+                'username': username,
+                'first_name': self.name.split()[0] if self.name else '',
+                'last_name': ' '.join(self.name.split()[1:]) if len(self.name.split()) > 1 else '',
+                'role': 'student',
+                'is_active': self.is_active,
+                'is_verified': True,  # Students are auto-verified
+            }
+            
             user, created = User.objects.get_or_create(
                 student_id=self.student_id,
-                defaults={
-                    'username': username,
-                    'first_name': self.name.split()[0] if self.name else '',
-                    'last_name': ' '.join(self.name.split()[1:]) if len(self.name.split()) > 1 else '',
-                    'role': 'student',
-                    'is_active': self.is_active,
-                    'is_verified': True,  # Students are auto-verified
-                }
+                defaults=user_data
             )
             
             if not created:
@@ -186,4 +197,18 @@ class Student(models.Model):
         verbose_name = "Student"
         verbose_name_plural = "Students"
         ordering = ['-created_at']
-        unique_together = ['campus', 'grade', 'section', 'student_id']
+        unique_together = ['campus', 'grade', 'shift', 'student_id']
+
+
+# Signal to delete User account when Student is deleted
+@receiver(post_delete, sender=Student)
+def delete_student_user_account(sender, instance, **kwargs):
+    """Delete User account when Student is deleted"""
+    try:
+        from users.models import User
+        user = User.objects.filter(student_id=instance.student_id).first()
+        if user:
+            user.delete()
+            print(f"User account deleted for student {instance.student_id}")
+    except Exception as e:
+        print(f"Error deleting user account for student {instance.student_id}: {str(e)}")

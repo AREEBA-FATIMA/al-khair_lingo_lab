@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from campus.models import Campus
-from classes.models import Grade, ClassRoom
+from classes.models import Grade
 from teachers.models import Teacher
 from students.models import Student
 from progress.models import LevelProgress
@@ -113,7 +113,7 @@ class TeacherAnalytics(models.Model):
     date = models.DateField(auto_now_add=True)
     
     # Class Info
-    assigned_class = models.ForeignKey(ClassRoom, on_delete=models.CASCADE, null=True, blank=True)
+    assigned_grade = models.ForeignKey(Grade, on_delete=models.CASCADE, null=True, blank=True)
     total_students = models.PositiveIntegerField(default=0)
     
     # Performance Metrics
@@ -188,7 +188,7 @@ class ClassAnalytics(models.Model):
     """Class-specific analytics"""
     
     id = models.AutoField(primary_key=True)
-    classroom = models.ForeignKey(ClassRoom, on_delete=models.CASCADE, related_name='analytics')
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='analytics', null=True, blank=True)
     date = models.DateField(auto_now_add=True)
     
     # Class Stats
@@ -217,11 +217,11 @@ class ClassAnalytics(models.Model):
     class Meta:
         verbose_name = "Class Analytics"
         verbose_name_plural = "Class Analytics"
-        unique_together = ['classroom', 'date']
+        unique_together = ['grade', 'date']
         ordering = ['-date']
     
     def __str__(self):
-        return f"{self.classroom} - {self.date}"
+        return f"{self.grade} - {self.date}"
 
 class PerformanceTrend(models.Model):
     """Track performance trends over time"""

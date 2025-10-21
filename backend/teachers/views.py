@@ -8,7 +8,7 @@ from .models import Teacher
 from students.models import Student
 from progress.models import LevelProgress
 from levels.models import Level
-from classes.models import ClassRoom, Grade
+from classes.models import Grade
 from campus.models import Campus
 
 

@@ -5,16 +5,16 @@ from .models import Student
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'father_name', 'grade', 'section', 'campus', 
+        'name', 'father_name', 'grade', 'shift', 'campus', 
         'class_teacher', 'student_id', 'is_active', 'created_at'
     ]
     list_filter = [
-        'is_active', 'grade', 'section', 'campus', 'created_at'
+        'is_active', 'grade', 'shift', 'campus', 'created_at'
     ]
     search_fields = [
         'name', 'father_name', 'student_id'
     ]
-    readonly_fields = ['student_id', 'created_at', 'updated_at']
+    readonly_fields = ['student_id', 'class_teacher', 'created_at', 'updated_at']
     
     fieldsets = (
         ('Basic Information', {
@@ -24,7 +24,7 @@ class StudentAdmin(admin.ModelAdmin):
         }),
         ('Academic Information', {
             'fields': (
-                'grade', 'section', 'campus', 'class_teacher'
+                'grade', 'shift', 'campus', 'class_teacher'
             )
         }),
         ('Authentication', {

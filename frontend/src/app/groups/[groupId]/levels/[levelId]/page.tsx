@@ -184,6 +184,25 @@ export default function QuizGame() {
   const [currentStep, setCurrentStep] = useState<'intro' | 'practice' | 'quiz' | 'result'>('intro')
   const [practiceStep, setPracticeStep] = useState(0)
 
+  // Normalize options coming from API to always be string[]
+  const toArrayOptions = (options: any): string[] => {
+    try {
+      if (Array.isArray(options)) return options.filter(Boolean)
+      if (options && typeof options === 'object') return Object.values(options).map(String)
+      if (typeof options === 'string') {
+        const maybeJson = options.trim()
+        if ((maybeJson.startsWith('[') && maybeJson.endsWith(']')) || (maybeJson.startsWith('{') && maybeJson.endsWith('}'))) {
+          const parsed = JSON.parse(maybeJson)
+          if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String)
+          if (parsed && typeof parsed === 'object') return Object.values(parsed).map(String)
+        }
+        // Fallback: split by common delimiters
+        return options.split(/\||,|;|\n/).map(s => s.trim()).filter(Boolean)
+      }
+    } catch (_) {}
+    return ['Option A', 'Option B', 'Option C', 'Option D']
+  }
+
   // Initialize voices for consistent speech
   const initializeVoices = () => {
     return new Promise((resolve) => {
@@ -431,8 +450,9 @@ export default function QuizGame() {
             id: q.id,
             question_text: q.question_text,
             question_type: q.question_type,
-            options: q.options || ['Option A', 'Option B', 'Option C', 'Option D'],
-            correct_answer: q.correct_answer,
+            options: toArrayOptions(q.options),
+            // If backend sends list for correct_answer, use first entry for MCQ display
+            correct_answer: Array.isArray(q.correct_answer) ? String(q.correct_answer[0] ?? '') : String(q.correct_answer ?? ''),
             hint: q.hint,
             explanation: q.explanation,
             difficulty: q.difficulty,
@@ -634,7 +654,7 @@ export default function QuizGame() {
 
     setSelectedOption(choiceIdx)
     const currentQuestion = currentLevelQuestions[questionPointer]
-    const selectedAnswer = currentQuestion.options[choiceIdx]
+    const selectedAnswer = (Array.isArray(currentQuestion.options) ? currentQuestion.options : toArrayOptions(currentQuestion.options))[choiceIdx]
     const correctAnswer = currentQuestion.correct_answer
 
     if (selectedAnswer === correctAnswer) {

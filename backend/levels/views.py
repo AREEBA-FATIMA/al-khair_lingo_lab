@@ -85,11 +85,42 @@ def submit_answer(request):
         question = Question.objects.get(id=question_id, is_active=True)
         is_correct = question.validate_answer(user_answer)
         
+        # Track question progress
+        from progress.models import QuestionProgress
+        question_progress, created = QuestionProgress.objects.get_or_create(
+            user=request.user,
+            question=question,
+            defaults={
+                'is_answered': True,
+                'is_correct': is_correct,
+                'user_answer': user_answer,
+                'xp_earned': question.xp_value if is_correct else 0,
+                'attempts': 1
+            }
+        )
+        
+        if not created:
+            # Update existing progress
+            question_progress.is_answered = True
+            question_progress.is_correct = is_correct
+            question_progress.user_answer = user_answer
+            question_progress.attempts += 1
+            question_progress.xp_earned = question.xp_value if is_correct else 0
+            question_progress.save()
+        
+        # Update user's total XP if answer is correct
+        if is_correct:
+            user = request.user
+            user.total_xp += question.xp_value
+            user.save()
+        
         return Response({
             'is_correct': is_correct,
             'correct_answer': question.correct_answer,
             'explanation': question.explanation,
-            'xp_earned': question.xp_value if is_correct else 0
+            'xp_earned': question.xp_value if is_correct else 0,
+            'attempts': question_progress.attempts,
+            'hint': question.hint if not is_correct else None
         })
     except Question.DoesNotExist:
         return Response(
@@ -112,10 +143,102 @@ def complete_level(request):
         user.total_xp += completion.xp_earned
         user.save()
         
-        return Response(
-            LevelCompletionSerializer(completion).data,
-            status=status.HTTP_201_CREATED
+        # Update LevelProgress for this user and level
+        from progress.models import LevelProgress
+        level_progress, created = LevelProgress.objects.get_or_create(
+            user=user,
+            level=completion.level,
+            defaults={
+                'is_completed': completion.passed,
+                'completion_percentage': completion.percentage,
+                'questions_answered': completion.total_questions,
+                'correct_answers': completion.correct_answers,
+                'xp_earned': completion.xp_earned,
+                'time_spent': completion.time_taken_seconds,
+                'completed_at': completion.completed_at,
+                'daily_level_completed': completion.passed
+            }
         )
+        
+        if not created:
+            # Update existing progress
+            level_progress.is_completed = completion.passed
+            level_progress.completion_percentage = completion.percentage
+            level_progress.questions_answered = completion.total_questions
+            level_progress.correct_answers = completion.correct_answers
+            level_progress.xp_earned = completion.xp_earned
+            level_progress.time_spent = completion.time_taken_seconds
+            level_progress.completed_at = completion.completed_at
+            level_progress.daily_level_completed = completion.passed
+            level_progress.save()
+        
+        # Update group progress
+        from groups.models import GroupProgress
+        group = completion.level.group
+        group_progress, created = GroupProgress.objects.get_or_create(
+            user=user,
+            group=group
+        )
+        
+        if completion.passed:
+            group_progress.levels_completed += 1
+            group_progress.total_xp_earned += completion.xp_earned
+            group_progress.time_spent_minutes += completion.time_taken_seconds // 60
+            group_progress.last_accessed_at = timezone.now()
+            
+            # Calculate group completion percentage
+            total_levels_in_group = group.levels.count()
+            if total_levels_in_group > 0:
+                group_progress.completion_percentage = (group_progress.levels_completed / total_levels_in_group) * 100
+                
+                # Check if group is completed (80% or more)
+                if group_progress.completion_percentage >= 80 and not group_progress.is_completed:
+                    group_progress.complete_group()
+                    
+                    # Unlock next group
+                    next_group = group.get_next_group()
+                    if next_group:
+                        next_group_progress, _ = GroupProgress.objects.get_or_create(
+                            user=user,
+                            group=next_group
+                        )
+                        next_group_progress.unlock_group()
+            
+            group_progress.save()
+        
+        # Update daily progress
+        from progress.models import DailyProgress
+        today = timezone.now().date()
+        daily_progress, created = DailyProgress.objects.get_or_create(
+            user=user,
+            date=today,
+            defaults={
+                'levels_completed': 1 if completion.passed else 0,
+                'questions_answered': completion.total_questions,
+                'correct_answers': completion.correct_answers,
+                'xp_earned': completion.xp_earned,
+                'time_spent': completion.time_taken_seconds // 60,
+                'streak_maintained': True
+            }
+        )
+        
+        if not created and completion.passed:
+            daily_progress.levels_completed += 1
+            daily_progress.questions_answered += completion.total_questions
+            daily_progress.correct_answers += completion.correct_answers
+            daily_progress.xp_earned += completion.xp_earned
+            daily_progress.time_spent += completion.time_taken_seconds // 60
+            daily_progress.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Level completed successfully',
+            'completion': LevelCompletionSerializer(completion).data,
+            'xp_earned': completion.xp_earned,
+            'passed': completion.passed,
+            'group_completed': group_progress.is_completed if completion.passed else False,
+            'next_group_unlocked': next_group is not None if completion.passed and group_progress.is_completed else False
+        }, status=status.HTTP_201_CREATED)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

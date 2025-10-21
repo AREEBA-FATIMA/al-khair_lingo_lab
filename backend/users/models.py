@@ -20,7 +20,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         
         # Display user info after creation
-        print(f"\n✅ User created successfully!")
+        print(f"\nUser created successfully!")
         print(f"   Username: {user.username}")
         print(f"   Role: {user.get_role_display()}")
         if user.email:
@@ -203,11 +203,12 @@ class LoginLog(models.Model):
         return f"{self.user.get_display_name()} - {self.login_method} - {status}"
 
 
+# DISABLED: This signal causes infinite loop with Student/Teacher models
+# Student and Teacher models now handle User creation themselves
+"""
 @receiver(post_save, sender=User)
 def create_student_or_teacher_profile(sender, instance, created, **kwargs):
-    """
-    Automatically create Student or Teacher profile when User is created
-    """
+    # Automatically create Student or Teacher profile when User is created
     if created:  # Only when user is first created
         if instance.role == 'student':
             # Create Student profile
@@ -257,10 +258,10 @@ def create_student_or_teacher_profile(sender, instance, created, **kwargs):
                 instance.student_id = student_id
                 instance.save()
                 
-                print(f"✅ Student profile created: {student_id}")
+                print(f"Student profile created: {student_id}")
                 
             except Exception as e:
-                print(f"❌ Error creating student profile: {str(e)}")
+                print(f"Error creating student profile: {str(e)}")
         
         elif instance.role == 'teacher':
             # Create Teacher profile
@@ -304,7 +305,8 @@ def create_student_or_teacher_profile(sender, instance, created, **kwargs):
                     is_active=instance.is_active
                 )
                 
-                print(f"✅ Teacher profile created: {teacher_id}")
+                print(f"Teacher profile created: {teacher_id}")
                 
             except Exception as e:
-                print(f"❌ Error creating teacher profile: {str(e)}")
+                print(f"Error creating teacher profile: {str(e)}")
+"""

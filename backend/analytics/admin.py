@@ -30,8 +30,8 @@ class StudentAnalyticsAdmin(admin.ModelAdmin):
 
 @admin.register(ClassAnalytics)
 class ClassAnalyticsAdmin(admin.ModelAdmin):
-    list_display = ['classroom', 'date', 'total_students', 'average_completion_rate', 'active_students_today']
-    list_filter = ['classroom', 'date']
+    list_display = ['grade', 'date', 'total_students', 'average_completion_rate', 'active_students_today']
+    list_filter = ['grade', 'date']
     readonly_fields = ['created_at', 'updated_at']
 
 @admin.register(PerformanceTrend)

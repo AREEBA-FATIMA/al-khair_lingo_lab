@@ -30,7 +30,13 @@ urlpatterns = [
     path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
-    # API URLs
+    # Unified Learning API (Primary)
+    path('api/learning/', include('learning_api')),
+    
+    # Analytics and Reporting API
+    # path('api/analytics/', include('analytics_api.urls')),
+    
+    # Individual App APIs (Legacy/Admin)
     path('api/users/', include('users.urls')),
     path('api/groups/', include('groups.urls')),    # Groups and levels
     path('api/levels/', include('levels.urls')),    # Level management

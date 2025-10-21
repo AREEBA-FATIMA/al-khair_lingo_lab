@@ -13,7 +13,7 @@ from .models import (
 from campus.models import Campus
 from teachers.models import Teacher
 from students.models import Student
-from classes.models import ClassRoom
+from classes.models import Grade
 from progress.models import LevelProgress
 from users.models import User
 
@@ -27,8 +27,7 @@ def overall_analytics(request):
             date=timezone.now().date(),
             defaults={
                 'total_campuses': Campus.objects.count(),
-                'total_grades': 10,  # Fixed for our system
-                'total_classes': ClassRoom.objects.count(),
+                'total_grades': Grade.objects.count(),
                 'total_users': User.objects.count(),
                 'total_teachers': User.objects.filter(role='teacher').count(),
                 'total_students': User.objects.filter(role='student').count(),
@@ -115,7 +114,7 @@ def campus_analytics(request):
                 defaults={
                     'total_teachers': Teacher.objects.filter(campus=campus).count(),
                     'total_students': Student.objects.filter(campus=campus).count(),
-                    'total_classes': ClassRoom.objects.filter(grade__campus=campus).count(),
+                    'total_grades': Grade.objects.filter(campus=campus).count(),
                     'active_students_today': Student.objects.filter(
                         campus=campus
                     ).count(),  # Simplified - just count all students
@@ -195,12 +194,12 @@ def teacher_analytics(request):
 def class_analytics(request):
     """Get class-specific analytics"""
     try:
-        classes = ClassRoom.objects.all()
+        grades = Grade.objects.all()
         class_data = []
         
-        for classroom in classes:
+        for grade in grades:
             analytics, created = ClassAnalytics.objects.get_or_create(
-                classroom=classroom,
+                grade=grade,
                 date=timezone.now().date(),
                 defaults={
                     'total_students': 0,  # Simplified
@@ -370,7 +369,7 @@ def dashboard_summary(request):
         
         # Top performers (simplified)
         top_student = Student.objects.first()  # Simple approach
-        top_class = ClassRoom.objects.first()   # Simple approach
+        top_grade = Grade.objects.first()   # Simple approach
         
         return Response({
             'success': True,

@@ -1,65 +1,36 @@
 from django.contrib import admin
-from .models import Grade, ClassRoom
+from .models import Grade
 
 
 @admin.register(Grade)
 class GradeAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'code', 'campus'
+        'name', 'code', 'campus', 'shift', 'english_teacher'
     ]
-    list_filter = ['campus']
-    search_fields = ['name', 'code', 'campus__campus_name']
+    list_filter = ['campus', 'shift', 'english_teacher']
+    search_fields = ['name', 'code', 'campus__campus_name', 'english_teacher__name']
     readonly_fields = ['code']
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'code', 'campus')
+            'fields': ('name', 'code', 'campus', 'shift')
+        }),
+        ('Teacher Assignment', {
+            'fields': ('english_teacher',),
+            'description': 'Select English teacher for this grade from dropdown or search by name'
         }),
     )
-
-
-@admin.register(ClassRoom)
-class ClassRoomAdmin(admin.ModelAdmin):
-    list_display = [
-        'grade', 'section', 'shift', 'class_teacher', 'capacity', 
-        'campus_name', 'code'
-    ]
-    list_filter = [
-        'grade__campus', 'grade', 'shift'
-    ]
-    search_fields = [
-        'grade__name', 'section', 'class_teacher__name', 
-        'code', 'grade__campus__campus_name'
-    ]
-    readonly_fields = ['code']
-    
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('grade', 'section', 'shift', 'capacity')
-        }),
-        ('Class Teacher Assignment', {
-            'fields': ('class_teacher',)
-        }),
-        ('System Information', {
-            'fields': ('code',),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def campus_name(self, obj):
-        return obj.campus.campus_name if obj.campus else "N/A"
-    campus_name.short_description = "Campus"
     
     actions = ['assign_teacher', 'unassign_teacher']
     
     def assign_teacher(self, request, queryset):
-        """Assign teacher to selected classrooms"""
+        """Assign teacher to selected grades"""
         # This would need a custom form to select teacher
-        self.message_user(request, 'Use individual classroom edit to assign teachers.')
-    assign_teacher.short_description = "Assign teacher to selected classrooms"
+        self.message_user(request, 'Use individual grade edit to assign teachers.')
+    assign_teacher.short_description = "Assign teacher to selected grades"
     
     def unassign_teacher(self, request, queryset):
-        """Unassign teacher from selected classrooms"""
-        count = queryset.update(class_teacher=None)
-        self.message_user(request, f'{count} classrooms unassigned from teachers.')
-    unassign_teacher.short_description = "Unassign teacher from selected classrooms"
+        """Unassign teacher from selected grades"""
+        count = queryset.update(english_teacher=None)
+        self.message_user(request, f'{count} grades unassigned from teachers.')
+    unassign_teacher.short_description = "Unassign teacher from selected grades"

@@ -32,6 +32,17 @@ urlpatterns = [
     path('levels/<int:level_number>/', views.LevelDetailView.as_view(), name='level-detail'),
     path('levels/<int:level_number>/questions/', views.LevelQuestionsView.as_view(), name='level-questions'),
     
+    # Level completion and answer submission
+    path('submit-answer/', views.submit_answer, name='submit-answer'),
+    path('complete-level/', views.complete_level, name='complete-level'),
+    path('next-level/', views.get_next_level, name='next-level'),
+    path('test-levels/', views.get_test_levels, name='test-levels'),
+    
+    # User level completions
+    path('completions/', views.LevelCompletionListView.as_view(), name='level-completion-list'),
+    path('completions/<int:pk>/', views.LevelCompletionDetailView.as_view(), name='level-completion-detail'),
+    path('stats/', views.level_stats, name='level-stats'),
+    
     # Include router URLs
     path('', include(router.urls)),
 ]

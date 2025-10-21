@@ -3,12 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .models import Grade, ClassRoom
-from .serializers import (
-    GradeSerializer, ClassRoomSerializer,
-    ClassRoomListSerializer, ClassRoomDetailSerializer,
-    ClassRoomCreateSerializer, ClassRoomUpdateSerializer
-)
+from .models import Grade
+from .serializers import GradeSerializer
 
 
 class GradeViewSet(viewsets.ModelViewSet):
@@ -26,71 +22,17 @@ class GradeViewSet(viewsets.ModelViewSet):
         if campus:
             queryset = queryset.filter(campus__id=campus)
         
-        return queryset.order_by('name')
-    
-    @action(detail=False, methods=['get'])
-    def by_campus(self, request):
-        """Get grades by campus"""
-        campus_id = request.query_params.get('campus_id', None)
-        if not campus_id:
-            return Response(
-                {'error': 'campus_id parameter is required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        grades = Grade.objects.filter(campus__id=campus_id)
-        serializer = self.get_serializer(grades, many=True)
-        return Response(serializer.data)
-
-
-class ClassRoomViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing classrooms"""
-    queryset = ClassRoom.objects.all()
-    serializer_class = ClassRoomSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_serializer_class(self):
-        """Return appropriate serializer based on action"""
-        if self.action == 'list':
-            return ClassRoomListSerializer
-        elif self.action == 'retrieve':
-            return ClassRoomDetailSerializer
-        elif self.action == 'create':
-            return ClassRoomCreateSerializer
-        elif self.action in ['update', 'partial_update']:
-            return ClassRoomUpdateSerializer
-        return ClassRoomSerializer
-    
-    def get_queryset(self):
-        """Filter classrooms based on query parameters"""
-        queryset = ClassRoom.objects.all()
-        
-        # Filter by grade
-        grade = self.request.query_params.get('grade', None)
-        if grade:
-            queryset = queryset.filter(grade__id=grade)
-        
-        # Filter by campus
-        campus = self.request.query_params.get('campus', None)
-        if campus:
-            queryset = queryset.filter(grade__campus__id=campus)
-        
         # Filter by shift
         shift = self.request.query_params.get('shift', None)
         if shift:
             queryset = queryset.filter(shift=shift)
         
-        # Filter by teacher
-        teacher = self.request.query_params.get('teacher', None)
-        if teacher:
-            queryset = queryset.filter(class_teacher__id=teacher)
-        
-        return queryset.order_by('grade__name', 'section')
+        return queryset.order_by('name')
     
     @action(detail=True, methods=['post'])
     def assign_teacher(self, request, pk=None):
-        """Assign teacher to classroom"""
-        classroom = self.get_object()
+        """Assign English teacher to grade"""
+        grade = self.get_object()
         teacher_id = request.data.get('teacher_id')
         
         if not teacher_id:
@@ -102,99 +44,70 @@ class ClassRoomViewSet(viewsets.ModelViewSet):
         try:
             from teachers.models import Teacher
             teacher = Teacher.objects.get(id=teacher_id)
-            classroom.class_teacher = teacher
-            classroom.save()
+            
+            # Check if teacher is already assigned to another grade
+            existing_grade = Grade.objects.filter(
+                english_teacher=teacher
+            ).exclude(pk=grade.pk).first()
+            
+            if existing_grade:
+                return Response(
+                    {'error': f'Teacher is already assigned to {existing_grade}'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            grade.english_teacher = teacher
+            grade.save()
             
             return Response({
-                'message': f'Teacher {teacher.name} assigned to {classroom}'
+                'message': f'Teacher {teacher.name} assigned to {grade}',
+                'grade': GradeSerializer(grade).data
             })
+            
         except Teacher.DoesNotExist:
             return Response(
                 {'error': 'Teacher not found'}, 
                 status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
     @action(detail=True, methods=['post'])
     def unassign_teacher(self, request, pk=None):
-        """Unassign teacher from classroom"""
-        classroom = self.get_object()
-        classroom.class_teacher = None
-        classroom.save()
+        """Unassign teacher from grade"""
+        grade = self.get_object()
+        
+        if not grade.english_teacher:
+            return Response(
+                {'error': 'No teacher assigned to this grade'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        teacher_name = grade.english_teacher.name
+        grade.english_teacher = None
+        grade.save()
         
         return Response({
-            'message': f'Teacher unassigned from {classroom}'
+            'message': f'Teacher {teacher_name} unassigned from {grade}',
+            'grade': GradeSerializer(grade).data
         })
     
-    @action(detail=True, methods=['get'])
-    def students(self, request, pk=None):
-        """Get students in this classroom"""
-        classroom = self.get_object()
-        
-        try:
-            from students.models import Student
-            students = Student.objects.filter(assigned_class=classroom)
-            
-            from students.serializers import StudentListSerializer
-            serializer = StudentListSerializer(students, many=True)
-            return Response(serializer.data)
-        except ImportError:
-            return Response(
-                {'error': 'Students app not available'}, 
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-    
     @action(detail=False, methods=['get'])
-    def by_teacher(self, request):
-        """Get classrooms by teacher"""
-        teacher_id = request.query_params.get('teacher_id', None)
-        if not teacher_id:
-            return Response(
-                {'error': 'teacher_id parameter is required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    def available_teachers(self, request):
+        """Get teachers available for assignment"""
+        from teachers.models import Teacher
         
-        classrooms = ClassRoom.objects.filter(class_teacher__id=teacher_id)
-        serializer = self.get_serializer(classrooms, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def by_campus(self, request):
-        """Get classrooms by campus"""
-        campus_id = request.query_params.get('campus_id', None)
-        if not campus_id:
-            return Response(
-                {'error': 'campus_id parameter is required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Get teachers not assigned to any grade
+        assigned_teacher_ids = Grade.objects.filter(
+            english_teacher__isnull=False
+        ).values_list('english_teacher_id', flat=True)
         
-        classrooms = ClassRoom.objects.filter(grade__campus__id=campus_id)
-        serializer = self.get_serializer(classrooms, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def available_for_teacher(self, request):
-        """Get classrooms available for teacher assignment"""
-        teacher_id = request.query_params.get('teacher_id', None)
-        if not teacher_id:
-            return Response(
-                {'error': 'teacher_id parameter is required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        available_teachers = Teacher.objects.exclude(
+            id__in=assigned_teacher_ids
+        ).filter(is_active=True)
         
-        try:
-            from teachers.models import Teacher
-            teacher = Teacher.objects.get(id=teacher_id)
-            
-            # Get classrooms in same campus as teacher
-            classrooms = ClassRoom.objects.filter(
-                grade__campus=teacher.campus,
-                class_teacher__isnull=True
-            )
-            
-            serializer = self.get_serializer(classrooms, many=True)
-            return Response(serializer.data)
-        except Teacher.DoesNotExist:
-            return Response(
-                {'error': 'Teacher not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+        from teachers.serializers import TeacherListSerializer
+        return Response(TeacherListSerializer(available_teachers, many=True).data)

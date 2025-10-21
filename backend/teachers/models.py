@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 
 class Teacher(models.Model):
@@ -6,15 +8,17 @@ class Teacher(models.Model):
     name = models.CharField(max_length=200, default="Unknown Teacher", help_text="Teacher's full name")
     father_name = models.CharField(max_length=200, default="Unknown", help_text="Father's name")
     
+    # --- Shift Information ---
+    SHIFT_CHOICES = [
+        ('M', 'Morning'),
+        ('A', 'Afternoon'),
+    ]
+    
+    shift = models.CharField(max_length=1, choices=SHIFT_CHOICES, default='M', help_text="Teacher's shift (Morning/Afternoon)")
+    
     # --- Academic Assignment ---
-    assigned_class = models.ForeignKey(
-        'classes.ClassRoom',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='assigned_teacher',
-        help_text="Class assigned as class teacher"
-    )
+    # Teachers are not assigned to specific classes
+    # They are just added with basic info and can be assigned to grades later
     
     # --- Campus ---
     campus = models.ForeignKey(
@@ -26,6 +30,9 @@ class Teacher(models.Model):
     
     # --- Contact ---
     email = models.EmailField(unique=True, help_text="Teacher's email address")
+    
+    # --- Authentication ---
+    password = models.CharField(max_length=128, default="password123", help_text="Teacher's password")
     
     # --- Auto-generated ID ---
     teacher_id = models.CharField(
@@ -48,17 +55,18 @@ class Teacher(models.Model):
                 # Get campus code (C01, C02, etc.)
                 campus_code = f"C{self.campus.id:02d}" if self.campus else "C01"
                 
-                # Default to morning shift
-                shift_code = "M"
+                # Get shift code
+                shift_code = self.shift
                 
                 # Get current year
                 from datetime import datetime
                 year = str(datetime.now().year)[-2:]
                 
-                # Get next teacher number for this campus
+                # Get next teacher number for this campus and shift
                 from django.db.models import Max
                 last_teacher = Teacher.objects.filter(
-                    campus=self.campus
+                    campus=self.campus,
+                    shift=self.shift
                 ).exclude(teacher_id__isnull=True).aggregate(
                     max_id=Max('teacher_id')
                 )['max_id']
@@ -73,8 +81,8 @@ class Teacher(models.Model):
                 
                 next_number = last_number + 1
                 
-                # Generate teacher ID: C01-T-001
-                self.teacher_id = f"{campus_code}-T-{next_number:03d}"
+                # Generate teacher ID: C01-M-T-001
+                self.teacher_id = f"{campus_code}-{shift_code}-T-{next_number:03d}"
                 
             except Exception as e:
                 print(f"Error generating teacher ID: {str(e)}")
@@ -127,3 +135,17 @@ class Teacher(models.Model):
         verbose_name = "Teacher"
         verbose_name_plural = "Teachers"
         ordering = ['-created_at']
+
+
+# Signal to delete User account when Teacher is deleted
+@receiver(post_delete, sender=Teacher)
+def delete_teacher_user_account(sender, instance, **kwargs):
+    """Delete User account when Teacher is deleted"""
+    try:
+        from users.models import User
+        user = User.objects.filter(email=instance.email).first()
+        if user:
+            user.delete()
+            print(f"User account deleted for teacher {instance.email}")
+    except Exception as e:
+        print(f"Error deleting user account for teacher {instance.email}: {str(e)}")

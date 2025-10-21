@@ -9,7 +9,7 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = [
-            'id', 'name', 'father_name', 'grade', 'section', 
+            'id', 'name', 'father_name', 'grade', 'section', 'shift',
             'campus', 'campus_name', 'class_teacher', 'class_teacher_name',
             'password', 'student_id', 'is_active', 'created_at', 'updated_at'
         ]
@@ -39,7 +39,7 @@ class StudentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = [
-            'id', 'name', 'father_name', 'grade', 'section', 
+            'id', 'name', 'father_name', 'grade', 'section', 'shift',
             'campus_name', 'class_teacher_name', 'student_id', 
             'is_active', 'created_at'
         ]
@@ -52,7 +52,7 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = [
-            'name', 'father_name', 'grade', 'section', 'campus', 
+            'name', 'father_name', 'grade', 'section', 'shift', 'campus', 
             'class_teacher', 'password', 'confirm_password'
         ]
         extra_kwargs = {
@@ -78,7 +78,7 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = [
-            'name', 'father_name', 'grade', 'section', 'campus', 
+            'name', 'father_name', 'grade', 'section', 'shift', 'campus', 
             'class_teacher', 'password', 'is_active'
         ]
         extra_kwargs = {

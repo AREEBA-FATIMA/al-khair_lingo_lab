@@ -9,7 +9,7 @@ class TeacherSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = [
-            'id', 'name', 'father_name', 'assigned_class', 'assigned_class_name',
+            'id', 'name', 'father_name', 'shift', 'assigned_class', 'assigned_class_name',
             'campus', 'campus_name', 'email', 'teacher_id', 'is_active', 
             'created_at', 'updated_at'
         ]
@@ -36,7 +36,7 @@ class TeacherListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = [
-            'id', 'name', 'father_name', 'assigned_class_name', 
+            'id', 'name', 'father_name', 'shift', 'assigned_class_name', 
             'campus_name', 'email', 'teacher_id', 'is_active', 'created_at'
         ]
 
@@ -46,7 +46,7 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = [
-            'name', 'father_name', 'assigned_class', 'campus', 'email'
+            'name', 'father_name', 'shift', 'assigned_class', 'campus', 'email'
         ]
     
     def validate_email(self, value):
@@ -61,7 +61,7 @@ class TeacherUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = [
-            'name', 'father_name', 'assigned_class', 'campus', 'email', 'is_active'
+            'name', 'father_name', 'shift', 'assigned_class', 'campus', 'email', 'is_active'
         ]
     
     def validate_email(self, value):
