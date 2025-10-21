@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { BookOpen, Trophy, Leaf, Target, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import PenguinMascot from '@/components/PenguinMascot'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function HomePage() {
@@ -259,19 +260,29 @@ export default function HomePage() {
             </p>
               <div className="flex flex-col gap-3 justify-center items-center lg:items-start">
                 {isLoggedIn ? (
-                  <Link 
-                    href="/groups" 
-                    className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white text-sm sm:text-base px-6 sm:px-8 py-4 sm:py-5 rounded-full font-bold transition-all duration-300 hover:shadow-2xl hover:scale-110 hover:from-[#02033a] hover:to-[#0099cc] transform w-[70%] text-center shadow-xl"
-                    style={{
-                      boxShadow: '0 12px 24px rgba(3, 4, 94, 0.4), 0 6px 12px rgba(0, 191, 230, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-                    }}
-                  >
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      🚀 START LEARNING
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-                  </Link>
+                  <>
+                    <div className="mb-4 text-center lg:text-left">
+                      <p className="text-lg text-gray-700 mb-2">
+                        Welcome back, <span className="font-bold text-[#03045e]">{user?.first_name}!</span> 👋
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Ready to continue your English learning journey?
+                      </p>
+                    </div>
+                    <Link 
+                      href={user?.role === 'teacher' ? '/teachers/dashboard' : '/groups'} 
+                      className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white text-sm sm:text-base px-6 sm:px-8 py-4 sm:py-5 rounded-full font-bold transition-all duration-300 hover:shadow-2xl hover:scale-110 hover:from-[#02033a] hover:to-[#0099cc] transform w-[70%] text-center shadow-xl"
+                      style={{
+                        boxShadow: '0 12px 24px rgba(3, 4, 94, 0.4), 0 6px 12px rgba(0, 191, 230, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                      }}
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        🚀 {user?.role === 'teacher' ? 'GO TO DASHBOARD' : 'CONTINUE LEARNING'}
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link 
@@ -422,10 +433,10 @@ export default function HomePage() {
           </p>
           {isLoggedIn ? (
             <Link 
-              href="/groups" 
+              href={user?.role === 'teacher' ? '/teachers/dashboard' : '/groups'} 
               className="group relative inline-block bg-white text-[#03045e] font-semibold py-4 px-8 rounded-lg text-lg hover:bg-gray-50 transition-all duration-300 hover:shadow-2xl hover:scale-105 transform"
             >
-              <span className="relative z-10">Start Learning Now</span>
+              <span className="relative z-10">{user?.role === 'teacher' ? 'Go to Dashboard' : 'Continue Learning'}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-lg opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
             </Link>
           ) : (
@@ -452,6 +463,9 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Penguin Mascot */}
+      <PenguinMascot />
     </div>
   )
 }

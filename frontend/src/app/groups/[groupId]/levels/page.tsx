@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import PenguinMascot from '@/components/PenguinMascot'
 import Navigation from '@/components/Navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import ProgressManager from '@/utils/progressManager'
@@ -419,6 +420,9 @@ export default function LevelsPage() {
           </motion.div>
         )}
       </div>
+
+      {/* Penguin Mascot */}
+      <PenguinMascot />
     </div>
   )
 }

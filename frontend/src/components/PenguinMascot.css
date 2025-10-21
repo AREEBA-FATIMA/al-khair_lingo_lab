@@ -1,0 +1,441 @@
+/* Penguin Mascot Styles */
+.penguin-mascot {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 120px;
+  height: 140px;
+  perspective: 1000px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Speech Bubble */
+.speech-bubble {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 1001;
+}
+
+.speech-bubble.show {
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+}
+
+.bubble-content {
+  background: white;
+  color: #1e3a8a;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-family: 'Arial', sans-serif;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  border: 2px solid #1e3a8a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+
+.bubble-tail {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #1e3a8a;
+}
+
+.bubble-tail::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid white;
+}
+
+/* Penguin Container */
+.penguin-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: idleBounce 3s ease-in-out infinite;
+}
+
+.penguin-container.hovered {
+  animation: hoverWave 0.6s ease-in-out;
+}
+
+/* Penguin Body */
+.penguin-body {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+/* Penguin Head */
+.penguin-head {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 60px;
+  background: #1e3a8a;
+  border-radius: 50px 50px 40px 40px;
+  box-shadow: 
+    inset -5px -5px 10px rgba(0, 0, 0, 0.2),
+    inset 5px 5px 10px rgba(255, 255, 255, 0.1),
+    0 8px 16px rgba(0, 0, 0, 0.2);
+  transform-style: preserve-3d;
+}
+
+/* Eyes */
+.penguin-eyes {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.eye {
+  width: 12px;
+  height: 12px;
+  background: black;
+  border-radius: 50%;
+  position: relative;
+  animation: blink 4s infinite;
+}
+
+.eye::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+}
+
+/* Beak */
+.penguin-beak {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid #f97316;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Belly */
+.penguin-belly {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 60px;
+  background: white;
+  border-radius: 50px 50px 30px 30px;
+  box-shadow: 
+    inset -3px -3px 6px rgba(0, 0, 0, 0.1),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.8),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+  animation: breathe 2s ease-in-out infinite;
+}
+
+/* Flippers */
+.penguin-flippers {
+  position: absolute;
+  top: 55px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 30px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.flipper {
+  width: 25px;
+  height: 30px;
+  background: #1e3a8a;
+  border-radius: 15px 5px 15px 5px;
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.2),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  transform-origin: center bottom;
+  transition: transform 0.3s ease-in-out;
+}
+
+.left-flipper {
+  animation: leftFlipperIdle 3s ease-in-out infinite;
+}
+
+.right-flipper {
+  animation: rightFlipperIdle 3s ease-in-out infinite;
+}
+
+.penguin-container.hovered .right-flipper {
+  animation: wave 0.6s ease-in-out;
+}
+
+/* Feet */
+.penguin-feet {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.foot {
+  width: 20px;
+  height: 15px;
+  background: #f97316;
+  border-radius: 10px 10px 5px 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: footTap 4s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes idleBounce {
+  0%, 100% {
+    transform: translateY(0px) rotateY(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotateY(2deg);
+  }
+  50% {
+    transform: translateY(-5px) rotateY(0deg);
+  }
+  75% {
+    transform: translateY(-3px) rotateY(-2deg);
+  }
+}
+
+@keyframes hoverWave {
+  0% {
+    transform: translateY(0px) rotateY(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotateY(5deg);
+  }
+  50% {
+    transform: translateY(-5px) rotateY(0deg);
+  }
+  75% {
+    transform: translateY(-8px) rotateY(-5deg);
+  }
+  100% {
+    transform: translateY(0px) rotateY(0deg);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.02);
+  }
+}
+
+@keyframes blink {
+  0%, 90%, 100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes leftFlipperIdle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-5deg);
+  }
+}
+
+@keyframes rightFlipperIdle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes wave {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-20deg);
+  }
+  50% {
+    transform: rotate(-40deg);
+  }
+  75% {
+    transform: rotate(-20deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes footTap {
+  0%, 90%, 100% {
+    transform: translateY(0px);
+  }
+  95% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .penguin-mascot {
+    width: 80px;
+    height: 100px;
+    bottom: 15px;
+    right: 15px;
+  }
+  
+  .penguin-head {
+    width: 60px;
+    height: 45px;
+  }
+  
+  .penguin-belly {
+    width: 50px;
+    height: 45px;
+    top: 35px;
+  }
+  
+  .penguin-flippers {
+    width: 80px;
+    top: 40px;
+  }
+  
+  .flipper {
+    width: 20px;
+    height: 25px;
+  }
+  
+  .penguin-feet {
+    width: 50px;
+  }
+  
+  .foot {
+    width: 15px;
+    height: 12px;
+  }
+  
+  .bubble-content {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .penguin-mascot {
+    width: 60px;
+    height: 80px;
+    bottom: 10px;
+    right: 10px;
+  }
+  
+  .penguin-head {
+    width: 45px;
+    height: 35px;
+  }
+  
+  .penguin-belly {
+    width: 40px;
+    height: 35px;
+    top: 28px;
+  }
+  
+  .penguin-flippers {
+    width: 60px;
+    top: 32px;
+  }
+  
+  .flipper {
+    width: 15px;
+    height: 20px;
+  }
+  
+  .penguin-feet {
+    width: 40px;
+  }
+  
+  .foot {
+    width: 12px;
+    height: 10px;
+  }
+  
+  .bubble-content {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+}
+
+/* High DPI Display Support */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .penguin-head,
+  .penguin-belly,
+  .flipper,
+  .foot {
+    box-shadow: 
+      inset -2px -2px 4px rgba(0, 0, 0, 0.2),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .penguin-container,
+  .penguin-belly,
+  .left-flipper,
+  .right-flipper,
+  .foot,
+  .eye {
+    animation: none;
+  }
+  
+  .penguin-container.hovered {
+    animation: none;
+  }
+}

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Volume2, VolumeX, Trophy, Star } from 'lucide-react'
 import ProgressManager from '@/utils/progressManager'
+import PenguinMascot from '@/components/PenguinMascot'
+// import PenguinMascot from '@/components/PenguinMascot'
 
 // Types
 interface Question {
@@ -918,6 +920,11 @@ export default function QuizGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-900 overflow-auto p-7">
+      {/* Penguin Mascot - Floating helper */}
+      <div className="fixed right-6 bottom-6 z-40">
+        <PenguinMascot className="transform hover:scale-110 transition-transform duration-300" />
+      </div>
+
       {/* Top Bar */}
       <div className="fixed right-6 top-5 flex gap-3 items-center z-50">
         <div className="bg-white/95 backdrop-blur-sm px-4 py-3 rounded-2xl flex gap-3 items-center border border-gray-200 shadow-xl">
