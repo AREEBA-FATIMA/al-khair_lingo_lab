@@ -18,6 +18,8 @@ export default function HomePage() {
     if (isLoggedIn) {
       if (user?.role === 'teacher') {
         window.location.href = '/teachers/dashboard'
+      } else if (user?.role === 'doner') {
+        window.location.href = '/analytics'
       } else {
         window.location.href = '/groups'
       }
