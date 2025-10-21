@@ -85,7 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('DEBUG - User role:', response.user.role)
         
         // Redirect based on user role
-        if (response.user.role === 'teacher') {
+        if (response.user.role === 'doner') {
+          window.location.href = '/analytics'
+        } else if (response.user.role === 'teacher') {
           window.location.href = '/teachers/dashboard'
         } else {
           window.location.href = '/groups'
@@ -129,7 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('DEBUG - Registration and auto-login successful:', loginResponse.user)
           
           // Redirect based on user role
-          if (loginResponse.user.role === 'teacher') {
+          if (loginResponse.user.role === 'doner') {
+            window.location.href = '/analytics'
+          } else if (loginResponse.user.role === 'teacher') {
             window.location.href = '/teachers/dashboard'
           } else {
             window.location.href = '/groups'

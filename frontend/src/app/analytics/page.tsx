@@ -215,7 +215,7 @@ export default function AnalyticsDashboard() {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">💰 Doner Analytics Dashboard</h1>
-              <p className="text-gray-600 mt-1">System performance overview for donors</p>
+              <p className="text-gray-600 mt-1">System performance overview for donors - No course access required</p>
             </div>
             <div className="text-sm text-gray-500">
               Last updated: {overallStats?.date ? new Date(overallStats.date).toLocaleDateString() : 'N/A'}

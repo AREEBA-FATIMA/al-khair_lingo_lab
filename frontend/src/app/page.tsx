@@ -16,10 +16,10 @@ export default function HomePage() {
     
     // Redirect based on user role
     if (isLoggedIn) {
-      if (user?.role === 'teacher') {
-        window.location.href = '/teachers/dashboard'
-      } else if (user?.role === 'doner') {
+      if (user?.role === 'doner') {
         window.location.href = '/analytics'
+      } else if (user?.role === 'teacher') {
+        window.location.href = '/teachers/dashboard'
       } else {
         window.location.href = '/groups'
       }
