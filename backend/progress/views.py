@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.utils import timezone
+from datetime import timedelta
 from django.db.models import Sum, Avg
 from .models import LevelProgress
 from levels.models import Level, Question
@@ -21,9 +22,43 @@ def progress_overview(request):
     completed_levels = user_progress.filter(is_completed=True).count()
     total_xp = user_progress.aggregate(total=Sum('xp_earned'))['total'] or 0
     
-    # Calculate streaks and other stats
-    current_streak = 0  # TODO: Implement streak calculation
-    longest_streak = 0  # TODO: Implement streak calculation
+    # Calculate streaks based on days with at least one completed level
+    # Get unique local dates where user completed any level
+    completed_qs = user_progress.filter(is_completed=True, completed_at__isnull=False)
+    dates = list(
+        completed_qs.order_by().values_list('completed_at', flat=True)
+    )
+    unique_days = set()
+    for dt in dates:
+        # normalize to date in user's timezone
+        local_dt = timezone.localtime(dt)
+        unique_days.add(local_dt.date())
+
+    # Compute current streak ending today (or yesterday if no completion today)
+    today = timezone.localdate()
+    current_streak = 0
+    # If user didn't complete anything today but did yesterday, allow streak to count back from yesterday
+    start_day = today if today in unique_days else (today - timedelta(days=1) if (today - timedelta(days=1)) in unique_days else None)
+    if start_day:
+        d = start_day
+        while d in unique_days:
+            current_streak += 1
+            d = d - timedelta(days=1)
+
+    # Compute longest streak across all days
+    longest_streak = 0
+    if unique_days:
+        sorted_days = sorted(unique_days)
+        streak = 1
+        for i in range(1, len(sorted_days)):
+            prev_day = sorted_days[i - 1]
+            day = sorted_days[i]
+            if day == prev_day + timedelta(days=1):
+                streak += 1
+            else:
+                longest_streak = max(longest_streak, streak)
+                streak = 1
+        longest_streak = max(longest_streak, streak)
     average_score = user_progress.aggregate(avg=Avg('completion_percentage'))['avg'] or 0
     time_spent_minutes = user_progress.aggregate(total=Sum('time_spent'))['total'] or 0
     total_groups_completed = 0  # TODO: Implement group completion tracking
@@ -50,7 +85,8 @@ def progress_overview(request):
         'total_xp': total_xp,
         'current_streak': current_streak,
         'longest_streak': longest_streak,
-        'hearts': 5, # TODO: Implement hearts system
+        # Hearts: without per-attempt failure storage on backend, keep 5 as default.
+        'hearts': 5,
         'daily_goal': 50, # Default daily goal
         'total_levels_completed': completed_levels,
         'total_groups_completed': total_groups_completed,

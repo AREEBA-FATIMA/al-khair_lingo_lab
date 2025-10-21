@@ -651,11 +651,12 @@ export default function QuizGame() {
       const progressManager = ProgressManager.getInstance()
       const userProgress = progressManager.getUserProgress()
       if (userProgress.totalXP >= 2) {
-        // Reduce 2 XP for wrong answer
         const newXP = Math.max(0, userProgress.totalXP - 2)
         progressManager.updateXP(newXP)
         console.log(`XP reduced by 2 for wrong answer. New XP: ${newXP}`)
       }
+      // Lose a heart immediately on wrong answer
+      progressManager.decrementHeart()
     }
   }
 
@@ -683,11 +684,12 @@ export default function QuizGame() {
       const progressManager = ProgressManager.getInstance()
       const userProgress = progressManager.getUserProgress()
       if (userProgress.totalXP >= 2) {
-        // Reduce 2 XP for wrong answer
         const newXP = Math.max(0, userProgress.totalXP - 2)
         progressManager.updateXP(newXP)
         console.log(`XP reduced by 2 for wrong answer. New XP: ${newXP}`)
       }
+      // Lose a heart immediately on wrong answer
+      progressManager.decrementHeart()
     }
   }
 

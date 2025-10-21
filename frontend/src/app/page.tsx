@@ -14,7 +14,14 @@ export default function HomePage() {
   useEffect(() => {
     setMounted(true)
     
-    // No automatic redirect - let users stay on home page
+    // Redirect based on user role
+    if (isLoggedIn) {
+      if (user?.role === 'teacher') {
+        window.location.href = '/teachers/dashboard'
+      } else {
+        window.location.href = '/groups'
+      }
+    }
   }, [isLoggedIn])
 
   if (!mounted) {

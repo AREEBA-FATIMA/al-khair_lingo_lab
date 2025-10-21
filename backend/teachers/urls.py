@@ -1,10 +1,8 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import TeacherViewSet
-
-router = DefaultRouter()
-router.register(r'teachers', TeacherViewSet)
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('dashboard/', views.teacher_dashboard, name='teacher-dashboard'),
+    path('student/<str:student_id>/', views.student_detail, name='student-detail'),
+    path('analytics/', views.class_analytics, name='class-analytics'),
 ]

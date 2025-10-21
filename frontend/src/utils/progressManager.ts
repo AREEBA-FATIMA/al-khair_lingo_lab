@@ -129,6 +129,7 @@ class ProgressManager {
     await this.saveProgressToBackend(levelNumber, score, total, xpEarned, passed)
 
     this.saveToLocalStorage()
+    window.dispatchEvent(new CustomEvent('progressUpdated'))
     return levelProgress
   }
 
@@ -225,6 +226,23 @@ class ProgressManager {
   public updateXP(newXP: number) {
     this.userProgress.totalXP = newXP
     this.saveToLocalStorage()
+    window.dispatchEvent(new CustomEvent('progressUpdated'))
+  }
+
+  // Decrement a heart (question mistake)
+  public decrementHeart() {
+    this.userProgress.hearts = Math.max(0, this.userProgress.hearts - 1)
+    this.saveToLocalStorage()
+    window.dispatchEvent(new CustomEvent('progressUpdated'))
+  }
+
+  // Merge backend stats into local (authoritative from server)
+  public setStatsFromBackend(stats: { total_xp?: number; current_streak?: number; hearts?: number; }) {
+    if (typeof stats.total_xp === 'number') this.userProgress.totalXP = stats.total_xp
+    if (typeof stats.current_streak === 'number') this.userProgress.currentStreak = stats.current_streak
+    if (typeof stats.hearts === 'number') this.userProgress.hearts = stats.hearts
+    this.saveToLocalStorage()
+    window.dispatchEvent(new CustomEvent('progressUpdated'))
   }
 
   // Regenerate hearts (simplified - regenerate after 1 hour)

@@ -213,12 +213,15 @@ class MultiMethodAuthBackend(ModelBackend):
         Authenticate teacher or admin using email and password
         """
         try:
-            # Find user by email
-            user = User.objects.get(
+            # Find user by email (use filter().first() to avoid MultipleObjectsReturned)
+            user = User.objects.filter(
                 email=email,
                 role__in=['teacher', 'admin'],
                 is_active=True
-            )
+            ).first()
+            
+            if not user:
+                raise User.DoesNotExist
             
             # Check password
             if user.check_password(password):

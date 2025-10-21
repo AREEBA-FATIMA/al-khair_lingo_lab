@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = JSON.parse(savedUser)
         console.log('DEBUG - Parsed user data:', userData)
+        console.log('DEBUG - User role from localStorage:', userData.role)
         setUser(userData)
         setIsLoggedIn(true)
         
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const progressManager = ProgressManager.getInstance()
         progressManager.setCurrentUser(userData.id)
         
-        console.log('DEBUG - User logged in from localStorage')
+        console.log('DEBUG - User logged in from localStorage, role:', userData.role)
       } catch (error) {
         console.error('Error parsing saved user data:', error)
         localStorage.removeItem('user')
@@ -81,9 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         console.log('DEBUG - Login successful, user set:', response.user)
         console.log('DEBUG - isLoggedIn set to:', true)
+        console.log('DEBUG - User role:', response.user.role)
         
-        // Redirect to home page after successful login
-        window.location.href = '/'
+        // Redirect based on user role
+        if (response.user.role === 'teacher') {
+          window.location.href = '/teachers/dashboard'
+        } else {
+          window.location.href = '/groups'
+        }
       } else {
         console.log('DEBUG - Invalid response structure:', response)
         throw new Error('Invalid response from server')
@@ -122,8 +128,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           console.log('DEBUG - Registration and auto-login successful:', loginResponse.user)
           
-          // Redirect to home page after successful registration
-          window.location.href = '/'
+          // Redirect based on user role
+          if (loginResponse.user.role === 'teacher') {
+            window.location.href = '/teachers/dashboard'
+          } else {
+            window.location.href = '/groups'
+          }
         }
       } else {
         throw new Error('Registration failed')
@@ -167,4 +177,3 @@ export function useAuth() {
   return context
 }
 
-// done

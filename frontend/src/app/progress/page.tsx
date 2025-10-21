@@ -71,10 +71,20 @@ export default function ProgressPage() {
     // Listen for level completion events
     const handleLevelCompleted = () => {
       loadProgressFromLocalStorage()
+      fetchUserStats()
+    }
+
+    const handleProgressUpdated = () => {
+      loadProgressFromLocalStorage()
+      fetchUserStats()
     }
 
     window.addEventListener('levelCompleted', handleLevelCompleted)
-    return () => window.removeEventListener('levelCompleted', handleLevelCompleted)
+    window.addEventListener('progressUpdated', handleProgressUpdated)
+    return () => {
+      window.removeEventListener('levelCompleted', handleLevelCompleted)
+      window.removeEventListener('progressUpdated', handleProgressUpdated)
+    }
   }, [])
 
   const loadProgressFromLocalStorage = () => {
@@ -136,6 +146,13 @@ export default function ProgressPage() {
       if (response.ok) {
         const data = await response.json()
         setUserStats(data)
+        // Merge authoritative backend stats into local progress
+        const pm = ProgressManager.getInstance()
+        pm.setStatsFromBackend({
+          total_xp: data.total_xp,
+          current_streak: data.current_streak,
+          hearts: data.hearts
+        })
         console.log('Progress loaded from backend:', data)
       } else {
         console.error('Failed to load progress from backend:', response.status)
