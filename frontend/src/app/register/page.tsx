@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { ArrowLeft, User, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import apiService from '@/services/api'
+import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, Building2, GraduationCap, Clock, UserCheck } from 'lucide-react'
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -14,15 +15,86 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    fatherName: '',
+    campus: '',
+    grade: '',
+    shift: 'morning'
   })
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
+  const [campusOptions, setCampusOptions] = useState<{value: string, label: string}[]>([])
+  const [gradeOptions, setGradeOptions] = useState<{value: string, label: string}[]>([])
+  const [shiftOptions, setShiftOptions] = useState<{value: string, label: string}[]>([])
+  const [loadingOptions, setLoadingOptions] = useState(true)
   const { register } = useAuth()
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fetch dynamic options on component mount
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        setLoadingOptions(true)
+        console.log('DEBUG - Starting to fetch options...')
+        console.log('DEBUG - API Base URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api')
+        
+        const [campusResponse, gradeResponse, shiftResponse] = await Promise.all([
+          apiService.getCampusOptions(),
+          apiService.getGradeOptions(),
+          apiService.getShiftOptions()
+        ])
+
+        console.log('DEBUG - All responses received:', { campusResponse, gradeResponse, shiftResponse })
+
+        if (campusResponse.success) {
+          console.log('DEBUG - Campus data received:', campusResponse.data)
+          setCampusOptions(campusResponse.data.map((campus: any) => ({
+            value: campus.id,
+            label: campus.campus_name
+          })))
+        } else {
+          console.log('DEBUG - Campus API failed:', campusResponse)
+        }
+
+        if (gradeResponse.success) {
+          console.log('DEBUG - Grade data received:', gradeResponse.data)
+          setGradeOptions(gradeResponse.data.map((grade: any) => ({
+            value: grade.grade,
+            label: grade.grade
+          })))
+        } else {
+          console.log('DEBUG - Grade API failed:', gradeResponse)
+        }
+
+        if (shiftResponse.success) {
+          console.log('DEBUG - Shift data received:', shiftResponse.data)
+          setShiftOptions(shiftResponse.data)
+        } else {
+          console.log('DEBUG - Shift API failed:', shiftResponse)
+        }
+      } catch (error: any) {
+        console.error('Error fetching options:', error)
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          config: error.config
+        })
+        // No fallback - let the form show empty options
+        console.log('DEBUG - API failed, showing empty options')
+        setCampusOptions([])
+        setGradeOptions([])
+        setShiftOptions([])
+      } finally {
+        setLoadingOptions(false)
+      }
+    }
+
+    fetchOptions()
+  }, [])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -59,7 +131,11 @@ export default function RegisterPage() {
         formData.email,
         formData.password,
         formData.firstName,
-        formData.lastName
+        formData.lastName,
+        formData.fatherName,
+        formData.campus,
+        formData.grade,
+        formData.shift
       )
       // Redirect will happen automatically in AuthContext
     } catch (error: any) {
@@ -190,6 +266,104 @@ export default function RegisterPage() {
                   />
                 </div>
                       </div>
+
+              {/* Father's Name */}
+              <div>
+                <label htmlFor="fatherName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Father's Name
+                </label>
+                <div className="relative">
+                  <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="fatherName"
+                    name="fatherName"
+                    type="text"
+                    required
+                    value={formData.fatherName}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03045e] focus:border-transparent"
+                    placeholder="Father's Name"
+                  />
+                </div>
+              </div>
+
+              {/* Campus Selection */}
+              <div>
+                <label htmlFor="campus" className="block text-sm font-medium text-gray-700 mb-1">
+                  Campus
+                </label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <select
+                    id="campus"
+                    name="campus"
+                    required
+                    value={formData.campus}
+                    onChange={handleInputChange}
+                    disabled={loadingOptions}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03045e] focus:border-transparent appearance-none bg-white disabled:bg-gray-100"
+                  >
+                    <option value="">{loadingOptions ? 'Loading...' : campusOptions.length === 0 ? 'No campus available' : 'Select Campus'}</option>
+                    {campusOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Grade Selection */}
+              <div>
+                <label htmlFor="grade" className="block text-sm font-medium text-gray-700 mb-1">
+                  Grade
+                </label>
+                <div className="relative">
+                  <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <select
+                    id="grade"
+                    name="grade"
+                    required
+                    value={formData.grade}
+                    onChange={handleInputChange}
+                    disabled={loadingOptions}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03045e] focus:border-transparent appearance-none bg-white disabled:bg-gray-100"
+                  >
+                    <option value="">{loadingOptions ? 'Loading...' : gradeOptions.length === 0 ? 'No grade available' : 'Select Grade'}</option>
+                    {gradeOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Shift Selection */}
+              <div>
+                <label htmlFor="shift" className="block text-sm font-medium text-gray-700 mb-1">
+                  Shift
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <select
+                    id="shift"
+                    name="shift"
+                    required
+                    value={formData.shift}
+                    onChange={handleInputChange}
+                    disabled={loadingOptions}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#03045e] focus:border-transparent appearance-none bg-white disabled:bg-gray-100"
+                  >
+                    <option value="">{loadingOptions ? 'Loading...' : shiftOptions.length === 0 ? 'No shift available' : 'Select Shift'}</option>
+                    {shiftOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
               {/* Password */}
               <div>

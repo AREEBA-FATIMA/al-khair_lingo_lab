@@ -165,7 +165,9 @@ class LoginLog(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='login_logs'
+        related_name='login_logs',
+        null=True,
+        blank=True
     )
     login_method = models.CharField(
         max_length=20,

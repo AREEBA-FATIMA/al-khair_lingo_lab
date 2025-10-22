@@ -105,8 +105,8 @@ export const apiService = {
     }
   },
 
-  register: async (username: string, email: string, password: string, firstName: string, lastName: string) => {
-    console.log('DEBUG - API Service: Making registration request', { username, email })
+  register: async (username: string, email: string, password: string, firstName: string, lastName: string, fatherName?: string, campus?: string, grade?: string, shift?: string) => {
+    console.log('DEBUG - API Service: Making student registration request', { username, email, fatherName, campus, grade, shift })
     try {
       const requestData = {
         username,
@@ -114,16 +114,20 @@ export const apiService = {
         password,
         password_confirm: password, // Add password confirmation
         first_name: firstName,
-        last_name: lastName
+        last_name: lastName,
+        father_name: fatherName,
+        campus: campus,
+        grade: grade,
+        shift: shift
       }
       console.log('DEBUG - API Service: Request data:', requestData)
-      console.log('DEBUG - API Service: Request URL:', `${API_BASE_URL}/users/auth/register/`)
+      console.log('DEBUG - API Service: Request URL:', `${API_BASE_URL}/students/register/`)
       
-      const response = await api.post('/users/auth/register/', requestData)
-      console.log('DEBUG - API Service: Registration response received', response.data)
+      const response = await api.post('/students/register/', requestData)
+      console.log('DEBUG - API Service: Student registration response received', response.data)
       return response.data
-    } catch (error) {
-      console.error('DEBUG - API Service: Registration error', error)
+    } catch (error: any) {
+      console.error('DEBUG - API Service: Student registration error', error)
       console.error('DEBUG - API Service: Error response:', error.response?.data)
       console.error('DEBUG - API Service: Error status:', error.response?.status)
       console.error('DEBUG - API Service: Error headers:', error.response?.headers)
@@ -399,7 +403,29 @@ export const apiService = {
   getPlacementStats: async () => {
     const response = await api.get('/placement/stats/')
     return response.data
+  },
+
+  // Registration form data APIs
+  getCampusOptions: async () => {
+    const response = await api.get('/analytics/campus-list/')
+    return response.data
+  },
+
+  getGradeOptions: async () => {
+    const response = await api.get('/analytics/classes-list/')
+    return response.data
+  },
+
+  getShiftOptions: async () => {
+    // Return static shift options as they are defined in Student model
+    return {
+      success: true,
+      data: [
+        { value: 'morning', label: 'Morning' },
+        { value: 'afternoon', label: 'Afternoon' }
+      ]
+    }
   }
 }
 
-export default api
+export default apiService

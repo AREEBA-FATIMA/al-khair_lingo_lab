@@ -346,7 +346,7 @@ def performance_trend(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def campus_list(request):
     """Get list of all campuses with basic info"""
     try:
@@ -362,12 +362,12 @@ def campus_list(request):
             campus_data.append({
                 'id': campus.id,
                 'campus_name': campus.campus_name,
-                'location': campus.location,
+                'city': campus.city,
                 'total_teachers': total_teachers,
                 'total_students': total_students,
                 'total_classes': total_classes,
-                'established_year': campus.established_year,
-                'instruction_language': campus.instruction_language,
+                'established_year': getattr(campus, 'established_year', None),
+                'instruction_language': getattr(campus, 'instruction_language', None),
             })
         
         return Response({
@@ -419,7 +419,7 @@ def teachers_list(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def classes_list(request):
     """Get list of all classes with progress metrics"""
     try:
@@ -428,7 +428,7 @@ def classes_list(request):
         
         for grade in grades:
             # Get basic stats for each grade
-            total_students = Student.objects.filter(class_room__grade=grade).count()
+            total_students = Student.objects.filter(grade=grade.name).count()
             english_teacher = grade.english_teacher.name if grade.english_teacher else 'Not Assigned'
             
             class_data.append({

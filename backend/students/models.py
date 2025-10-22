@@ -131,12 +131,6 @@ class Student(models.Model):
         
         # Save the student first
         super().save(*args, **kwargs)
-        
-        # Auto-assign English teacher based on campus and grade
-        self._assign_english_teacher()
-        
-        # Create or update User account for student
-        self._create_or_update_user_account()
     
     def check_password(self, raw_password):
         """Check if raw password matches hashed password"""
@@ -161,7 +155,7 @@ class Student(models.Model):
             if grade_obj and grade_obj.english_teacher:
                 # Assign the English teacher from the grade
                 self.class_teacher = grade_obj.english_teacher
-                self.save(update_fields=['class_teacher'])
+                # Don't save here to avoid transaction conflicts
                 print(f"Assigned English teacher {grade_obj.english_teacher.name} to student {self.student_id}")
             else:
                 print(f"No English teacher assigned to {self.grade} in {self.campus.campus_name} ({self.shift})")
@@ -186,6 +180,8 @@ class Student(models.Model):
                 'role': 'student',
                 'is_active': self.is_active,
                 'is_verified': True,  # Students are auto-verified
+                'student_id': self.student_id,  # Add student_id field
+                'password': self.password,  # Add password field
             }
             
             user, created = User.objects.get_or_create(
@@ -194,12 +190,12 @@ class Student(models.Model):
             )
             
             if not created:
-                # Update existing user
+                # Update existing user - don't save to avoid transaction conflicts
                 user.username = username
                 user.first_name = self.name.split()[0] if self.name else ''
                 user.last_name = ' '.join(self.name.split()[1:]) if len(self.name.split()) > 1 else ''
                 user.is_active = self.is_active
-                user.save()
+                # user.save()  # Commented out to avoid transaction conflicts
             
             print(f"User account {'created' if created else 'updated'} for student {self.student_id}")
             
@@ -212,6 +208,24 @@ class Student(models.Model):
         ordering = ['-created_at']
         unique_together = ['campus', 'grade', 'shift', 'student_id']
 
+
+# Signal to handle post-save operations for Student
+@receiver(post_save, sender=Student)
+def handle_student_post_save(sender, instance, created, **kwargs):
+    """Handle post-save operations for Student"""
+    try:
+        # Auto-assign English teacher based on campus and grade
+        if not instance.class_teacher:
+            instance._assign_english_teacher()
+            if instance.class_teacher:
+                # Save the teacher assignment
+                Student.objects.filter(pk=instance.pk).update(class_teacher=instance.class_teacher)
+        
+        # Create User account when Student is created
+        if created:
+            instance._create_or_update_user_account()
+    except Exception as e:
+        print(f"Error in post_save signal for student {instance.student_id}: {str(e)}")
 
 # Signal to delete User account when Student is deleted
 @receiver(post_delete, sender=Student)

@@ -104,14 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const register = async (username: string, email: string, password: string, firstName: string, lastName: string) => {
+  const register = async (username: string, email: string, password: string, firstName: string, lastName: string, fatherName?: string, campus?: string, grade?: string, shift?: string) => {
     try {
       console.log('DEBUG - Starting registration process:', { username, email })
       setLoading(true)
-      const response = await apiService.register(username, email, password, firstName, lastName)
+      const response = await apiService.register(username, email, password, firstName, lastName, fatherName || '', campus || '', grade || '', shift || '')
       console.log('DEBUG - Registration API response:', response)
       
-      if (response.user) {
+      if (response.success) {
         // Auto-login after successful registration
         console.log('DEBUG - Starting auto-login after registration')
         const loginResponse = await apiService.login(username, password)
