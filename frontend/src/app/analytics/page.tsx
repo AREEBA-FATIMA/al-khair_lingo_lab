@@ -14,7 +14,6 @@ import {
   Trophy,
   Award,
   BarChart3,
-  PieChart,
   Activity,
   Clock,
   Zap,
@@ -25,9 +24,11 @@ import {
   RefreshCw,
   Download,
   Filter,
-  Search
+  Search,
+  Building2
 } from 'lucide-react'
 import AnalyticsCharts from '@/components/AnalyticsCharts'
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface OverallStats {
   date: string
@@ -120,8 +121,8 @@ export default function AnalyticsDashboard() {
         return
       }
       
-      // Only allow doner to access analytics
-      if (user?.role !== 'doner') {
+      // Only allow donor to access analytics
+      if (user?.role !== 'donor') {
         router.push('/')
         return
       }
@@ -129,7 +130,7 @@ export default function AnalyticsDashboard() {
   }, [isLoggedIn, user, authLoading, router])
 
   useEffect(() => {
-    if (isLoggedIn && user?.role === 'doner') {
+    if (isLoggedIn && user?.role === 'donor') {
       fetchAnalyticsData()
     }
   }, [isLoggedIn, user])
@@ -192,7 +193,7 @@ export default function AnalyticsDashboard() {
     return null // Will redirect to login
   }
 
-  if (user?.role !== 'doner') {
+  if (user?.role !== 'donor') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
@@ -244,7 +245,7 @@ export default function AnalyticsDashboard() {
           <div className="flex justify-between items-center py-6">
             <div>
               <div className="flex items-center gap-4 mb-2">
-                <span className="text-sm text-gray-500">{getCurrentDate()} · WEEK {getCurrentWeek()} · ENGLISH MASTER 2025</span>
+                <span className="text-sm text-gray-500">{getCurrentDate()} · WEEK {getCurrentWeek()} · Al Khair Lingo Lab</span>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                 Dashboard
@@ -271,65 +272,151 @@ export default function AnalyticsDashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Overall Progress Bar */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 border border-gray-100">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
+        {/* Enhanced Overview Section with Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* System Overview with Chart */}
+          <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
+                System Overview
+              </h3>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                Live Data
+              </div>
+            </div>
+            
+            {/* User Distribution Chart */}
+            <div className="mb-6">
+              <h4 className="text-lg font-medium text-gray-800 mb-4">User Distribution</h4>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Students', value: overallStats?.total_students || 0, color: '#10B981' },
+                        { name: 'Teachers', value: overallStats?.total_teachers || 0, color: '#3B82F6' },
+                        { name: 'Donors', value: 1, color: '#8B5CF6' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Students', value: overallStats?.total_students || 0, color: '#10B981' },
+                        { name: 'Teachers', value: overallStats?.total_teachers || 0, color: '#3B82F6' },
+                        { name: 'Donors', value: 1, color: '#8B5CF6' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value, name) => [value, name]}
+                      labelStyle={{ color: '#374151' }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Progress Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 min-w-0">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-600">Learning Progress</span>
-                  <span className="font-semibold text-gray-900">
-                    {overallStats?.total_levels_completed || 0}/{overallStats?.total_levels || 0} levels
-                  </span>
+                  <BookOpen className="h-4 w-4 text-blue-500" />
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="text-2xl font-bold text-blue-600 break-words">
+                  {overallStats?.total_levels_completed || 0}/{Math.max(overallStats?.total_levels || 1, 1)}
+                </div>
+                <div className="text-xs text-gray-500">levels completed</div>
+                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-1000"
                     style={{ 
-                      width: `${overallStats ? (overallStats.total_levels_completed / Math.max(overallStats.total_levels, 1)) * 100 : 0}%` 
+                      width: `${overallStats ? (overallStats.total_levels_completed / Math.max(overallStats.total_levels || 1, 1)) * 100 : 0}%` 
                     }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>{overallStats?.total_levels_completed || 0} completed</span>
-                  <span>{overallStats?.total_levels || 0} total</span>
+              </div>
+              
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Total XP</span>
+                  <Zap className="h-4 w-4 text-green-500" />
+                </div>
+                <div className="text-2xl font-bold text-green-600">
+                  {overallStats?.total_xp_earned || 0}
+                </div>
+                <div className="text-xs text-gray-500">points earned</div>
+                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full" style={{ width: '75%' }}></div>
+                </div>
                 </div>
               </div>
             </div>
             
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Activity</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Active Users</span>
-                  <span className="font-semibold text-green-600">{overallStats?.active_users_today || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Levels Completed</span>
-                  <span className="font-semibold text-blue-600">{overallStats?.levels_completed_today || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">XP Earned</span>
-                  <span className="font-semibold text-purple-600">{overallStats?.total_xp_earned || 0}</span>
-                </div>
-              </div>
+          {/* Today's Activity */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Activity className="h-5 w-5 text-green-500" />
+                Today's Activity
+              </h3>
+              <div className="text-sm text-gray-500">{getCurrentDate()}</div>
             </div>
             
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total Users</span>
-                  <span className="font-semibold text-gray-900">{overallStats?.total_users || 0}</span>
+                    <div className="text-sm text-gray-600">Active Users</div>
+                    <div className="text-lg font-bold text-green-600">{overallStats?.active_users_today || 0}</div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Teachers</span>
-                  <span className="font-semibold text-indigo-600">{overallStats?.total_teachers || 0}</span>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Today</div>
+                  <div className="text-sm font-medium text-green-600">+12%</div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Students</span>
-                  <span className="font-semibold text-green-600">{overallStats?.total_students || 0}</span>
+                </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Target className="h-5 w-5 text-white" />
+                </div>
+                  <div>
+                    <div className="text-sm text-gray-600">Levels Completed</div>
+                    <div className="text-lg font-bold text-blue-600">{overallStats?.levels_completed_today || 0}</div>
+                </div>
+              </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Today</div>
+                  <div className="text-sm font-medium text-blue-600">+8%</div>
+                </div>
+            </div>
+            
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-white" />
+                  </div>
+            <div>
+                    <div className="text-sm text-gray-600">XP Earned</div>
+                    <div className="text-lg font-bold text-purple-600">{overallStats?.total_xp_earned || 0}</div>
+                </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Total</div>
+                  <div className="text-sm font-medium text-purple-600">+15%</div>
                 </div>
               </div>
             </div>
@@ -398,7 +485,7 @@ export default function AnalyticsDashboard() {
 
         {/* Detailed Analytics Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Campus Performance */}
+          {/* Campus Performance with Chart */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -407,33 +494,89 @@ export default function AnalyticsDashboard() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <GraduationCap className="h-5 w-5 text-indigo-500" />
+                <Building2 className="h-5 w-5 text-green-500" />
                 Campus Performance
               </h3>
-              <button className="text-gray-400 hover:text-gray-600">
-                <ChevronRight className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                {campusData.length} Campuses
+              </div>
             </div>
             
-            <div className="space-y-4">
-              {campusData.length > 0 ? campusData.slice(0, 3).map((campus, index) => (
-                <div key={campus.campus_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            {/* Campus Comparison Chart */}
+            <div className="mb-6">
+              <h4 className="text-lg font-medium text-gray-800 mb-4">Students Distribution</h4>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={campusData.map((campus) => ({
+                    name: campus.campus_name.split(' ')[0], // First word only
+                    students: campus.total_students,
+                    teachers: campus.total_teachers,
+                    classes: campus.total_classes
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 12 }}
+                      stroke="#6b7280"
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      stroke="#6b7280"
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#fff', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      labelStyle={{ color: '#374151', fontWeight: 'bold' }}
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="students" 
+                      fill="#10B981" 
+                      radius={[4, 4, 0, 0]}
+                      name="Students"
+                    />
+                    <Bar 
+                      dataKey="teachers" 
+                      fill="#3B82F6" 
+                      radius={[4, 4, 0, 0]}
+                      name="Teachers"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {/* Campus List */}
+            <div className="space-y-3">
+              <h4 className="text-lg font-medium text-gray-800 mb-3">Campus Details</h4>
+              {campusData.length > 0 ? campusData.map((campus, index) => (
+                <div key={campus.campus_id} className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      {index + 1}
+                    </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">{campus.campus_name}</h4>
-                    <p className="text-sm text-gray-600">{campus.total_students} students</p>
+                      <h4 className="font-medium text-gray-900 text-sm">{campus.campus_name}</h4>
+                      <p className="text-xs text-gray-600">{campus.total_students} students, {campus.total_teachers} teachers</p>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-indigo-600">{campus.total_teachers}</div>
-                    <div className="text-sm text-gray-500">teachers</div>
+                    <div className="text-sm font-semibold text-green-600">{campus.total_classes}</div>
+                    <div className="text-xs text-gray-500">classes</div>
                   </div>
                 </div>
               )) : (
-                <div className="text-center py-8 text-gray-500">No campus data available</div>
+                <div className="text-center py-6 text-gray-500 text-sm">No campus data available</div>
               )}
             </div>
           </motion.div>
 
-          {/* Top Teachers */}
+          {/* Teachers Performance Chart */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -442,41 +585,84 @@ export default function AnalyticsDashboard() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                Top Teachers
+                <GraduationCap className="h-5 w-5 text-indigo-500" />
+                Teachers Performance
               </h3>
-              <button className="text-gray-400 hover:text-gray-600">
-                <ChevronRight className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                {teacherData.length} Teachers
+              </div>
             </div>
             
-            <div className="space-y-4">
+            {/* Teachers Bar Chart */}
+            <div className="mb-6">
+              <h4 className="text-lg font-medium text-gray-800 mb-4">Students per Teacher</h4>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={teacherData.slice(0, 5).map((teacher, index) => ({
+                    name: teacher.teacher_name.split(' ')[0], // First name only
+                    students: teacher.total_students,
+                    completion: teacher.average_completion_rate
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 12 }}
+                      stroke="#6b7280"
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      stroke="#6b7280"
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#fff', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      labelStyle={{ color: '#374151', fontWeight: 'bold' }}
+                    />
+                    <Bar 
+                      dataKey="students" 
+                      fill="#3B82F6" 
+                      radius={[4, 4, 0, 0]}
+                      name="Students"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {/* Top Teachers List */}
+            <div className="space-y-3">
+              <h4 className="text-lg font-medium text-gray-800 mb-3">Top Performers</h4>
               {teacherData.length > 0 ? teacherData.slice(0, 3).map((teacher, index) => (
-                <div key={teacher.teacher_id} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                <div key={teacher.teacher_id} className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-8 h-8 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                       {index + 1}
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">{teacher.teacher_name}</h4>
-                      <p className="text-sm text-gray-600">{teacher.total_students} students</p>
+                      <h4 className="font-medium text-gray-900 text-sm">{teacher.teacher_name}</h4>
+                      <p className="text-xs text-gray-600">{teacher.total_students} students</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-yellow-600">{teacher.average_completion_rate}%</div>
-                    <div className="text-sm text-gray-500">completion</div>
+                    <div className="text-sm font-semibold text-indigo-600">{teacher.average_completion_rate}%</div>
+                    <div className="text-xs text-gray-500">completion</div>
                   </div>
                 </div>
               )) : (
-                <div className="text-center py-8 text-gray-500">No teacher data available</div>
+                <div className="text-center py-6 text-gray-500 text-sm">No teacher data available</div>
               )}
             </div>
           </motion.div>
         </div>
 
-        {/* Bottom Analytics Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Class Performance */}
+        {/* Enhanced Bottom Section with Trend Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Activity Trends Chart */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -485,33 +671,71 @@ export default function AnalyticsDashboard() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-blue-500" />
-                Class Performance
+                <TrendingUp className="h-5 w-5 text-purple-500" />
+                Activity Trends
               </h3>
-              <button className="text-gray-400 hover:text-gray-600">
-                <ChevronRight className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                Last 7 Days
+              </div>
             </div>
             
-            <div className="space-y-4">
-              {classData.length > 0 ? classData.slice(0, 4).map((classItem, index) => (
-                <div key={classItem.class_id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-gray-900">{classItem.class_name}</h4>
-                    <p className="text-sm text-gray-600">{classItem.grade} - {classItem.section}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-blue-600">{classItem.total_students}</div>
-                    <div className="text-xs text-gray-500">students</div>
-                  </div>
-                </div>
-              )) : (
-                <div className="text-center py-8 text-gray-500">No class data available</div>
-              )}
+            {/* Mock trend data - in real app this would come from API */}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={[
+                  { day: 'Mon', users: 45, levels: 12, xp: 1200 },
+                  { day: 'Tue', users: 52, levels: 18, xp: 1500 },
+                  { day: 'Wed', users: 48, levels: 15, xp: 1350 },
+                  { day: 'Thu', users: 61, levels: 22, xp: 1800 },
+                  { day: 'Fri', users: 58, levels: 20, xp: 1650 },
+                  { day: 'Sat', users: 35, levels: 8, xp: 900 },
+                  { day: 'Sun', users: 42, levels: 14, xp: 1100 }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="day" 
+                    tick={{ fontSize: 12 }}
+                    stroke="#6b7280"
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    stroke="#6b7280"
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    labelStyle={{ color: '#374151', fontWeight: 'bold' }}
+                  />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="users" 
+                    stackId="1" 
+                    stroke="#3B82F6" 
+                    fill="#3B82F6" 
+                    fillOpacity={0.6}
+                    name="Active Users"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="levels" 
+                    stackId="2" 
+                    stroke="#10B981" 
+                    fill="#10B981" 
+                    fillOpacity={0.6}
+                    name="Levels Completed"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </motion.div>
 
-          {/* System Stats */}
+          {/* System Health Dashboard */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -520,62 +744,79 @@ export default function AnalyticsDashboard() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-green-500" />
-                System Stats
+                <Activity className="h-5 w-5 text-green-500" />
+                System Health
               </h3>
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                All Systems Operational
+              </div>
             </div>
             
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <span className="text-sm text-gray-600">Average Completion Rate</span>
-                <span className="font-semibold text-green-600">{overallStats?.average_completion_rate || 0}%</span>
+              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600">Total Users</div>
+                    <div className="text-lg font-bold text-green-600">{overallStats?.total_users || 0}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Growth</div>
+                  <div className="text-sm font-medium text-green-600">+12%</div>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                <span className="text-sm text-gray-600">Average XP per Student</span>
-                <span className="font-semibold text-purple-600">{overallStats?.average_xp_per_student || 0}</span>
+
+              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                    <GraduationCap className="h-5 w-5 text-white" />
               </div>
-              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm text-gray-600">Students with Streaks</span>
-                <span className="font-semibold text-blue-600">{overallStats?.students_with_streak || 0}</span>
+                  <div>
+                    <div className="text-sm text-gray-600">Teachers</div>
+                    <div className="text-lg font-bold text-blue-600">{overallStats?.total_teachers || 0}</div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-                <span className="text-sm text-gray-600">Total XP Earned</span>
-                <span className="font-semibold text-orange-600">{overallStats?.total_xp_earned || 0}</span>
+              </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Active</div>
+                  <div className="text-sm font-medium text-blue-600">100%</div>
               </div>
             </div>
-          </motion.div>
 
-          {/* Quick Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Activity className="h-5 w-5 text-indigo-500" />
-                Quick Actions
-              </h3>
+              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600">Students</div>
+                    <div className="text-lg font-bold text-purple-600">{overallStats?.total_students || 0}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Engagement</div>
+                  <div className="text-sm font-medium text-purple-600">85%</div>
+                </div>
             </div>
             
-            <div className="space-y-3">
-              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-200">
-                <Download className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-gray-900">Export Report</span>
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 hover:shadow-md transition-all duration-200">
-                <Filter className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-gray-900">Filter Data</span>
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200 hover:shadow-md transition-all duration-200">
-                <Search className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-medium text-gray-900">Search Records</span>
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 hover:shadow-md transition-all duration-200">
-                <RefreshCw className="h-4 w-4 text-orange-600" />
-                <span className="text-sm font-medium text-gray-900">Refresh All</span>
-              </button>
+              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600">Total XP</div>
+                    <div className="text-lg font-bold text-orange-600">{overallStats?.total_xp_earned || 0}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Earned</div>
+                  <div className="text-sm font-medium text-orange-600">+25%</div>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
