@@ -13,6 +13,8 @@ from students.models import Student
 from classes.models import Grade
 from progress.models import LevelProgress
 from users.models import User
+from levels.models import Level
+from groups.models import Group
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -27,8 +29,8 @@ def overall_analytics(request):
                 'total_teachers': User.objects.filter(role='teacher').count(),
                 'total_students': User.objects.filter(role='student').count(),
                 'active_users_today': User.objects.filter(last_login__date=timezone.now().date()).count(),
-                'total_levels': 0,  # Simplified for now
-                'total_groups': 0,  # Simplified for now
+                'total_levels': Level.objects.count(),  # Real level count
+                'total_groups': Group.objects.count(),  # Real group count
                 'levels_completed_today': LevelProgress.objects.filter(completed_at__date=timezone.now().date()).count(),
                 'total_levels_completed': LevelProgress.objects.filter(is_completed=True).count(),
                 'average_completion_rate': LevelProgress.objects.aggregate(avg=Avg('completion_percentage'))['avg'] or 0.0,
@@ -85,7 +87,7 @@ def dashboard_summary(request):
         total_teachers = User.objects.filter(role='teacher').count()
         total_students = User.objects.filter(role='student').count()
         total_campuses = Campus.objects.count()
-        total_classes = ClassRoom.objects.count()
+        total_classes = Grade.objects.count()
         
         # Get today's activity
         today = timezone.now().date()
@@ -131,7 +133,7 @@ def campus_analytics(request):
                 defaults={
                     'total_teachers': Teacher.objects.filter(campus=campus).count(),
                     'total_students': Student.objects.filter(campus=campus).count(),
-                    'total_classes': ClassRoom.objects.filter(grade__campus=campus).count(),
+                    'total_classes': Grade.objects.filter(campus=campus).count(),
                     'active_students_today': Student.objects.filter(
                         campus=campus
                     ).count(),  # Simplified - just count all students
@@ -175,7 +177,7 @@ def teacher_analytics(request):
                 teacher=teacher,
                 date=timezone.now().date(),
                 defaults={
-                    'total_students': Student.objects.filter(class_room__class_teacher=teacher).count(),
+                    'total_students': Student.objects.filter(class_room__grade__english_teacher=teacher).count(),
                     'students_completed_levels': 0,  # Simplified
                     'active_students_today': 0,  # Simplified
                     'average_completion_rate': 0.0,  # Simplified
@@ -214,15 +216,15 @@ def teacher_analytics(request):
 def class_analytics(request):
     """Get class-specific analytics"""
     try:
-        classes = ClassRoom.objects.all()
+        grades = Grade.objects.all()
         class_data = []
         
-        for classroom in classes:
+        for grade in grades:
             analytics, created = ClassAnalytics.objects.get_or_create(
-                classroom=classroom,
+                grade=grade,
                 date=timezone.now().date(),
                 defaults={
-                    'total_students': classroom.students.count(),
+                    'total_students': Student.objects.filter(class_room__grade=grade).count(),
                     'active_students_today': 0,  # Simplified
                     'active_students_this_week': 0,  # Simplified
                     'total_levels_completed': 0,  # Simplified
@@ -238,11 +240,11 @@ def class_analytics(request):
             )
             
             class_data.append({
-                'class_id': classroom.id,
-                'class_name': classroom.name,
-                'grade': classroom.grade.grade_number,
-                'section': classroom.section,
-                'campus': classroom.grade.campus.campus_name,
+                'class_id': grade.id,
+                'class_name': grade.name,
+                'grade': grade.name,
+                'section': grade.shift,
+                'campus': grade.campus.campus_name,
                 'total_students': analytics.total_students,
                 'active_students_today': analytics.active_students_today,
                 'total_levels_completed': analytics.total_levels_completed,
@@ -389,7 +391,7 @@ def teachers_list(request):
         
         for teacher in teachers:
             # Get basic stats for each teacher
-            total_students = Student.objects.filter(class_room__class_teacher=teacher).count()
+            total_students = Student.objects.filter(class_room__grade__english_teacher=teacher).count()
             classes_taught = Grade.objects.filter(english_teacher=teacher).count()
             
             teacher_data.append({
