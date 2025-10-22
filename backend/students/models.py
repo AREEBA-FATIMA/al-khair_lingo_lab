@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.hashers import make_password, check_password
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
@@ -76,6 +77,10 @@ class Student(models.Model):
         return f"{self.name} ({self.student_id or 'No ID'})"
     
     def save(self, *args, **kwargs):
+        # Hash password if it's plain text (for new students or password changes)
+        if self.password and not self.password.startswith('pbkdf2_'):
+            self.password = make_password(self.password)
+        
         # Generate student ID if not provided
         if not self.student_id or self.student_id == "TEMP-ID":
             try:
@@ -132,6 +137,14 @@ class Student(models.Model):
         
         # Create or update User account for student
         self._create_or_update_user_account()
+    
+    def check_password(self, raw_password):
+        """Check if raw password matches hashed password"""
+        return check_password(raw_password, self.password)
+    
+    def set_password(self, raw_password):
+        """Set password in hashed form"""
+        self.password = make_password(raw_password)
     
     def _assign_english_teacher(self):
         """Auto-assign English teacher based on campus and grade"""
