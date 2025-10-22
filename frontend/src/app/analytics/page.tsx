@@ -1,34 +1,37 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
-import { 
-  Users, 
-  GraduationCap, 
-  BookOpen, 
-  TrendingUp, 
-  Calendar,
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import {
+  Users,
+  GraduationCap,
+  TrendingUp,
   Target,
-  Trophy,
-  Award,
   BarChart3,
   Activity,
-  Clock,
   Zap,
-  Star,
   Eye,
-  ChevronRight,
-  ChevronLeft,
   RefreshCw,
-  Download,
-  Filter,
-  Search,
-  Building2
-} from 'lucide-react'
-import AnalyticsCharts from '@/components/AnalyticsCharts'
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+  Building2,
+  ArrowUpRight,
+} from "lucide-react"
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from "recharts"
 
 interface OverallStats {
   date: string
@@ -99,134 +102,134 @@ interface ClassData {
 }
 
 export default function AnalyticsDashboard() {
-  const { user, isLoggedIn, loading: authLoading } = useAuth()
-  const router = useRouter()
   const [overallStats, setOverallStats] = useState<OverallStats | null>(null)
   const [campusData, setCampusData] = useState<CampusData[]>([])
   const [teacherData, setTeacherData] = useState<TeacherData[]>([])
   const [classData, setClassData] = useState<ClassData[]>([])
   const [trendsData, setTrendsData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [selectedCampus, setSelectedCampus] = useState<string>('all')
-  const [selectedTeacher, setSelectedTeacher] = useState<string>('all')
-  const [dateRange, setDateRange] = useState('week')
+  const [activeTab, setActiveTab] = useState("overview")
+  const [selectedCampus, setSelectedCampus] = useState<string>("all")
+  const [selectedTeacher, setSelectedTeacher] = useState<string>("all")
+  const [dateRange, setDateRange] = useState("week")
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Check authentication and redirect if not authorized
+  // Mock data for demonstration
   useEffect(() => {
-    if (!authLoading) {
-      if (!isLoggedIn) {
-        router.push('/login')
-        return
-      }
-      
-      // Only allow donor to access analytics
-      if (user?.role !== 'donor') {
-        router.push('/')
-        return
-      }
+    const mockOverallStats: OverallStats = {
+      date: new Date().toISOString(),
+      total_users: 1250,
+      total_teachers: 45,
+      total_students: 1200,
+      active_users_today: 890,
+      total_levels: 150,
+      total_groups: 25,
+      levels_completed_today: 45,
+      total_levels_completed: 3450,
+      average_completion_rate: 78,
+      average_xp_per_student: 2500,
+      total_xp_earned: 3000000,
+      students_with_streak: 450,
+      students_active_this_week: 950,
+      students_active_this_month: 1100,
+      top_student_xp: 15000,
+      top_student_streak: 45,
+      top_class_completion: 92,
     }
-  }, [isLoggedIn, user, authLoading, router])
 
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'donor') {
-      fetchAnalyticsData()
-    }
-  }, [isLoggedIn, user])
+    const mockCampusData: CampusData[] = [
+      {
+        campus_id: 1,
+        campus_name: "Main Campus",
+        total_teachers: 20,
+        total_students: 500,
+        total_classes: 15,
+        active_students_today: 380,
+        total_xp_earned: 1200000,
+        average_class_completion: 82,
+      },
+      {
+        campus_id: 2,
+        campus_name: "North Campus",
+        total_teachers: 15,
+        total_students: 400,
+        total_classes: 12,
+        active_students_today: 310,
+        total_xp_earned: 950000,
+        average_class_completion: 75,
+      },
+      {
+        campus_id: 3,
+        campus_name: "South Campus",
+        total_teachers: 10,
+        total_students: 300,
+        total_classes: 10,
+        active_students_today: 200,
+        total_xp_earned: 850000,
+        average_class_completion: 70,
+      },
+    ]
 
-  const fetchAnalyticsData = async () => {
-    try {
-      const token = localStorage.getItem('authToken')
-      if (!token) {
-        console.error('No auth token found')
-        return
-      }
+    const mockTeacherData: TeacherData[] = [
+      {
+        teacher_id: 1,
+        teacher_name: "Ahmed Khan",
+        teacher_code: "T001",
+        assigned_class: "Class 5A",
+        total_students: 35,
+        students_completed_levels: 28,
+        active_students_today: 32,
+        average_completion_rate: 85,
+        average_xp_per_student: 3200,
+        top_student_name: "Ali Ahmed",
+        top_student_xp: 12000,
+        struggling_students: 3,
+      },
+      {
+        teacher_id: 2,
+        teacher_name: "Fatima Hassan",
+        teacher_code: "T002",
+        assigned_class: "Class 6B",
+        total_students: 32,
+        students_completed_levels: 25,
+        active_students_today: 28,
+        average_completion_rate: 78,
+        average_xp_per_student: 2800,
+        top_student_name: "Zainab Ali",
+        top_student_xp: 10500,
+        struggling_students: 5,
+      },
+      {
+        teacher_id: 3,
+        teacher_name: "Mohammed Ibrahim",
+        teacher_code: "T003",
+        assigned_class: "Class 7C",
+        total_students: 38,
+        students_completed_levels: 32,
+        active_students_today: 35,
+        average_completion_rate: 88,
+        average_xp_per_student: 3400,
+        top_student_name: "Hassan Omar",
+        top_student_xp: 13500,
+        struggling_students: 2,
+      },
+    ]
 
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-
-      // Fetch all analytics data in parallel
-      const [overallRes, campusRes, teacherRes, classRes, trendsRes] = await Promise.all([
-        fetch('http://localhost:8000/api/analytics/overall/', { headers }),
-        fetch('http://localhost:8000/api/analytics/campus/', { headers }),
-        fetch('http://localhost:8000/api/analytics/teachers/', { headers }),
-        fetch('http://localhost:8000/api/analytics/classes/', { headers }),
-        fetch('http://localhost:8000/api/analytics/trends/', { headers })
-      ])
-
-      if (overallRes.ok) {
-        const overallData = await overallRes.json()
-        setOverallStats(overallData.data)
-      }
-
-      if (campusRes.ok) {
-        const campusData = await campusRes.json()
-        setCampusData(campusData.data)
-      }
-
-      if (teacherRes.ok) {
-        const teacherData = await teacherRes.json()
-        setTeacherData(teacherData.data)
-      }
-
-      if (classRes.ok) {
-        const classData = await classRes.json()
-        setClassData(classData.data)
-      }
-
-      if (trendsRes.ok) {
-        const trendsData = await trendsRes.json()
-        setTrendsData(trendsData.data)
-      }
-
-    } catch (error) {
-      console.error('Error fetching analytics data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (!isLoggedIn) {
-    return null // Will redirect to login
-  }
-
-  if (user?.role !== 'donor') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🚫</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600 mb-4">This page is only accessible to donors.</p>
-          <p className="text-sm text-gray-500">Please contact the administrator if you believe this is an error.</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading Analytics Dashboard...</p>
-        </div>
-      </div>
-    )
-  }
+    setOverallStats(mockOverallStats)
+    setCampusData(mockCampusData)
+    setTeacherData(mockTeacherData)
+    setLoading(false)
+  }, [refreshKey])
 
   const refreshData = () => {
-    setRefreshKey(prev => prev + 1)
-    fetchAnalyticsData()
+    setRefreshKey((prev) => prev + 1)
   }
 
   const getCurrentDate = () => {
-    return new Date().toLocaleDateString('en-GB', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: '2-digit' 
+    return new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
     })
   }
 
@@ -237,17 +240,29 @@ export default function AnalyticsDashboard() {
     return Math.ceil(days / 7)
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[hsl(208,98%,23%)] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Analytics Dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10 shadow-lg">
+    <div className="min-h-screen bg-white">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
               <div className="flex items-center gap-4 mb-2">
-                <span className="text-sm text-gray-500">{getCurrentDate()} · WEEK {getCurrentWeek()} · Al Khair Lingo Lab</span>
+                <span className="text-xs text-gray-500 uppercase tracking-wider">
+                  {getCurrentDate()} · WEEK {getCurrentWeek()} · Analytics
+                </span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <h1 className="text-4xl font-bold text-[hsl(208,98%,23%)] flex items-center gap-3">
                 Dashboard
                 <button className="text-gray-400 hover:text-gray-600 transition-colors">
                   <Eye className="h-5 w-5" />
@@ -257,569 +272,367 @@ export default function AnalyticsDashboard() {
             <div className="flex items-center gap-4">
               <button
                 onClick={refreshData}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300"
+                className="flex items-center gap-2 bg-[hsl(208,98%,23%)] hover:bg-[hsl(208,98%,18%)] text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
               >
                 <RefreshCw className="h-4 w-4" />
-                Refresh Data
+                Refresh
               </button>
-              <div className="text-sm text-gray-500">
-                Last updated: {overallStats?.date ? new Date(overallStats.date).toLocaleDateString() : 'N/A'}
+              <div className="text-xs text-gray-500">
+                Updated: {overallStats?.date ? new Date(overallStats.date).toLocaleDateString() : "N/A"}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Enhanced Overview Section with Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* System Overview with Chart */}
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-500" />
-                System Overview
-              </h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Live Data
-              </div>
-            </div>
-            
-            {/* User Distribution Chart */}
-            <div className="mb-6">
-              <h4 className="text-lg font-medium text-gray-800 mb-4">User Distribution</h4>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Students', value: overallStats?.total_students || 0, color: '#10B981' },
-                        { name: 'Teachers', value: overallStats?.total_teachers || 0, color: '#3B82F6' },
-                        { name: 'Donors', value: 1, color: '#8B5CF6' }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {[
-                        { name: 'Students', value: overallStats?.total_students || 0, color: '#10B981' },
-                        { name: 'Teachers', value: overallStats?.total_teachers || 0, color: '#3B82F6' },
-                        { name: 'Donors', value: 1, color: '#8B5CF6' }
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value, name) => [value, name]}
-                      labelStyle={{ color: '#374151' }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Progress Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 min-w-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Learning Progress</span>
-                  <BookOpen className="h-4 w-4 text-blue-500" />
-                </div>
-                <div className="text-2xl font-bold text-blue-600 break-words">
-                  {overallStats?.total_levels_completed || 0}/{Math.max(overallStats?.total_levels || 1, 1)}
-                </div>
-                <div className="text-xs text-gray-500">levels completed</div>
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-1000"
-                    style={{ 
-                      width: `${overallStats ? (overallStats.total_levels_completed / Math.max(overallStats.total_levels || 1, 1)) * 100 : 0}%` 
-                    }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 min-w-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Total XP</span>
-                  <Zap className="h-4 w-4 text-green-500" />
-                </div>
-                <div className="text-2xl font-bold text-green-600">
-                  {overallStats?.total_xp_earned || 0}
-                </div>
-                <div className="text-xs text-gray-500">points earned</div>
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full" style={{ width: '75%' }}></div>
-                </div>
-                </div>
-              </div>
-            </div>
-            
-          {/* Today's Activity */}
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Activity className="h-5 w-5 text-green-500" />
-                Today's Activity
-              </h3>
-              <div className="text-sm text-gray-500">{getCurrentDate()}</div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <Users className="h-5 w-5 text-white" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          {[
+            {
+              label: "Total Users",
+              value: overallStats?.total_users || 0,
+              icon: Users,
+              color: "hsl(208, 98%, 23%)",
+              change: "+12%",
+            },
+            {
+              label: "Active Today",
+              value: overallStats?.active_users_today || 0,
+              icon: Activity,
+              color: "#10b981",
+              change: "+8%",
+            },
+            {
+              label: "Levels Completed",
+              value: overallStats?.total_levels_completed || 0,
+              icon: Target,
+              color: "#f59e0b",
+              change: "+15%",
+            },
+            {
+              label: "Total XP",
+              value: (overallStats?.total_xp_earned || 0).toLocaleString(),
+              icon: Zap,
+              color: "#8b5cf6",
+              change: "+25%",
+            },
+          ].map((stat, index) => {
+            const Icon = stat.icon
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-gray-50 border border-gray-200 rounded-xl p-6 hover:border-gray-300 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${stat.color}20` }}
+                  >
+                    <Icon className="h-5 w-5" style={{ color: stat.color }} />
                   </div>
-            <div>
-                    <div className="text-sm text-gray-600">Active Users</div>
-                    <div className="text-lg font-bold text-green-600">{overallStats?.active_users_today || 0}</div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-green-600">
+                    <ArrowUpRight className="h-3 w-3" />
+                    {stat.change}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Today</div>
-                  <div className="text-sm font-medium text-green-600">+12%</div>
-                </div>
-                </div>
-
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Target className="h-5 w-5 text-white" />
-                </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Levels Completed</div>
-                    <div className="text-lg font-bold text-blue-600">{overallStats?.levels_completed_today || 0}</div>
-                </div>
-              </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Today</div>
-                  <div className="text-sm font-medium text-blue-600">+8%</div>
-                </div>
-            </div>
-            
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                    <Trophy className="h-5 w-5 text-white" />
-                  </div>
-            <div>
-                    <div className="text-sm text-gray-600">XP Earned</div>
-                    <div className="text-lg font-bold text-purple-600">{overallStats?.total_xp_earned || 0}</div>
-                </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Total</div>
-                  <div className="text-sm font-medium text-purple-600">+15%</div>
-                </div>
-              </div>
-            </div>
-          </div>
+                <div className="text-2xl font-bold text-[hsl(208,98%,23%)] mb-1">{stat.value}</div>
+                <div className="text-xs text-gray-600">{stat.label}</div>
+              </motion.div>
+            )
+          })}
         </div>
 
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Today</h3>
-              <Clock className="h-5 w-5 text-blue-500" />
-            </div>
-            <div className="text-3xl font-bold text-blue-600 mb-2">
-              {overallStats?.levels_completed_today || 0}
-            </div>
-            <div className="text-sm text-gray-600">Levels Completed</div>
-            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-500 h-2 rounded-full" style={{ width: '75%' }}></div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">This Week</h3>
-              <Calendar className="h-5 w-5 text-green-500" />
-            </div>
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {overallStats?.students_active_this_week || 0}
-            </div>
-            <div className="text-sm text-gray-600">Active Students</div>
-            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-green-500 h-2 rounded-full" style={{ width: '60%' }}></div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">This Month</h3>
-              <TrendingUp className="h-5 w-5 text-purple-500" />
-            </div>
-            <div className="text-3xl font-bold text-purple-600 mb-2">
-              {overallStats?.students_active_this_month || 0}
-            </div>
-            <div className="text-sm text-gray-600">Monthly Active</div>
-            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-purple-500 h-2 rounded-full" style={{ width: '85%' }}></div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Detailed Analytics Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Campus Performance with Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* System Overview Chart */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+            className="lg:col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-green-500" />
-                Campus Performance
+              <h3 className="text-lg font-semibold text-[hsl(208,98%,23%)] flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                System Overview
               </h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-gray-600">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                {campusData.length} Campuses
+                Live
               </div>
             </div>
-            
-            {/* Campus Comparison Chart */}
-            <div className="mb-6">
-              <h4 className="text-lg font-medium text-gray-800 mb-4">Students Distribution</h4>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={campusData.map((campus) => ({
-                    name: campus.campus_name.split(' ')[0], // First word only
-                    students: campus.total_students,
-                    teachers: campus.total_teachers,
-                    classes: campus.total_classes
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fontSize: 12 }}
-                      stroke="#6b7280"
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12 }}
-                      stroke="#6b7280"
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#fff', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      labelStyle={{ color: '#374151', fontWeight: 'bold' }}
-                    />
-                    <Legend />
-                    <Bar 
-                      dataKey="students" 
-                      fill="#10B981" 
-                      radius={[4, 4, 0, 0]}
-                      name="Students"
-                    />
-                    <Bar 
-                      dataKey="teachers" 
-                      fill="#3B82F6" 
-                      radius={[4, 4, 0, 0]}
-                      name="Teachers"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            
-            {/* Campus List */}
-            <div className="space-y-3">
-              <h4 className="text-lg font-medium text-gray-800 mb-3">Campus Details</h4>
-              {campusData.length > 0 ? campusData.map((campus, index) => (
-                <div key={campus.campus_id} className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {index + 1}
-                    </div>
-                  <div>
-                      <h4 className="font-medium text-gray-900 text-sm">{campus.campus_name}</h4>
-                      <p className="text-xs text-gray-600">{campus.total_students} students, {campus.total_teachers} teachers</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-green-600">{campus.total_classes}</div>
-                    <div className="text-xs text-gray-500">classes</div>
-                  </div>
-                </div>
-              )) : (
-                <div className="text-center py-6 text-gray-500 text-sm">No campus data available</div>
-              )}
-            </div>
-          </motion.div>
 
-          {/* Teachers Performance Chart */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <GraduationCap className="h-5 w-5 text-indigo-500" />
-                Teachers Performance
-              </h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                {teacherData.length} Teachers
-              </div>
-            </div>
-            
-            {/* Teachers Bar Chart */}
-            <div className="mb-6">
-              <h4 className="text-lg font-medium text-gray-800 mb-4">Students per Teacher</h4>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={teacherData.slice(0, 5).map((teacher, index) => ({
-                    name: teacher.teacher_name.split(' ')[0], // First name only
-                    students: teacher.total_students,
-                    completion: teacher.average_completion_rate
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fontSize: 12 }}
-                      stroke="#6b7280"
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12 }}
-                      stroke="#6b7280"
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#fff', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      labelStyle={{ color: '#374151', fontWeight: 'bold' }}
-                    />
-                    <Bar 
-                      dataKey="students" 
-                      fill="#3B82F6" 
-                      radius={[4, 4, 0, 0]}
-                      name="Students"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            
-            {/* Top Teachers List */}
-            <div className="space-y-3">
-              <h4 className="text-lg font-medium text-gray-800 mb-3">Top Performers</h4>
-              {teacherData.length > 0 ? teacherData.slice(0, 3).map((teacher, index) => (
-                <div key={teacher.teacher_id} className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900 text-sm">{teacher.teacher_name}</h4>
-                      <p className="text-xs text-gray-600">{teacher.total_students} students</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-indigo-600">{teacher.average_completion_rate}%</div>
-                    <div className="text-xs text-gray-500">completion</div>
-                  </div>
-                </div>
-              )) : (
-                <div className="text-center py-6 text-gray-500 text-sm">No teacher data available</div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Enhanced Bottom Section with Trend Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Activity Trends Chart */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-purple-500" />
-                Activity Trends
-              </h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                Last 7 Days
-              </div>
-            </div>
-            
-            {/* Mock trend data - in real app this would come from API */}
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[
-                  { day: 'Mon', users: 45, levels: 12, xp: 1200 },
-                  { day: 'Tue', users: 52, levels: 18, xp: 1500 },
-                  { day: 'Wed', users: 48, levels: 15, xp: 1350 },
-                  { day: 'Thu', users: 61, levels: 22, xp: 1800 },
-                  { day: 'Fri', users: 58, levels: 20, xp: 1650 },
-                  { day: 'Sat', users: 35, levels: 8, xp: 900 },
-                  { day: 'Sun', users: 42, levels: 14, xp: 1100 }
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="day" 
-                    tick={{ fontSize: 12 }}
-                    stroke="#6b7280"
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    stroke="#6b7280"
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#fff', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                <AreaChart
+                  data={[
+                    { day: "Mon", users: 450, levels: 120, xp: 12000 },
+                    { day: "Tue", users: 520, levels: 180, xp: 15000 },
+                    { day: "Wed", users: 480, levels: 150, xp: 13500 },
+                    { day: "Thu", users: 610, levels: 220, xp: 18000 },
+                    { day: "Fri", users: 580, levels: 200, xp: 16500 },
+                    { day: "Sat", users: 350, levels: 80, xp: 9000 },
+                    { day: "Sun", users: 420, levels: 140, xp: 11000 },
+                  ]}
+                >
+                  <defs>
+                    <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(208, 98%, 23%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(208, 98%, 23%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                  <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
                     }}
-                    labelStyle={{ color: '#374151', fontWeight: 'bold' }}
+                    labelStyle={{ color: "hsl(208, 98%, 23%)" }}
                   />
-                  <Legend />
-                  <Area 
-                    type="monotone" 
-                    dataKey="users" 
-                    stackId="1" 
-                    stroke="#3B82F6" 
-                    fill="#3B82F6" 
-                    fillOpacity={0.6}
+                  <Area
+                    type="monotone"
+                    dataKey="users"
+                    stroke="hsl(208, 98%, 23%)"
+                    fillOpacity={1}
+                    fill="url(#colorUsers)"
                     name="Active Users"
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="levels" 
-                    stackId="2" 
-                    stroke="#10B981" 
-                    fill="#10B981" 
-                    fillOpacity={0.6}
-                    name="Levels Completed"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
 
-          {/* System Health Dashboard */}
+          {/* User Distribution */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-gray-50 border border-gray-200 rounded-xl p-6"
+          >
+            <h3 className="text-lg font-semibold text-[hsl(208,98%,23%)] mb-6 flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Distribution
+            </h3>
+
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Students", value: overallStats?.total_students || 0, color: "#10B981" },
+                      { name: "Teachers", value: overallStats?.total_teachers || 0, color: "hsl(208, 98%, 23%)" },
+                      { name: "Admin", value: 5, color: "#8B5CF6" },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: "Students", value: overallStats?.total_students || 0, color: "#10B981" },
+                      { name: "Teachers", value: overallStats?.total_teachers || 0, color: "hsl(208, 98%, 23%)" },
+                      { name: "Admin", value: 5, color: "#8B5CF6" },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                    }}
+                    labelStyle={{ color: "hsl(208, 98%, 23%)" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Campus Performance */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-gray-50 border border-gray-200 rounded-xl p-6"
+          >
+            <h3 className="text-lg font-semibold text-[hsl(208,98%,23%)] mb-6 flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Campus Performance
+            </h3>
+
+            <div className="h-48 mb-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={campusData.map((campus) => ({
+                    name: campus.campus_name.split(" ")[0],
+                    students: campus.total_students,
+                    completion: campus.average_class_completion,
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                  <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                    }}
+                    labelStyle={{ color: "hsl(208, 98%, 23%)" }}
+                  />
+                  <Bar dataKey="students" fill="hsl(208, 98%, 23%)" radius={[4, 4, 0, 0]} name="Students" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="space-y-2">
+              {campusData.map((campus, index) => (
+                <div
+                  key={campus.campus_id}
+                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-[hsl(208,98%,23%)] rounded-full flex items-center justify-center text-xs font-bold text-white">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-[hsl(208,98%,23%)]">{campus.campus_name}</div>
+                      <div className="text-xs text-gray-600">{campus.total_students} students</div>
+                    </div>
+                  </div>
+                  <div className="text-sm font-semibold text-green-600">{campus.average_class_completion}%</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Teachers Performance */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+            className="bg-gray-50 border border-gray-200 rounded-xl p-6"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Activity className="h-5 w-5 text-green-500" />
-                System Health
-              </h3>
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                All Systems Operational
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <Users className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Total Users</div>
-                    <div className="text-lg font-bold text-green-600">{overallStats?.total_users || 0}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Growth</div>
-                  <div className="text-sm font-medium text-green-600">+12%</div>
-                </div>
-              </div>
+            <h3 className="text-lg font-semibold text-[hsl(208,98%,23%)] mb-6 flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              Top Teachers
+            </h3>
 
-              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <GraduationCap className="h-5 w-5 text-white" />
-              </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Teachers</div>
-                    <div className="text-lg font-bold text-blue-600">{overallStats?.total_teachers || 0}</div>
-              </div>
-              </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Active</div>
-                  <div className="text-sm font-medium text-blue-600">100%</div>
-              </div>
+            <div className="h-48 mb-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={teacherData.slice(0, 3).map((teacher) => ({
+                    name: teacher.teacher_name.split(" ")[0],
+                    completion: teacher.average_completion_rate,
+                    students: teacher.total_students,
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                  <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                    }}
+                    labelStyle={{ color: "hsl(208, 98%, 23%)" }}
+                  />
+                  <Bar dataKey="completion" fill="hsl(208, 98%, 23%)" radius={[4, 4, 0, 0]} name="Completion %" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
-              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-white" />
+            <div className="space-y-2">
+              {teacherData.slice(0, 3).map((teacher, index) => (
+                <div
+                  key={teacher.teacher_id}
+                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-[hsl(208,98%,23%)] rounded-full flex items-center justify-center text-xs font-bold text-white">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-[hsl(208,98%,23%)]">{teacher.teacher_name}</div>
+                      <div className="text-xs text-gray-600">{teacher.total_students} students</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Students</div>
-                    <div className="text-lg font-bold text-purple-600">{overallStats?.total_students || 0}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Engagement</div>
-                  <div className="text-sm font-medium text-purple-600">85%</div>
-                </div>
-            </div>
-            
-              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                    <Zap className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Total XP</div>
-                    <div className="text-lg font-bold text-orange-600">{overallStats?.total_xp_earned || 0}</div>
+                  <div className="text-sm font-semibold text-[hsl(208,98%,23%)]">
+                    {teacher.average_completion_rate}%
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Earned</div>
-                  <div className="text-sm font-medium text-orange-600">+25%</div>
-                </div>
-              </div>
+              ))}
             </div>
           </motion.div>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-gray-50 border border-gray-200 rounded-xl p-6"
+        >
+          <h3 className="text-lg font-semibold text-[hsl(208,98%,23%)] mb-6 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Activity Trends
+          </h3>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={[
+                  { day: "Mon", users: 450, levels: 120, xp: 12000 },
+                  { day: "Tue", users: 520, levels: 180, xp: 15000 },
+                  { day: "Wed", users: 480, levels: 150, xp: 13500 },
+                  { day: "Thu", users: 610, levels: 220, xp: 18000 },
+                  { day: "Fri", users: 580, levels: 200, xp: 16500 },
+                  { day: "Sat", users: 350, levels: 80, xp: 9000 },
+                  { day: "Sun", users: 420, levels: 140, xp: 11000 },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#e5e7eb" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "hsl(208, 98%, 23%)" }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="users"
+                  stroke="hsl(208, 98%, 23%)"
+                  strokeWidth={2}
+                  name="Active Users"
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="levels"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  name="Levels Completed"
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
       </div>
     </div>
   )
