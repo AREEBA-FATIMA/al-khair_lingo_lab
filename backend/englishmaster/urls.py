@@ -51,6 +51,7 @@ urlpatterns = [
     path('api/vocabulary/', include('vocabulary.urls')),
     path('api/grammar/', include('grammar.urls')),
     path('api/placement/', include('placement.urls')),
+    path('api/english-coordinator/', include('english_coordinator.urls')),
 ]
 
 # Serve media files during development

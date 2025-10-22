@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.contrib.auth.hashers import make_password, check_password
 
 
 class Teacher(models.Model):
@@ -19,6 +20,28 @@ class Teacher(models.Model):
     # --- Academic Assignment ---
     # Teachers are not assigned to specific classes
     # They are just added with basic info and can be assigned to grades later
+    
+    # English Coordinator relationship
+    english_coordinator = models.ForeignKey(
+        'english_coordinator.EnglishCoordinator',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='supervised_teachers',
+        help_text="English Coordinator supervising this teacher"
+    )
+    
+    # Teacher type
+    TEACHER_TYPE_CHOICES = [
+        ('regular', 'Regular Teacher'),
+        ('english_head', 'English Head'),
+    ]
+    teacher_type = models.CharField(
+        max_length=20,
+        choices=TEACHER_TYPE_CHOICES,
+        default='regular',
+        help_text="Type of teacher"
+    )
     
     # --- Campus ---
     campus = models.ForeignKey(
@@ -49,6 +72,10 @@ class Teacher(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
+        # Hash password if it's plain text (for new teachers or password changes)
+        if self.password and not self.password.startswith('pbkdf2_'):
+            self.password = make_password(self.password)
+        
         # Generate teacher ID if not provided
         if not self.teacher_id or self.teacher_id == "TEMP-TEACHER-ID":
             try:
@@ -93,6 +120,14 @@ class Teacher(models.Model):
         
         # Create or update User account for teacher
         self._create_or_update_user_account()
+
+    def check_password(self, raw_password):
+        """Check if raw password matches hashed password"""
+        return check_password(raw_password, self.password)
+    
+    def set_password(self, raw_password):
+        """Set password in hashed form"""
+        self.password = make_password(raw_password)
 
     def _create_or_update_user_account(self):
         """Create or update User account for teacher"""

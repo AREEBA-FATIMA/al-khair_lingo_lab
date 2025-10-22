@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'vocabulary',
     'grammar',
     'placement',
+    'english_coordinator',
 ]
 
 MIDDLEWARE = [

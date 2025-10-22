@@ -4,6 +4,9 @@ from django.utils import timezone
 from django.core.validators import RegexValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings
+import secrets
+import string
 
 
 class UserManager(BaseUserManager):
@@ -61,6 +64,12 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('role', 'teacher')
         extra_fields.setdefault('is_verified', True)
         return self.create_user(email, password, **extra_fields)
+    
+    def create_english_coordinator_user(self, email, password=None, **extra_fields):
+        """Create an English Coordinator user (email required)"""
+        extra_fields.setdefault('role', 'english_coordinator')
+        extra_fields.setdefault('is_verified', True)
+        return self.create_user(email, password, **extra_fields)
 
 
 # StudentList, TeacherList, DonorList models removed - now handled in separate apps
@@ -75,6 +84,7 @@ class User(AbstractUser):
         ('teacher', 'Teacher'),
         ('student', 'Student'),
         ('donor', 'Donor'),
+        ('english_coordinator', 'English Coordinator'),
     ]
     
     # Override default fields
@@ -134,9 +144,12 @@ class User(AbstractUser):
     def is_donor(self):
         return self.role == 'donor'
     
+    def is_english_coordinator(self):
+        return self.role == 'english_coordinator'
+    
     def can_login_with_password(self):
         """Check if user can login with password"""
-        return self.role in ['admin', 'teacher']
+        return self.role in ['admin', 'teacher', 'english_coordinator']
     
     def can_login_with_student_id(self):
         """Check if user can login with student ID"""
@@ -205,108 +218,162 @@ class LoginLog(models.Model):
 
 # DISABLED: This signal causes infinite loop with Student/Teacher models
 # Student and Teacher models now handle User creation themselves
-"""
-@receiver(post_save, sender=User)
-def create_student_or_teacher_profile(sender, instance, created, **kwargs):
-    # Automatically create Student or Teacher profile when User is created
-    if created:  # Only when user is first created
-        if instance.role == 'student':
-            # Create Student profile
-            try:
-                from students.models import Student
-                from campus.models import Campus
-                
-                # Get default campus (C01)
-                default_campus = Campus.objects.first()
-                if not default_campus:
-                    print("❌ No campus found! Please create a campus first.")
-                    return
-                
-                # Generate student_id
-                from django.db.models import Max
-                last_student = Student.objects.filter(
-                    campus=default_campus
-                ).exclude(student_id__isnull=True).aggregate(
-                    max_id=Max('student_id')
-                )['max_id']
-                
-                if last_student and '-' in last_student:
-                    try:
-                        last_serial = int(last_student.split('-')[-1])
-                    except:
-                        last_serial = 0
-                else:
-                    last_serial = 0
-                
-                next_serial = last_serial + 1
-                campus_code = f"C{default_campus.id:02d}"
-                student_id = f"{campus_code}-M-G01-A-{next_serial:04d}"
-                
-                # Create Student
-                student = Student.objects.create(
-                    name=f"{instance.first_name} {instance.last_name}".strip(),
-                    father_name="Unknown",
-                    grade='1',
-                    section='A',
-                    campus=default_campus,
-                    password=instance.password or 'student123',
-                    student_id=student_id,
-                    is_active=instance.is_active
-                )
-                
-                # Update User with student_id
-                instance.student_id = student_id
-                instance.save()
-                
-                print(f"Student profile created: {student_id}")
-                
-            except Exception as e:
-                print(f"Error creating student profile: {str(e)}")
+
+
+class PasswordResetToken(models.Model):
+    """Model for managing password reset tokens"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='password_reset_tokens',
+        help_text="User requesting password reset"
+    )
+    
+    token = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Unique reset token"
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="When token was created"
+    )
+    
+    expires_at = models.DateTimeField(
+        help_text="When token expires"
+    )
+    
+    used = models.BooleanField(
+        default=False,
+        help_text="Whether token has been used"
+    )
+    
+    used_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When token was used"
+    )
+    
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text="IP address of reset request"
+    )
+    
+    user_agent = models.TextField(
+        blank=True,
+        help_text="User agent string"
+    )
+    
+    class Meta:
+        verbose_name = "Password Reset Token"
+        verbose_name_plural = "Password Reset Tokens"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['expires_at']),
+            models.Index(fields=['used']),
+        ]
+    
+    def __str__(self):
+        return f"Reset token for {self.user.email} - {'Used' if self.used else 'Active'}"
+    
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = self.generate_token()
         
-        elif instance.role == 'teacher':
-            # Create Teacher profile
-            try:
-                from teachers.models import Teacher
-                from campus.models import Campus
-                
-                # Get default campus (C01)
-                default_campus = Campus.objects.first()
-                if not default_campus:
-                    print("❌ No campus found! Please create a campus first.")
-                    return
-                
-                # Generate teacher_id
-                from django.db.models import Max
-                last_teacher = Teacher.objects.filter(
-                    campus=default_campus
-                ).exclude(teacher_id__isnull=True).aggregate(
-                    max_id=Max('teacher_id')
-                )['max_id']
-                
-                if last_teacher and '-' in last_teacher:
-                    try:
-                        last_number = int(last_teacher.split('-')[-1])
-                    except:
-                        last_number = 0
-                else:
-                    last_number = 0
-                
-                next_number = last_number + 1
-                campus_code = f"C{default_campus.id:02d}"
-                teacher_id = f"{campus_code}-T-{next_number:03d}"
-                
-                # Create Teacher
-                teacher = Teacher.objects.create(
-                    name=f"{instance.first_name} {instance.last_name}".strip(),
-                    father_name="Unknown",
-                    email=instance.email or f"teacher{next_number}@school.com",
-                    campus=default_campus,
-                    teacher_id=teacher_id,
-                    is_active=instance.is_active
-                )
-                
-                print(f"Teacher profile created: {teacher_id}")
-                
-            except Exception as e:
-                print(f"Error creating teacher profile: {str(e)}")
-"""
+        if not self.expires_at:
+            # Token expires in 1 hour
+            self.expires_at = timezone.now() + timezone.timedelta(hours=1)
+        
+        super().save(*args, **kwargs)
+    
+    @staticmethod
+    def generate_token():
+        """Generate a secure random token"""
+        alphabet = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(alphabet) for _ in range(64))
+    
+    def is_valid(self):
+        """Check if token is valid (not used and not expired)"""
+        return not self.used and timezone.now() < self.expires_at
+    
+    def mark_as_used(self):
+        """Mark token as used"""
+        self.used = True
+        self.used_at = timezone.now()
+        self.save()
+    
+    @classmethod
+    def create_for_user(cls, user, ip_address=None, user_agent=None):
+        """Create a new reset token for user"""
+        # Invalidate existing tokens for this user
+        cls.objects.filter(user=user, used=False).update(used=True)
+        
+        # Create new token
+        return cls.objects.create(
+            user=user,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+    
+    @classmethod
+    def get_valid_token(cls, token):
+        """Get a valid token by token string"""
+        try:
+            reset_token = cls.objects.get(token=token)
+            if reset_token.is_valid():
+                return reset_token
+        except cls.DoesNotExist:
+            pass
+        return None
+
+
+class PasswordChangeLog(models.Model):
+    """Model for logging password changes"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='password_change_logs',
+        help_text="User who changed password"
+    )
+    
+    changed_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="When password was changed"
+    )
+    
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text="IP address of password change"
+    )
+    
+    user_agent = models.TextField(
+        blank=True,
+        help_text="User agent string"
+    )
+    
+    change_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('reset', 'Password Reset'),
+            ('change', 'Password Change'),
+            ('admin_reset', 'Admin Reset'),
+        ],
+        default='change',
+        help_text="Type of password change"
+    )
+    
+    class Meta:
+        verbose_name = "Password Change Log"
+        verbose_name_plural = "Password Change Logs"
+        ordering = ['-changed_at']
+        indexes = [
+            models.Index(fields=['user', 'changed_at']),
+            models.Index(fields=['change_type']),
+        ]
+    
+    def __str__(self):
+        return f"Password {self.change_type} for {self.user.email} at {self.changed_at}"

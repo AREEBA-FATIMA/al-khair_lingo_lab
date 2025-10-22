@@ -108,6 +108,7 @@ class Command(BaseCommand):
                 level, created = Level.objects.get_or_create(
                     level_number=global_level_num,
                     defaults={
+                        'group': group,  # Add group reference
                         'name': f'{group.name} - Level {level_num}',
                         'description': f'Level {level_num} of {group.name}',
                         'xp_reward': 10 + (level_num * 2),
