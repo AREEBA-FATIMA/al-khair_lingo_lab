@@ -36,7 +36,7 @@ class Student(models.Model):
     
     # Static choices - no dynamic fields
     grade = models.CharField(max_length=50, choices=GRADE_CHOICES, help_text="Student's grade")
-    shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='morning', help_text="Student's shift (Morning/Afternoon)")
+    shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='morning', help_text="Student's shift (Morning/Afternoon)", blank=True, null=True)
     
     # --- Campus and Class Assignment ---
     campus = models.ForeignKey(

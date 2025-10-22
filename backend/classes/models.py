@@ -30,7 +30,9 @@ class Grade(models.Model):
             ('afternoon', 'Afternoon'),
         ],
         default='morning',
-        help_text="Shift for this grade"
+        help_text="Shift for this grade",
+        blank=True,
+        null=True
     )
     
     # English teacher assignment

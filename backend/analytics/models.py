@@ -113,7 +113,7 @@ class TeacherAnalytics(models.Model):
     date = models.DateField(auto_now_add=True)
     
     # Class Info
-    assigned_grade = models.ForeignKey(Grade, on_delete=models.CASCADE, null=True, blank=True)
+    assigned_class = models.ForeignKey(Grade, on_delete=models.CASCADE, null=True, blank=True, db_column='assigned_class_id')
     total_students = models.PositiveIntegerField(default=0)
     
     # Performance Metrics
@@ -188,7 +188,7 @@ class ClassAnalytics(models.Model):
     """Class-specific analytics"""
     
     id = models.AutoField(primary_key=True)
-    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='analytics', null=True, blank=True)
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='analytics', null=True, blank=True, db_column='classroom_id')
     date = models.DateField(auto_now_add=True)
     
     # Class Stats

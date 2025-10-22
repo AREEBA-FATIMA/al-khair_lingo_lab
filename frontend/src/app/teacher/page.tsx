@@ -48,38 +48,42 @@ export default function TeacherDashboardPage() {
       try {
         setLoading(true)
         setError(null)
-        const data = await apiService.getStudents({ search, page, page_size: 20 })
-        const list: StudentItem[] = data.results || data || []
+        
+        // Use teacher dashboard API instead of students API
+        const dashboardData = await apiService.getTeacherDashboard()
+        
+        // Transform dashboard data to match expected format
+        const studentProgress = dashboardData.student_progress || []
+        const list: StudentItem[] = studentProgress.map((student: any) => ({
+          id: student.student_id,
+          username: student.name,
+          first_name: student.name?.split(' ')[0] || '',
+          last_name: student.name?.split(' ').slice(1).join(' ') || '',
+          email: `${student.student_id}@student.edu`,
+          class_name: `${student.grade} - ${student.section}`,
+          campus_name: dashboardData.teacher_info?.campus || ''
+        }))
+        
         setStudents(list)
-        setNext(data.next || null)
-        setPrev(data.previous || null)
+        setNext(null)
+        setPrev(null)
 
-        // fetch progress summaries in parallel (best-effort)
-        const summaries = await Promise.all(
-          list.map(async (s) => {
-            try {
-              const prog = await apiService.getStudentProgress(s.id)
-              return { id: s.id, prog }
-            } catch (e) {
-              return { id: s.id, prog: null }
-            }
-          })
-        )
+        // Transform progress data
         const byId: Record<number, StudentProgressSummary> = {}
-        for (const item of summaries) {
-          if (item.prog) {
-            byId[item.id] = {
-              total_xp: item.prog.total_xp ?? 0,
-              highest_level: item.prog.highest_level ?? 0,
-              completed_levels: item.prog.completed_levels ?? 0,
-              current_streak: item.prog.current_streak ?? 0,
-              hearts: item.prog.hearts ?? 0
-            }
+        for (const student of studentProgress) {
+          byId[student.student_id] = {
+            total_xp: student.total_xp || 0,
+            highest_level: student.completed_levels || 0,
+            completed_levels: student.completed_levels || 0,
+            current_streak: student.current_streak || 0,
+            hearts: 5 // Default hearts
           }
         }
         setProgressById(byId)
+        
       } catch (e: any) {
-        setError(e?.message || 'Failed to load students')
+        console.error('Teacher dashboard error:', e)
+        setError(e?.message || 'Failed to load teacher dashboard')
       } finally {
         setLoading(false)
       }
@@ -102,7 +106,7 @@ export default function TeacherDashboardPage() {
       { xp: 0, completed: 0, active: 0 }
     )
     const avgXP = Math.round(totals.xp / students.length)
-    const avgCompletion = Math.round((totals.completed / (students.length * 370)) * 100)
+    const avgCompletion = Math.round((totals.completed / (students.length * 200)) * 100) // Updated to 200 levels
     return { total: students.length, avgXP, avgCompletion: isFinite(avgCompletion) ? avgCompletion : 0, active: totals.active }
   }, [students, progressById])
 

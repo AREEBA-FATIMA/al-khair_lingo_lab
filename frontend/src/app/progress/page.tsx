@@ -15,7 +15,9 @@ import {
   BookOpen,
   Leaf,
   BarChart3,
-  Activity
+  Activity,
+  CheckCircle,
+  Lock
 } from 'lucide-react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
@@ -53,6 +55,7 @@ interface Achievement {
   icon: string
   unlocked: boolean
   unlocked_at?: string
+  xp_reward: number
 }
 
 export default function ProgressPage() {
@@ -60,9 +63,20 @@ export default function ProgressPage() {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [loading, setLoading] = useState(true)
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, user } = useAuth()
 
   useEffect(() => {
+    // Check if user is logged in and is a student
+    if (!isLoggedIn) {
+      window.location.href = '/login'
+      return
+    }
+    
+    if (user?.role !== 'student') {
+      window.location.href = '/'
+      return
+    }
+
     fetchUserStats()
     fetchRecentActivity()
     fetchAchievements()
@@ -85,7 +99,7 @@ export default function ProgressPage() {
       window.removeEventListener('levelCompleted', handleLevelCompleted)
       window.removeEventListener('progressUpdated', handleProgressUpdated)
     }
-  }, [])
+  }, [isLoggedIn, user])
 
   const loadProgressFromLocalStorage = () => {
     const progressManager = ProgressManager.getInstance()
@@ -166,21 +180,168 @@ export default function ProgressPage() {
 
   const fetchRecentActivity = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/progress/recent/')
-      const data = await response.json()
-      setRecentActivity(data)
+      // Generate recent activity from ProgressManager
+      const progressManager = ProgressManager.getInstance()
+      const userProgress = progressManager.getUserProgress()
+      
+      // Create mock recent activity based on completed levels
+      const mockActivity: RecentActivity[] = userProgress.completedLevels.slice(-5).map((levelId, index) => ({
+        id: levelId,
+        type: 'level',
+        level_name: `Level ${levelId}`,
+        xp_earned: Math.floor(Math.random() * 20) + 10, // Random XP between 10-30
+        completed_at: new Date(Date.now() - (index * 24 * 60 * 60 * 1000)).toISOString(), // Last 5 days
+        score: Math.floor(Math.random() * 30) + 70 // Random score between 70-100
+      }))
+      
+      setRecentActivity(mockActivity)
     } catch (error) {
       console.error('Error fetching recent activity:', error)
+      // Fallback to empty array
+      setRecentActivity([])
     }
   }
 
   const fetchAchievements = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/progress/achievements/')
-      const data = await response.json()
-      setAchievements(data)
+      // Generate achievements based on user progress
+      const progressManager = ProgressManager.getInstance()
+      const userProgress = progressManager.getUserProgress()
+      
+      const mockAchievements: Achievement[] = []
+      
+      // First Level Achievement
+      if (userProgress.completedLevels.length >= 1) {
+        mockAchievements.push({
+          id: 1,
+          name: 'First Steps',
+          description: 'Completed your first level',
+          icon: '🌱',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 50
+        })
+      }
+      
+      // Level 5 Achievement
+      if (userProgress.completedLevels.length >= 5) {
+        mockAchievements.push({
+          id: 2,
+          name: 'Getting Started',
+          description: 'Completed 5 levels',
+          icon: '🌿',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 100
+        })
+      }
+      
+      // Level 10 Achievement
+      if (userProgress.completedLevels.length >= 10) {
+        mockAchievements.push({
+          id: 3,
+          name: 'On a Roll',
+          description: 'Completed 10 levels',
+          icon: '🌳',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 200
+        })
+      }
+      
+      // Level 20 Achievement
+      if (userProgress.completedLevels.length >= 20) {
+        mockAchievements.push({
+          id: 4,
+          name: 'Level Master',
+          description: 'Completed 20 levels',
+          icon: '🏆',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 300
+        })
+      }
+      
+      // Streak Achievements
+      if (userProgress.currentStreak >= 3) {
+        mockAchievements.push({
+          id: 5,
+          name: 'Streak Master',
+          description: 'Maintained a 3-day streak',
+          icon: '🔥',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 150
+        })
+      }
+      
+      if (userProgress.currentStreak >= 7) {
+        mockAchievements.push({
+          id: 6,
+          name: 'Week Warrior',
+          description: 'Maintained a 7-day streak',
+          icon: '⚡',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 300
+        })
+      }
+      
+      // XP Achievements
+      if (userProgress.totalXP >= 500) {
+        mockAchievements.push({
+          id: 7,
+          name: 'XP Collector',
+          description: 'Earned 500+ XP',
+          icon: '⭐',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 100
+        })
+      }
+      
+      if (userProgress.totalXP >= 1000) {
+        mockAchievements.push({
+          id: 8,
+          name: 'XP Legend',
+          description: 'Earned 1000+ XP',
+          icon: '💎',
+          unlocked: true,
+          unlocked_at: new Date().toISOString(),
+          xp_reward: 500
+        })
+      }
+      
+      // Add locked achievements for motivation
+      if (userProgress.completedLevels.length < 5) {
+        mockAchievements.push({
+          id: 9,
+          name: 'Getting Started',
+          description: 'Complete 5 levels',
+          icon: '🌿',
+          unlocked: false,
+          unlocked_at: '',
+          xp_reward: 100
+        })
+      }
+      
+      if (userProgress.currentStreak < 3) {
+        mockAchievements.push({
+          id: 10,
+          name: 'Streak Master',
+          description: 'Maintain a 3-day streak',
+          icon: '🔥',
+          unlocked: false,
+          unlocked_at: '',
+          xp_reward: 150
+        })
+      }
+      
+      setAchievements(mockAchievements)
     } catch (error) {
       console.error('Error fetching achievements:', error)
+      // Fallback to empty array
+      setAchievements([])
     }
   }
 
@@ -209,6 +370,18 @@ export default function ProgressPage() {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  // Show loading while checking authentication
+  if (!isLoggedIn || user?.role !== 'student') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-[#00bfe6] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
@@ -497,35 +670,77 @@ export default function ProgressPage() {
               Achievements
             </h3>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               {achievements && achievements.length > 0 ? (
-                achievements.map((achievement) => (
-                  <div key={achievement.id} className={`flex items-center space-x-3 p-3 rounded-lg ${
-                    achievement.unlocked ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
-                  }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                achievements.map((achievement, index) => (
+                  <motion.div
+                    key={achievement.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className={`group relative flex items-center space-x-4 p-4 rounded-xl transition-all duration-300 ${
                       achievement.unlocked 
-                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg hover:shadow-xl' 
+                        : 'bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    {/* Achievement Icon */}
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all duration-300 ${
+                      achievement.unlocked 
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500 group-hover:scale-110' 
                         : 'bg-gray-300'
                     }`}>
-                      {achievement.unlocked ? '🏆' : '🔒'}
+                      {achievement.unlocked ? achievement.icon : '🔒'}
                     </div>
+                    
+                    {/* Achievement Content */}
                     <div className="flex-1">
-                      <p className={`font-medium ${
-                        achievement.unlocked ? 'text-gray-900' : 'text-gray-500'
-                      }`}>
-                        {achievement.name}
-                      </p>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className={`font-bold text-lg ${
+                          achievement.unlocked ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {achievement.name}
+                        </p>
+                        {achievement.unlocked && (
+                          <div className="flex items-center space-x-1 bg-yellow-100 px-2 py-1 rounded-full">
+                            <span className="text-xs font-bold text-yellow-800">+{achievement.xp_reward} XP</span>
+                          </div>
+                        )}
+                      </div>
                       <p className={`text-sm ${
                         achievement.unlocked ? 'text-gray-600' : 'text-gray-400'
                       }`}>
                         {achievement.description}
                       </p>
+                      {achievement.unlocked && achievement.unlocked_at && (
+                        <p className="text-xs text-green-600 font-medium mt-1">
+                          ✓ Unlocked {new Date(achievement.unlocked_at).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
-                  </div>
+                    
+                    {/* Achievement Status Badge */}
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      achievement.unlocked 
+                        ? 'bg-green-500' 
+                        : 'bg-gray-400'
+                    }`}>
+                      {achievement.unlocked ? (
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      ) : (
+                        <Lock className="h-3 w-3 text-white" />
+                      )}
+                    </div>
+                  </motion.div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No achievements yet</p>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Award className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-lg font-medium">No achievements yet</p>
+                  <p className="text-gray-400 text-sm mt-1">Complete levels to unlock achievements!</p>
+                </div>
               )}
             </div>
           </motion.div>

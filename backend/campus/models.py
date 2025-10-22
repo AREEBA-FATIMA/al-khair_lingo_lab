@@ -19,15 +19,15 @@ class Campus(models.Model):
     campus_type = models.CharField(max_length=20, choices=CAMPUS_TYPE_CHOICES, default="main")
     
     # Location
-    address = models.TextField(help_text="Full address", default="Not specified")
-    city = models.CharField(max_length=100, help_text="City name", default="Not specified")
+    address = models.TextField(help_text="Full address", blank=True, null=True)
+    city = models.CharField(max_length=100, help_text="City name", blank=True, null=True)
     
     # Contact
-    phone = models.CharField(max_length=20, help_text="Primary phone number", default="000-000-0000")
-    email = models.EmailField(help_text="Official email address", default="campus@example.com")
+    phone = models.CharField(max_length=20, help_text="Primary phone number", blank=True, null=True)
+    email = models.EmailField(help_text="Official email address", blank=True, null=True)
     
     # Administration
-    head_name = models.CharField(max_length=255, help_text="Campus head name", default="Not specified")
+    head_name = models.CharField(max_length=255, help_text="Campus head name", blank=True, null=True)
     
     # Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")

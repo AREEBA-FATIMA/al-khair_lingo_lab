@@ -55,6 +55,9 @@ INSTALLED_APPS = [
     'campus',
     'classes',
     'analytics',
+    'vocabulary',
+    'grammar',
+    'placement',
 ]
 
 MIDDLEWARE = [

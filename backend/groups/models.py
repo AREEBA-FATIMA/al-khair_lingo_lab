@@ -26,12 +26,53 @@ class Group(models.Model):
         help_text="Sequential group number"
     )
     
+    # Track and Classification
+    TRACK_CHOICES = [
+        ('beginner', 'Beginner Track (Class 3-5)'),
+        ('intermediate', 'Intermediate Track (Class 6-10)'),
+        ('advanced', 'Advanced Track (Fluency)'),
+    ]
+    
+    track = models.CharField(
+        max_length=20,
+        choices=TRACK_CHOICES,
+        default='beginner',
+        help_text="Learning track this group belongs to"
+    )
+    topic_category = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Topic category (e.g., 'alphabet', 'family', 'animals', 'food')"
+    )
+    
     # Configuration
     difficulty = models.PositiveIntegerField(
         choices=DIFFICULTY_CHOICES,
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text="Group difficulty level"
+    )
+    
+    # Oxford 3000 Integration
+    oxford_word_range_start = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(3000)],
+        help_text="Starting Oxford 3000 word rank for this group"
+    )
+    oxford_word_range_end = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(3000)],
+        help_text="Ending Oxford 3000 word rank for this group"
+    )
+    
+    # Grammar Focus
+    grammar_focus = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of grammar points covered in this group"
     )
     
     # Unlock Configuration

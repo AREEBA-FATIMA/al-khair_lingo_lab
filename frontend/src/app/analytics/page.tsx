@@ -4,41 +4,50 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { 
+  Users, 
+  GraduationCap, 
+  BookOpen, 
+  TrendingUp, 
+  Calendar,
+  Target,
+  Trophy,
+  Award,
+  BarChart3,
+  PieChart,
+  Activity,
+  Clock,
+  Zap,
+  Star,
+  Eye,
+  ChevronRight,
+  ChevronLeft,
+  RefreshCw,
+  Download,
+  Filter,
+  Search
+} from 'lucide-react'
+import AnalyticsCharts from '@/components/AnalyticsCharts'
 
 interface OverallStats {
   date: string
-  campus_overview: {
-    total_campuses: number
-    total_grades: number
-    total_classes: number
-  }
-  user_statistics: {
-    total_users: number
-    total_teachers: number
-    total_students: number
-    active_users_today: number
-  }
-  learning_progress: {
-    total_levels: number
-    total_groups: number
-    levels_completed_today: number
-    total_levels_completed: number
-  }
-  performance_metrics: {
-    average_completion_rate: number
-    average_xp_per_student: number
-    total_xp_earned: number
-  }
-  engagement_metrics: {
-    students_with_streak: number
-    students_active_this_week: number
-    students_active_this_month: number
-  }
-  top_performers: {
-    top_student_xp: number
-    top_student_streak: number
-    top_class_completion: number
-  }
+  total_users: number
+  total_teachers: number
+  total_students: number
+  active_users_today: number
+  total_levels: number
+  total_groups: number
+  levels_completed_today: number
+  total_levels_completed: number
+  average_completion_rate: number
+  average_xp_per_student: number
+  total_xp_earned: number
+  students_with_streak: number
+  students_active_this_week: number
+  students_active_this_month: number
+  top_student_xp: number
+  top_student_streak: number
+  top_class_completion: number
 }
 
 interface CampusData {
@@ -95,8 +104,13 @@ export default function AnalyticsDashboard() {
   const [campusData, setCampusData] = useState<CampusData[]>([])
   const [teacherData, setTeacherData] = useState<TeacherData[]>([])
   const [classData, setClassData] = useState<ClassData[]>([])
+  const [trendsData, setTrendsData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedCampus, setSelectedCampus] = useState<string>('all')
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('all')
+  const [dateRange, setDateRange] = useState('week')
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Check authentication and redirect if not authorized
   useEffect(() => {
@@ -134,11 +148,12 @@ export default function AnalyticsDashboard() {
       }
 
       // Fetch all analytics data in parallel
-      const [overallRes, campusRes, teacherRes, classRes] = await Promise.all([
+      const [overallRes, campusRes, teacherRes, classRes, trendsRes] = await Promise.all([
         fetch('http://localhost:8000/api/analytics/overall/', { headers }),
         fetch('http://localhost:8000/api/analytics/campus/', { headers }),
         fetch('http://localhost:8000/api/analytics/teachers/', { headers }),
-        fetch('http://localhost:8000/api/analytics/classes/', { headers })
+        fetch('http://localhost:8000/api/analytics/classes/', { headers }),
+        fetch('http://localhost:8000/api/analytics/trends/', { headers })
       ])
 
       if (overallRes.ok) {
@@ -161,22 +176,16 @@ export default function AnalyticsDashboard() {
         setClassData(classData.data)
       }
 
+      if (trendsRes.ok) {
+        const trendsData = await trendsRes.json()
+        setTrendsData(trendsData.data)
+      }
+
     } catch (error) {
       console.error('Error fetching analytics data:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    )
   }
 
   if (!isLoggedIn) {
@@ -207,355 +216,369 @@ export default function AnalyticsDashboard() {
     )
   }
 
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1)
+    fetchAnalyticsData()
+  }
+
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString('en-GB', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: '2-digit' 
+    })
+  }
+
+  const getCurrentWeek = () => {
+    const now = new Date()
+    const startOfYear = new Date(now.getFullYear(), 0, 1)
+    const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000))
+    return Math.ceil(days / 7)
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">💰 Doner Analytics Dashboard</h1>
-              <p className="text-gray-600 mt-1">System performance overview for donors - No course access required</p>
-            </div>
-            <div className="text-sm text-gray-500">
-              Last updated: {overallStats?.date ? new Date(overallStats.date).toLocaleDateString() : 'N/A'}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white rounded-lg shadow-sm border mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6">
-              {[
-                { id: 'overview', name: 'Overview', icon: '📈' },
-                { id: 'campus', name: 'Campus', icon: '🏫' },
-                { id: 'teachers', name: 'Teachers', icon: '👨‍🏫' },
-                { id: 'classes', name: 'Classes', icon: '🏛️' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.name}
+              <div className="flex items-center gap-4 mb-2">
+                <span className="text-sm text-gray-500">{getCurrentDate()} · WEEK {getCurrentWeek()} · ENGLISH MASTER 2025</span>
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                Dashboard
+                <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <Eye className="h-5 w-5" />
                 </button>
-              ))}
-            </nav>
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={refreshData}
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh Data
+              </button>
+              <div className="text-sm text-gray-500">
+                Last updated: {overallStats?.date ? new Date(overallStats.date).toLocaleDateString() : 'N/A'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Overall Progress Bar */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 border border-gray-100">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Learning Progress</span>
+                  <span className="font-semibold text-gray-900">
+                    {overallStats?.total_levels_completed || 0}/{overallStats?.total_levels || 0} levels
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-1000"
+                    style={{ 
+                      width: `${overallStats ? (overallStats.total_levels_completed / Math.max(overallStats.total_levels, 1)) * 100 : 0}%` 
+                    }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>{overallStats?.total_levels_completed || 0} completed</span>
+                  <span>{overallStats?.total_levels || 0} total</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Activity</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Active Users</span>
+                  <span className="font-semibold text-green-600">{overallStats?.active_users_today || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Levels Completed</span>
+                  <span className="font-semibold text-blue-600">{overallStats?.levels_completed_today || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">XP Earned</span>
+                  <span className="font-semibold text-purple-600">{overallStats?.total_xp_earned || 0}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Total Users</span>
+                  <span className="font-semibold text-gray-900">{overallStats?.total_users || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Teachers</span>
+                  <span className="font-semibold text-indigo-600">{overallStats?.total_teachers || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Students</span>
+                  <span className="font-semibold text-green-600">{overallStats?.total_students || 0}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'overview' && overallStats && (
-          <OverviewTab data={overallStats} />
-        )}
-
-        {activeTab === 'campus' && (
-          <CampusTab data={campusData} />
-        )}
-
-        {activeTab === 'teachers' && (
-          <TeachersTab data={teacherData} />
-        )}
-
-        {activeTab === 'classes' && (
-          <ClassesTab data={classData} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Overview Tab Component
-function OverviewTab({ data }: { data: OverallStats }) {
-  const stats = [
-    {
-      title: 'Total Users',
-      value: data.user_statistics.total_users,
-      icon: '👥',
-      color: 'blue'
-    },
-    {
-      title: 'Active Today',
-      value: data.user_statistics.active_users_today,
-      icon: '🟢',
-      color: 'green'
-    },
-    {
-      title: 'Levels Completed',
-      value: data.learning_progress.total_levels_completed,
-      icon: '✅',
-      color: 'purple'
-    },
-    {
-      title: 'Total XP Earned',
-      value: data.performance_metrics.total_xp_earned,
-      icon: '⭐',
-      color: 'yellow'
-    }
-  ]
-
-  return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {/* Key Metrics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <motion.div
-            key={stat.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className={`bg-white rounded-lg shadow-sm border p-6 ${
-              stat.color === 'blue' ? 'border-blue-200' :
-              stat.color === 'green' ? 'border-green-200' :
-              stat.color === 'purple' ? 'border-purple-200' :
-              'border-yellow-200'
-            }`}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
           >
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">{stat.icon}</div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Today</h3>
+              <Clock className="h-5 w-5 text-blue-500" />
+            </div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">
+              {overallStats?.levels_completed_today || 0}
+            </div>
+            <div className="text-sm text-gray-600">Levels Completed</div>
+            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-blue-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">This Week</h3>
+              <Calendar className="h-5 w-5 text-green-500" />
+            </div>
+            <div className="text-3xl font-bold text-green-600 mb-2">
+              {overallStats?.students_active_this_week || 0}
+            </div>
+            <div className="text-sm text-gray-600">Active Students</div>
+            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-green-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">This Month</h3>
+              <TrendingUp className="h-5 w-5 text-purple-500" />
+            </div>
+            <div className="text-3xl font-bold text-purple-600 mb-2">
+              {overallStats?.students_active_this_month || 0}
+            </div>
+            <div className="text-sm text-gray-600">Monthly Active</div>
+            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-purple-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Detailed Analytics Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Campus Performance */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-indigo-500" />
+                Campus Performance
+              </h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {campusData.length > 0 ? campusData.slice(0, 3).map((campus, index) => (
+                <div key={campus.campus_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-gray-900">{campus.campus_name}</h4>
+                    <p className="text-sm text-gray-600">{campus.total_students} students</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-indigo-600">{campus.total_teachers}</div>
+                    <div className="text-sm text-gray-500">teachers</div>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-8 text-gray-500">No campus data available</div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Top Teachers */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Top Teachers
+              </h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {teacherData.length > 0 ? teacherData.slice(0, 3).map((teacher, index) => (
+                <div key={teacher.teacher_id} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{teacher.teacher_name}</h4>
+                      <p className="text-sm text-gray-600">{teacher.total_students} students</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-yellow-600">{teacher.average_completion_rate}%</div>
+                    <div className="text-sm text-gray-500">completion</div>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-8 text-gray-500">No teacher data available</div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Bottom Analytics Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Class Performance */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-blue-500" />
+                Class Performance
+              </h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {classData.length > 0 ? classData.slice(0, 4).map((classItem, index) => (
+                <div key={classItem.class_id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-gray-900">{classItem.class_name}</h4>
+                    <p className="text-sm text-gray-600">{classItem.grade} - {classItem.section}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-blue-600">{classItem.total_students}</div>
+                    <div className="text-xs text-gray-500">students</div>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-8 text-gray-500">No class data available</div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* System Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-green-500" />
+                System Stats
+              </h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                <span className="text-sm text-gray-600">Average Completion Rate</span>
+                <span className="font-semibold text-green-600">{overallStats?.average_completion_rate || 0}%</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                <span className="text-sm text-gray-600">Average XP per Student</span>
+                <span className="font-semibold text-purple-600">{overallStats?.average_xp_per_student || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                <span className="text-sm text-gray-600">Students with Streaks</span>
+                <span className="font-semibold text-blue-600">{overallStats?.students_with_streak || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                <span className="text-sm text-gray-600">Total XP Earned</span>
+                <span className="font-semibold text-orange-600">{overallStats?.total_xp_earned || 0}</span>
               </div>
             </div>
           </motion.div>
-        ))}
-      </div>
 
-      {/* Detailed Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Statistics */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">👥 User Statistics</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Teachers</span>
-              <span className="font-semibold">{data.user_statistics.total_teachers}</span>
+          {/* Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Activity className="h-5 w-5 text-indigo-500" />
+                Quick Actions
+              </h3>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Students</span>
-              <span className="font-semibold">{data.user_statistics.total_students}</span>
+            
+            <div className="space-y-3">
+              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-200">
+                <Download className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-gray-900">Export Report</span>
+              </button>
+              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 hover:shadow-md transition-all duration-200">
+                <Filter className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium text-gray-900">Filter Data</span>
+              </button>
+              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200 hover:shadow-md transition-all duration-200">
+                <Search className="h-4 w-4 text-purple-600" />
+                <span className="text-sm font-medium text-gray-900">Search Records</span>
+              </button>
+              <button className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 hover:shadow-md transition-all duration-200">
+                <RefreshCw className="h-4 w-4 text-orange-600" />
+                <span className="text-sm font-medium text-gray-900">Refresh All</span>
+              </button>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Active Today</span>
-              <span className="font-semibold text-green-600">{data.user_statistics.active_users_today}</span>
-            </div>
-          </div>
+          </motion.div>
         </div>
-
-        {/* Performance Metrics */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Performance Metrics</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Avg Completion Rate</span>
-              <span className="font-semibold">{data.performance_metrics.average_completion_rate}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Avg XP per Student</span>
-              <span className="font-semibold">{data.performance_metrics.average_xp_per_student}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total XP Earned</span>
-              <span className="font-semibold text-blue-600">{data.performance_metrics.total_xp_earned.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Learning Progress */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">📚 Learning Progress</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Levels</span>
-              <span className="font-semibold">{data.learning_progress.total_levels}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Groups</span>
-              <span className="font-semibold">{data.learning_progress.total_groups}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Completed Today</span>
-              <span className="font-semibold text-green-600">{data.learning_progress.levels_completed_today}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Completed</span>
-              <span className="font-semibold text-blue-600">{data.learning_progress.total_levels_completed}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Engagement Metrics */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Engagement Metrics</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Students with Streak</span>
-              <span className="font-semibold text-orange-600">{data.engagement_metrics.students_with_streak}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Active This Week</span>
-              <span className="font-semibold text-green-600">{data.engagement_metrics.students_active_this_week}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Active This Month</span>
-              <span className="font-semibold text-blue-600">{data.engagement_metrics.students_active_this_month}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Campus Tab Component
-function CampusTab({ data }: { data: CampusData[] }) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm border">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">🏫 Campus Analytics</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campus</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teachers</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classes</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Today</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total XP</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Completion</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((campus, index) => (
-              <motion.tr
-                key={campus.campus_id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="hover:bg-gray-50"
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{campus.campus_name}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{campus.total_teachers}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{campus.total_students}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{campus.total_classes}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">{campus.active_students_today}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold">{campus.total_xp_earned.toLocaleString()}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-semibold">{campus.average_class_completion}%</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-// Teachers Tab Component
-function TeachersTab({ data }: { data: TeacherData[] }) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm border">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">👨‍🏫 Teacher Analytics</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teacher</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Today</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg XP</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Top Student</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((teacher, index) => (
-              <motion.tr
-                key={teacher.teacher_id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="hover:bg-gray-50"
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{teacher.teacher_name}</div>
-                  <div className="text-sm text-gray-500">{teacher.teacher_code}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.assigned_class || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.total_students}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">{teacher.active_students_today}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-semibold">{teacher.average_completion_rate}%</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold">{teacher.average_xp_per_student}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.top_student_name || 'N/A'}</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-// Classes Tab Component
-function ClassesTab({ data }: { data: ClassData[] }) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm border">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">🏛️ Class Analytics</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teacher</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Today</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Levels Completed</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total XP</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Streak</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((classroom, index) => (
-              <motion.tr
-                key={classroom.class_id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="hover:bg-gray-50"
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{classroom.class_name}</div>
-                  <div className="text-sm text-gray-500">{classroom.class_code}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{classroom.class_teacher || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{classroom.total_students}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">{classroom.active_students_today}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold">{classroom.total_levels_completed}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-semibold">{classroom.average_completion_rate}%</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 font-semibold">{classroom.total_xp_earned.toLocaleString()}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-semibold">{classroom.average_streak}</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   )

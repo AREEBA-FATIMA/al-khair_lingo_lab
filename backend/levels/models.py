@@ -41,10 +41,32 @@ class Level(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text="Difficulty level (1-5)"
     )
+    difficulty_score = models.FloatField(
+        default=1.0,
+        validators=[MinValueValidator(1.0), MaxValueValidator(10.0)],
+        help_text="Detailed difficulty score (1.0-10.0)"
+    )
     xp_reward = models.PositiveIntegerField(
         default=10,
         validators=[MinValueValidator(1)],
         help_text="XP points awarded for completing this level"
+    )
+    
+    # Learning Content
+    learning_objectives = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of learning objectives for this level"
+    )
+    vocabulary_words = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of vocabulary words taught in this level"
+    )
+    grammar_points = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of grammar points covered in this level"
     )
     
     # Status
@@ -196,6 +218,36 @@ class Question(models.Model):
     explanation = models.TextField(
         blank=True,
         help_text="Explanation of the correct answer"
+    )
+    
+    # Learning Context
+    vocabulary_tested = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Vocabulary word being tested"
+    )
+    grammar_tested = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Grammar rule being tested"
+    )
+    cognitive_level = models.CharField(
+        max_length=20,
+        choices=[
+            ('remember', 'Remember'),
+            ('understand', 'Understand'),
+            ('apply', 'Apply'),
+            ('analyze', 'Analyze'),
+            ('evaluate', 'Evaluate'),
+            ('create', 'Create'),
+        ],
+        default='remember',
+        help_text="Cognitive level of this question"
+    )
+    distractor_analysis = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Analysis of why wrong answers are wrong"
     )
     
     # Configuration

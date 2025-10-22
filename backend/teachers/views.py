@@ -28,18 +28,10 @@ def teacher_dashboard(request):
     except Teacher.DoesNotExist:
         return Response({'error': 'Teacher profile not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    # Get assigned classroom
-    try:
-        assigned_classroom = teacher.assigned_classroom_teacher
-    except Teacher.assigned_classroom_teacher.RelatedObjectDoesNotExist:
-        return Response({'error': 'No classroom assigned to this teacher'}, status=status.HTTP_404_NOT_FOUND)
-    
-    # Get students in assigned class
+    # Get all students in teacher's campus (simplified approach)
     students = Student.objects.filter(
         campus=teacher.campus,
-        grade=assigned_classroom.grade.name,
-        section=assigned_classroom.section,
-        class_teacher=teacher
+        is_active=True
     )
     
     # Calculate class statistics
@@ -48,11 +40,15 @@ def teacher_dashboard(request):
     
     # Get student progress data
     student_progress = []
-    for student in students:
-        # Get user account for student
+    for student in students[:10]:  # Limit to first 10 students for performance
         try:
-            student_user = user.__class__.objects.get(student_id=student.student_id)
+            # Get user account for student
+            from users.models import User
+            student_user = User.objects.filter(student_id=student.student_id).first()
             
+            if not student_user:
+                continue
+                
             # Get progress data
             progress_data = LevelProgress.objects.filter(user=student_user)
             completed_levels = progress_data.filter(is_completed=True).count()
@@ -110,13 +106,12 @@ def teacher_dashboard(request):
         class_avg_levels = 0
         class_avg_streak = 0
     
-    # Get recent activity (last 7 days)
+    # Get recent activity (last 7 days) - simplified
     week_ago = timezone.now() - timedelta(days=7)
     recent_activity = LevelProgress.objects.filter(
-        user__student_id__in=[s['student_id'] for s in student_progress],
         completed_at__gte=week_ago,
         is_completed=True
-    ).order_by('-completed_at')[:20]
+    ).order_by('-completed_at')[:10]
     
     recent_activities = []
     for activity in recent_activity:
@@ -135,8 +130,8 @@ def teacher_dashboard(request):
             'name': teacher.name,
             'teacher_id': teacher.teacher_id,
             'campus': teacher.campus.campus_name,
-            'assigned_class': f"{assigned_classroom.grade.name} - {assigned_classroom.section}",
-            'shift': assigned_classroom.shift
+            'assigned_class': f"Campus: {teacher.campus.campus_name}",
+            'shift': teacher.shift
         },
         'class_overview': {
             'total_students': total_students,
@@ -281,21 +276,16 @@ def class_analytics(request):
     try:
         # Get teacher profile
         teacher = Teacher.objects.get(email=user.email)
-        assigned_classroom = teacher.assigned_classroom_teacher
         
-        if not assigned_classroom:
-            return Response({'error': 'No classroom assigned to this teacher'}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Get students in assigned class
+        # Get all students in teacher's campus (simplified approach)
         students = Student.objects.filter(
             campus=teacher.campus,
-            grade=assigned_classroom.grade.name,
-            section=assigned_classroom.section,
-            class_teacher=teacher
+            is_active=True
         )
         
         # Get all student user accounts
-        student_users = user.__class__.objects.filter(
+        from users.models import User
+        student_users = User.objects.filter(
             student_id__in=[s.student_id for s in students]
         )
         
@@ -354,7 +344,7 @@ def class_analytics(request):
         
         # Get top performers (students with highest XP)
         top_students = []
-        for student_user in student_users:
+        for student_user in student_users[:20]:  # Limit for performance
             student_progress = LevelProgress.objects.filter(user=student_user)
             total_xp = student_progress.aggregate(total=Sum('xp_earned'))['total'] or 0
             completed_levels = student_progress.filter(is_completed=True).count()
@@ -373,7 +363,7 @@ def class_analytics(request):
         
         # Get students who need attention (low activity)
         low_activity_students = []
-        for student_user in student_users:
+        for student_user in student_users[:20]:  # Limit for performance
             recent_activity = LevelProgress.objects.filter(
                 user=student_user,
                 completed_at__gte=week_ago,

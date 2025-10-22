@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Leaf, ArrowLeft, User, LogOut, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import ProgressManager from '@/utils/progressManager'
 
 interface NavigationProps {
   showBackButton?: boolean
@@ -28,6 +29,41 @@ export default function Navigation({
 
   // Debug logging
   console.log('Navigation - isLoggedIn:', isLoggedIn, 'user:', user)
+
+  // Helper functions for stats
+  const getUserLevel = () => {
+    try {
+      const progressManager = ProgressManager.getInstance()
+      const userProgress = progressManager.getUserProgress()
+      return userProgress.completedLevels.length || 0
+    } catch {
+      return 0
+    }
+  }
+
+  const getCompletedGroups = () => {
+    try {
+      const progressManager = ProgressManager.getInstance()
+      const userProgress = progressManager.getUserProgress()
+      // Calculate completed groups based on levels (assuming 20 levels per group for Group 0, 50 for others)
+      const completedLevels = userProgress.completedLevels.length
+      if (completedLevels === 0) return 0
+      if (completedLevels <= 20) return 1 // Group 0 completed
+      return Math.floor((completedLevels - 20) / 50) + 1
+    } catch {
+      return 0
+    }
+  }
+
+  const getUserStreak = () => {
+    try {
+      const progressManager = ProgressManager.getInstance()
+      const userProgress = progressManager.getUserProgress()
+      return userProgress.currentStreak || 0
+    } catch {
+      return 0
+    }
+  }
 
   // Close dropdown when clicking outside + load local avatar
   useEffect(() => {
@@ -109,12 +145,15 @@ export default function Navigation({
               >
                 Home
               </Link>
-              <Link
-                href="/progress"
-                className="px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 text-gray-600 hover:text-[#03045e] hover:bg-gradient-to-r hover:from-[#03045e]/10 hover:to-[#00bfe6]/10 hover:shadow-md"
-              >
-                Progress
-              </Link>
+              {/* Only show Progress link for students */}
+              {isLoggedIn && user?.role === 'student' && (
+                <Link
+                  href="/progress"
+                  className="px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 text-gray-600 hover:text-[#03045e] hover:bg-gradient-to-r hover:from-[#03045e]/10 hover:to-[#00bfe6]/10 hover:shadow-md"
+                >
+                  Progress
+                </Link>
+              )}
             </nav>
 
             {/* Auth Buttons or User Menu */}
@@ -172,16 +211,16 @@ export default function Navigation({
                     {/* Quick Stats */}
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="grid grid-cols-3 gap-3 text-center">
-                        <div className="bg-gray-50 rounded-lg p-2">
-                          <p className="text-xl font-bold text-[#03045e]">--</p>
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
+                          <p className="text-xl font-bold text-[#03045e]">{getUserLevel()}</p>
                           <p className="text-xs text-gray-500">Level</p>
                         </div>
-                        <div className="bg-gray-50 rounded-lg p-2">
-                          <p className="text-xl font-bold text-[#00bfe6]">--</p>
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-100">
+                          <p className="text-xl font-bold text-green-600">{getCompletedGroups()}</p>
                           <p className="text-xs text-gray-500">Groups</p>
                         </div>
-                        <div className="bg-gray-50 rounded-lg p-2">
-                          <p className="text-xl font-bold text-green-500">--</p>
+                        <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-3 border border-orange-100">
+                          <p className="text-xl font-bold text-orange-600">{getUserStreak()}</p>
                           <p className="text-xs text-gray-500">Streak</p>
                         </div>
                       </div>
@@ -239,30 +278,88 @@ export default function Navigation({
                         </div>
                       </button>
 
-                      <button
-                        onClick={async () => {
-                          try {
-                            setIsProfileOpen(false)
-                            setIsNavigating(true)
-                            await router.push('/progress')
-                          } catch (error) {
-                            console.error('Navigation error:', error)
-                            window.location.href = '/progress'
-                          } finally {
-                            setIsNavigating(false)
-                          }
-                        }}
-                        disabled={isNavigating}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-left disabled:opacity-50"
-                      >
-                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                          <span className="text-lg">📊</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">View Progress</p>
-                          <p className="text-xs text-gray-500">Track your achievements</p>
-                        </div>
-                      </button>
+                      {/* Only show Progress option for students */}
+                      {user?.role === 'student' && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              setIsProfileOpen(false)
+                              setIsNavigating(true)
+                              await router.push('/progress')
+                            } catch (error) {
+                              console.error('Navigation error:', error)
+                              window.location.href = '/progress'
+                            } finally {
+                              setIsNavigating(false)
+                            }
+                          }}
+                          disabled={isNavigating}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-left disabled:opacity-50"
+                        >
+                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <span className="text-lg">📊</span>
+                          </div>
+                          <div>
+                            <p className="font-medium">View Progress</p>
+                            <p className="text-xs text-gray-500">Track your achievements</p>
+                          </div>
+                        </button>
+                      )}
+
+                      {/* Teacher-specific navigation links */}
+                      {user?.role === 'teacher' && (
+                        <>
+                          <button
+                            onClick={async () => {
+                              try {
+                                setIsProfileOpen(false)
+                                setIsNavigating(true)
+                                await router.push('/teachers/dashboard')
+                              } catch (error) {
+                                console.error('Navigation error:', error)
+                                window.location.href = '/teachers/dashboard'
+                              } finally {
+                                setIsNavigating(false)
+                              }
+                            }}
+                            disabled={isNavigating}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-left disabled:opacity-50"
+                          >
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <span className="text-lg">👨‍🏫</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">Teacher Dashboard</p>
+                              <p className="text-xs text-gray-500">Manage your classes</p>
+                            </div>
+                          </button>
+
+                          <button
+                            onClick={async () => {
+                              try {
+                                setIsProfileOpen(false)
+                                setIsNavigating(true)
+                                await router.push('/teachers/analytics')
+                              } catch (error) {
+                                console.error('Navigation error:', error)
+                                window.location.href = '/teachers/analytics'
+                              } finally {
+                                setIsNavigating(false)
+                              }
+                            }}
+                            disabled={isNavigating}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-left disabled:opacity-50"
+                          >
+                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                              <span className="text-lg">📈</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">Class Analytics</p>
+                              <p className="text-xs text-gray-500">View student performance</p>
+                            </div>
+                          </button>
+                        </>
+                      )}
                     </div>
 
                     {/* Logout Section */}

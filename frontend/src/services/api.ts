@@ -198,9 +198,19 @@ export const apiService = {
     return response.data
   },
 
-  // Plant Growth
-  getPlantGrowth: async () => {
-    const response = await api.get('/plants/user-plant/')
+  // Teacher Dashboard
+  getTeacherDashboard: async () => {
+    const response = await api.get('/teachers/dashboard/')
+    return response.data
+  },
+
+  getStudentDetail: async (studentId: number) => {
+    const response = await api.get(`/teachers/students/${studentId}/`)
+    return response.data
+  },
+
+  getClassAnalytics: async () => {
+    const response = await api.get('/teachers/analytics/')
     return response.data
   },
 
@@ -273,6 +283,121 @@ export const apiService = {
     time_spent: number
   }) => {
     const response = await api.post('/progress/daily/', data)
+    return response.data
+  },
+
+  // Vocabulary API
+  getVocabulary: async (params?: {
+    difficulty_level?: string
+    part_of_speech?: string
+    is_oxford_3000?: boolean
+    search?: string
+  }) => {
+    const response = await api.get('/vocabulary/', { params })
+    return response.data
+  },
+
+  getVocabularyById: async (id: number) => {
+    const response = await api.get(`/vocabulary/${id}/`)
+    return response.data
+  },
+
+  reviewVocabulary: async (vocabularyId: number, data: {
+    is_correct: boolean
+    response_time?: number
+    user_answer?: string
+  }) => {
+    const response = await api.post(`/vocabulary/review/${vocabularyId}/`, data)
+    return response.data
+  },
+
+  getReviewWords: async (limit?: number) => {
+    const response = await api.get('/vocabulary/review-words/', { 
+      params: { limit: limit || 20 } 
+    })
+    return response.data
+  },
+
+  getVocabularyStats: async () => {
+    const response = await api.get('/vocabulary/stats/')
+    return response.data
+  },
+
+  // Grammar API
+  getGrammarRules: async (params?: {
+    difficulty_level?: string
+    category?: string
+    is_essential?: boolean
+    search?: string
+  }) => {
+    const response = await api.get('/grammar/grammar-rules/', { params })
+    return response.data
+  },
+
+  getGrammarRuleById: async (id: number) => {
+    const response = await api.get(`/grammar/grammar-rules/${id}/`)
+    return response.data
+  },
+
+  practiceGrammar: async (grammarRuleId: number, data: {
+    is_correct: boolean
+    response_time?: number
+    user_answer?: string
+  }) => {
+    const response = await api.post(`/grammar/practice/${grammarRuleId}/`, data)
+    return response.data
+  },
+
+  getPracticeRules: async (difficultyLevel?: string, limit?: number) => {
+    const response = await api.get('/grammar/practice-rules/', { 
+      params: { 
+        difficulty_level: difficultyLevel || 'A1',
+        limit: limit || 10 
+      } 
+    })
+    return response.data
+  },
+
+  getGrammarStats: async () => {
+    const response = await api.get('/grammar/stats/')
+    return response.data
+  },
+
+  // Placement Test API
+  getPlacementTests: async (params?: {
+    test_type?: string
+    difficulty_level?: string
+    target_track?: string
+  }) => {
+    const response = await api.get('/placement/placement-tests/', { params })
+    return response.data
+  },
+
+  getPlacementTestById: async (id: number) => {
+    const response = await api.get(`/placement/placement-tests/${id}/`)
+    return response.data
+  },
+
+  startPlacementTest: async (testId: number) => {
+    const response = await api.post(`/placement/start/${testId}/`)
+    return response.data
+  },
+
+  submitPlacementTest: async (testId: number, data: {
+    answers: { [key: number]: string }
+    time_taken_seconds: number
+  }) => {
+    const response = await api.post(`/placement/submit/${testId}/`, data)
+    return response.data
+  },
+
+  getAvailableTests: async () => {
+    const response = await api.get('/placement/available/')
+    return response.data
+  },
+
+  getPlacementStats: async () => {
+    const response = await api.get('/placement/stats/')
     return response.data
   }
 }

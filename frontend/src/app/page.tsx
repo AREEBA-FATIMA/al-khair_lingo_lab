@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { BookOpen, Trophy, Leaf, Target, Users, Zap } from 'lucide-react'
+import { BookOpen, Trophy, Leaf, Target, Users, Zap, BarChart3, TrendingUp, Building2, GraduationCap, Activity } from 'lucide-react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import PenguinMascot from '@/components/PenguinMascot'
@@ -14,18 +14,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setMounted(true)
-    
-    // Redirect based on user role
-    if (isLoggedIn) {
-      if (user?.role === 'doner') {
-        window.location.href = '/analytics'
-      } else if (user?.role === 'teacher') {
-        window.location.href = '/teachers/dashboard'
-      } else {
-        window.location.href = '/groups'
-      }
-    }
-  }, [isLoggedIn])
+  }, [])
 
   if (!mounted) {
     return (
@@ -249,39 +238,57 @@ export default function HomePage() {
               className="text-center lg:text-left lg:pl-8"
             >
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                The free, fun, and effective way to learn
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-4xl md:text-5xl lg:text-6xl font-extrabold">
-                  English!
-              </span>
-            </h1>
+                {user?.role === 'doner' ? (
+                  <>
+                    Welcome to the 
+                    <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-4xl md:text-5xl lg:text-6xl font-extrabold">
+                      Analytics Dashboard!
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    The free, fun, and effective way to learn
+                    <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-4xl md:text-5xl lg:text-6xl font-extrabold">
+                      English!
+                    </span>
+                  </>
+                )}
+              </h1>
               <p className="text-lg text-gray-600 mb-8 max-w-2xl leading-relaxed">
-              Master English through 8 groups with 50 levels each. Watch your plant grow from seed to fruit tree as you progress!
-            </p>
+                {user?.role === 'doner' 
+                  ? 'Monitor system performance, track user engagement, and view comprehensive analytics for the English learning platform.'
+                  : 'Master English through 3 learning tracks: Beginner (Class 3-5), Intermediate (Class 6-10), and Advanced (Fluency). Watch your plant grow from seed to fruit tree as you progress!'
+                }
+              </p>
               <div className="flex flex-col gap-3 justify-center items-center lg:items-start">
                 {isLoggedIn ? (
                   <>
-                    <div className="mb-4 text-center lg:text-left">
-                      <p className="text-lg text-gray-700 mb-2">
-                        Welcome back, <span className="font-bold text-[#03045e]">{user?.first_name}!</span> 👋
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Ready to continue your English learning journey?
-                      </p>
-                    </div>
-                    <Link 
-                      href={user?.role === 'teacher' ? '/teachers/dashboard' : '/groups'} 
-                      className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white text-sm sm:text-base px-6 sm:px-8 py-4 sm:py-5 rounded-full font-bold transition-all duration-300 hover:shadow-2xl hover:scale-110 hover:from-[#02033a] hover:to-[#0099cc] transform w-[70%] text-center shadow-xl"
-                      style={{
-                        boxShadow: '0 12px 24px rgba(3, 4, 94, 0.4), 0 6px 12px rgba(0, 191, 230, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-                      }}
-                    >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        🚀 {user?.role === 'teacher' ? 'GO TO DASHBOARD' : 'CONTINUE LEARNING'}
-                      </span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-                    </Link>
+                     <div className="mb-4 text-center lg:text-left">
+                       <p className="text-lg text-gray-700 mb-2">
+                         Welcome back, <span className="font-bold text-[#03045e]">{user?.first_name}!</span> 👋
+                       </p>
+                       <p className="text-sm text-gray-600">
+                         {user?.role === 'doner' 
+                           ? 'View system performance and analytics data' 
+                           : 'Ready to continue your English learning journey?'
+                         }
+                       </p>
+                     </div>
+                     <Link 
+                       href={user?.role === 'doner' ? '/analytics' : user?.role === 'teacher' ? '/teachers/dashboard' : '/groups'} 
+                       className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white text-sm sm:text-base px-6 sm:px-8 py-4 sm:py-5 rounded-full font-bold transition-all duration-300 hover:shadow-2xl hover:scale-110 hover:from-[#02033a] hover:to-[#0099cc] transform w-[70%] text-center shadow-xl"
+                       style={{
+                         boxShadow: '0 12px 24px rgba(3, 4, 94, 0.4), 0 6px 12px rgba(0, 191, 230, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                       }}
+                     >
+                       <span className="relative z-10 flex items-center justify-center gap-2">
+                         🚀 {user?.role === 'doner' ? 'VIEW ANALYTICS' : user?.role === 'teacher' ? 'GO TO DASHBOARD' : 'CONTINUE LEARNING'}
+                       </span>
+                       <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                     </Link>
                   </>
                 ) : (
                   <>
@@ -319,18 +326,32 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#03045e] to-[#00bfe6]">
-                {' '}Lingo Master?
-              </span>
+              {user?.role === 'doner' ? (
+                <>
+                  Analytics 
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#03045e] to-[#00bfe6]">
+                    {' '}Dashboard Features
+                  </span>
+                </>
+              ) : (
+                <>
+                  Why Choose 
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#03045e] to-[#00bfe6]">
+                    {' '}Lingo Master?
+                  </span>
+                </>
+              )}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              A unique approach to English learning that makes education fun and engaging
+              {user?.role === 'doner' 
+                ? 'Comprehensive system monitoring and performance analytics for donors'
+                : 'A unique approach to English learning that makes education fun and engaging'
+              }
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
+            {features(user?.role).map((feature, index) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 30 }}
@@ -426,17 +447,23 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#03045e]/90 to-[#00bfe6]/90"></div>
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 relative z-10">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to Start Your English Journey?
+            {user?.role === 'doner' 
+              ? 'Ready to View System Analytics?'
+              : 'Ready to Start Your English Journey?'
+            }
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of learners who are mastering English with our plant-based system
+            {user?.role === 'doner' 
+              ? 'Access comprehensive analytics and performance metrics for the English learning platform'
+              : 'Join thousands of learners who are mastering English with our plant-based system'
+            }
           </p>
           {isLoggedIn ? (
             <Link 
-              href={user?.role === 'teacher' ? '/teachers/dashboard' : '/groups'} 
+              href={user?.role === 'doner' ? '/analytics' : user?.role === 'teacher' ? '/teachers/dashboard' : '/groups'} 
               className="group relative inline-block bg-white text-[#03045e] font-semibold py-4 px-8 rounded-lg text-lg hover:bg-gray-50 transition-all duration-300 hover:shadow-2xl hover:scale-105 transform"
             >
-              <span className="relative z-10">{user?.role === 'teacher' ? 'Go to Dashboard' : 'Continue Learning'}</span>
+              <span className="relative z-10">{user?.role === 'doner' ? 'View Analytics' : user?.role === 'teacher' ? 'Go to Dashboard' : 'Continue Learning'}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-lg opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
             </Link>
           ) : (
@@ -470,11 +497,42 @@ export default function HomePage() {
   )
 }
 
-const features = [
+const features = (userRole: string | undefined) => userRole === 'doner' ? [
+  {
+    icon: BarChart3,
+    title: 'System Overview',
+    description: 'Monitor total users, teachers, students, and overall platform performance metrics'
+  },
+  {
+    icon: TrendingUp,
+    title: 'Performance Trends',
+    description: 'Track daily, weekly, and monthly trends in user engagement and learning progress'
+  },
+  {
+    icon: Building2,
+    title: 'Campus Analytics',
+    description: 'View detailed analytics for each campus including student progress and teacher performance'
+  },
+  {
+    icon: GraduationCap,
+    title: 'Teacher Insights',
+    description: 'Monitor teacher performance, student assignments, and classroom effectiveness metrics'
+  },
+  {
+    icon: Users,
+    title: 'Class Progress',
+    description: 'Track individual class performance, completion rates, and student achievement levels'
+  },
+  {
+    icon: Activity,
+    title: 'Real-time Data',
+    description: 'Access live data updates and comprehensive reports for informed decision making'
+  }
+] : [
   {
     icon: BookOpen,
-    title: '8 Learning Groups',
-    description: 'From basic to master level, each group has 50 levels with 6 questions per level'
+    title: '3 Learning Tracks',
+    description: 'Beginner (Class 3-5), Intermediate (Class 6-10), and Advanced (Fluency) with structured progression'
   },
   {
     icon: Leaf,
@@ -488,8 +546,8 @@ const features = [
   },
   {
     icon: Trophy,
-    title: 'Group Jump Tests',
-    description: 'Pass 100% tests to unlock higher groups and accelerate your learning'
+    title: 'Placement Tests',
+    description: 'Smart placement tests to skip ahead or continue linearly based on your performance'
   },
   {
     icon: Users,
@@ -498,8 +556,8 @@ const features = [
   },
   {
     icon: Zap,
-    title: '6 Question Types',
-    description: 'MCQ, Pronunciation, Fill-in-blank, Synonyms, Antonyms, and more'
+    title: 'Oxford 3000 Words',
+    description: 'Learn with the most important English words, organized by frequency and difficulty'
   }
 ]
 

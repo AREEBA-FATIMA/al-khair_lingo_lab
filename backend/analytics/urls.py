@@ -13,5 +13,10 @@ urlpatterns = [
     path('students/', views.student_analytics, name='student-analytics'),
     
     # Trends
-    path('trends/', views.performance_trends, name='performance-trends'),
+    path('trends/', views.performance_trend, name='performance-trends'),
+    
+    # List APIs
+    path('campus-list/', views.campus_list, name='campus-list'),
+    path('teachers-list/', views.teachers_list, name='teachers-list'),
+    path('classes-list/', views.classes_list, name='classes-list'),
 ]
