@@ -10,6 +10,7 @@ from .serializers import (
     GroupUnlockTestAttemptSerializer, GroupStatsSerializer
 )
 from levels.serializers import LevelSerializer
+from cache_utils import cache_group_data, cache_api_response
 
 
 class GroupListView(generics.ListAPIView):
@@ -189,6 +190,7 @@ def complete_group(request, group_number):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+@cache_group_data(timeout=300)  # 5 minutes cache
 def group_stats(request, group_number):
     """Get group statistics for user"""
     try:

@@ -15,9 +15,11 @@ from progress.models import LevelProgress
 from users.models import User
 from levels.models import Level
 from groups.models import Group
+from cache_utils import cache_analytics, cache_api_response
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=900)  # 15 minutes cache
 def overall_analytics(request):
     """Get overall system analytics"""
     try:
@@ -79,6 +81,7 @@ def overall_analytics(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=600)  # 10 minutes cache
 def dashboard_summary(request):
     """Get dashboard summary with key metrics"""
     try:
@@ -120,6 +123,7 @@ def dashboard_summary(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=1200)  # 20 minutes cache
 def campus_analytics(request):
     """Get campus-specific analytics"""
     try:
@@ -166,6 +170,7 @@ def campus_analytics(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=1200)  # 20 minutes cache
 def teacher_analytics(request):
     """Get teacher-specific analytics"""
     try:
@@ -213,6 +218,7 @@ def teacher_analytics(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=1200)  # 20 minutes cache
 def class_analytics(request):
     """Get class-specific analytics"""
     try:
@@ -267,6 +273,7 @@ def class_analytics(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=1200)  # 20 minutes cache
 def student_analytics(request):
     """Get student-specific analytics"""
     try:
@@ -313,6 +320,7 @@ def student_analytics(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=1800)  # 30 minutes cache
 def performance_trend(request):
     """Get performance trends over time"""
     try:
@@ -347,6 +355,7 @@ def performance_trend(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@cache_api_response(timeout=1800, key_prefix='campus_list')  # 30 minutes cache
 def campus_list(request):
     """Get list of all campuses with basic info"""
     try:
@@ -383,6 +392,7 @@ def campus_list(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@cache_analytics(timeout=1200)  # 20 minutes cache
 def teachers_list(request):
     """Get list of all teachers with performance metrics"""
     try:
@@ -420,6 +430,7 @@ def teachers_list(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@cache_api_response(timeout=1200, key_prefix='classes_list')  # 20 minutes cache
 def classes_list(request):
     """Get list of all classes with progress metrics"""
     try:

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-b=rq0y1d4yj9(_y7qn7ql#w5^4t0xouw#*t1l2l&%9-8$5k@1*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'testserver']
 
 
 # Application definition
@@ -217,5 +217,3 @@ SIMPLE_JWT = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Static Files Configuration
-STATIC_ROOT = BASE_DIR / 'staticfiles'

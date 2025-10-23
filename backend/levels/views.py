@@ -9,6 +9,7 @@ from .serializers import (
     LevelSerializer, QuestionSerializer, LevelCompletionSerializer,
     LevelCompletionCreateSerializer, LevelStatsSerializer
 )
+from cache_utils import cache_level_data, cache_api_response
 
 
 class LevelListView(generics.ListAPIView):
@@ -263,6 +264,7 @@ class LevelCompletionDetailView(generics.RetrieveAPIView):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+@cache_level_data(timeout=600)  # 10 minutes cache
 def level_stats(request):
     """Get user's level statistics"""
     user = request.user
@@ -314,6 +316,7 @@ def level_stats(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+@cache_api_response(timeout=300, key_prefix='next_level')  # 5 minutes cache
 def get_next_level(request):
     """Get next level for user"""
     user = request.user
@@ -345,6 +348,7 @@ def get_next_level(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+@cache_level_data(timeout=1800)  # 30 minutes cache
 def get_test_levels(request):
     """Get test levels (every 10th level)"""
     test_levels = Level.objects.filter(
