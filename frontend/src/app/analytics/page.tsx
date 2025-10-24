@@ -32,6 +32,7 @@ import {
   LineChart,
   Line,
 } from "recharts"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface OverallStats {
   date: string
@@ -113,9 +114,18 @@ export default function AnalyticsDashboard() {
   const [selectedTeacher, setSelectedTeacher] = useState<string>("all")
   const [dateRange, setDateRange] = useState("week")
   const [refreshKey, setRefreshKey] = useState(0)
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   // Mock data for demonstration
   useEffect(() => {
+    if (isLoggedIn) {
     const mockOverallStats: OverallStats = {
       date: new Date().toISOString(),
       total_users: 1250,
@@ -240,7 +250,7 @@ export default function AnalyticsDashboard() {
     return Math.ceil(days / 7)
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">

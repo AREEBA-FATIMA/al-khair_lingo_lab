@@ -101,12 +101,21 @@ export default function VocabularyPage() {
     search: ''
   })
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   useEffect(() => {
-    fetchVocabulary()
-    fetchStats()
-  }, [])
+    if (isLoggedIn) {
+      fetchVocabulary()
+      fetchStats()
+    }
+  }, [isLoggedIn])
 
   useEffect(() => {
     if (isReviewMode && reviewWords.length > 0) {
@@ -222,7 +231,7 @@ export default function VocabularyPage() {
     return 'from-gray-400 to-gray-600'
   }
 
-  if (loading && !isReviewMode) {
+  if (loading && !isReviewMode || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <Navigation />

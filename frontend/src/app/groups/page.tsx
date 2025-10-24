@@ -71,21 +71,30 @@ export default function GroupsPage() {
     completion_percentage: 0,
     current_level: 1
   })
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   useEffect(() => {
-    fetchGroups()
-    fetchUserStats()
-    loadProgressFromLocalStorage()
-
-    // Listen for level completion events
-    const handleLevelCompleted = () => {
+    if (isLoggedIn) {
+      fetchGroups()
+      fetchUserStats()
       loadProgressFromLocalStorage()
-    }
 
-    window.addEventListener('levelCompleted', handleLevelCompleted)
-    return () => window.removeEventListener('levelCompleted', handleLevelCompleted)
-  }, [])
+      // Listen for level completion events
+      const handleLevelCompleted = () => {
+        loadProgressFromLocalStorage()
+      }
+
+      window.addEventListener('levelCompleted', handleLevelCompleted)
+      return () => window.removeEventListener('levelCompleted', handleLevelCompleted)
+    }
+  }, [isLoggedIn])
 
   const loadProgressFromLocalStorage = () => {
     const progressManager = ProgressManager.getInstance()
@@ -216,7 +225,7 @@ export default function GroupsPage() {
     return names[difficulty - 1] || 'Beginner'
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <Navigation />

@@ -8,6 +8,20 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+class DRFCompatibleModelBackend(ModelBackend):
+    """
+    Wrapper for Django's ModelBackend that handles DRF Request objects
+    """
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        # Handle both DRF Request and Django HttpRequest
+        if request and hasattr(request, '_request'):
+            # DRF Request - get underlying Django request
+            request = request._request
+        
+        # Call parent's authenticate method with Django HttpRequest
+        return super().authenticate(request, username, password, **kwargs)
+
+
 class MultiMethodAuthBackend(ModelBackend):
     """
     Custom authentication backend supporting:
@@ -19,6 +33,11 @@ class MultiMethodAuthBackend(ModelBackend):
         """
         Authenticate user based on login method
         """
+        # Handle both DRF Request and Django HttpRequest
+        if request and hasattr(request, '_request'):
+            # DRF Request - get underlying Django request
+            request = request._request
+        
         if not username or not password:
             return None
         
@@ -242,11 +261,19 @@ class MultiMethodAuthBackend(ModelBackend):
         Log login attempt
         """
         try:
+            # Handle both DRF Request and Django HttpRequest
+            if hasattr(request, '_request'):
+                # DRF Request - get underlying Django request
+                django_request = request._request
+            else:
+                # Already a Django HttpRequest
+                django_request = request
+                
             LoginLog.objects.create(
                 user=user,
                 login_method=login_method,
-                ip_address=self._get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                ip_address=self._get_client_ip(django_request),
+                user_agent=django_request.META.get('HTTP_USER_AGENT', ''),
                 success=success
             )
         except Exception as e:
@@ -266,11 +293,19 @@ class MultiMethodAuthBackend(ModelBackend):
         """
         Get client IP address from request
         """
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        # Handle both DRF Request and Django HttpRequest
+        if hasattr(request, '_request'):
+            # DRF Request - get underlying Django request
+            django_request = request._request
+        else:
+            # Already a Django HttpRequest
+            django_request = request
+            
+        x_forwarded_for = django_request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             ip = x_forwarded_for.split(',')[0]
         else:
-            ip = request.META.get('REMOTE_ADDR')
+            ip = django_request.META.get('REMOTE_ADDR')
         return ip
 
 

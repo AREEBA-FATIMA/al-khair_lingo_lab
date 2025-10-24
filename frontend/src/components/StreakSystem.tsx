@@ -20,11 +20,6 @@ export default function StreakSystem({
   const [streakStatus, setStreakStatus] = useState<'active' | 'at_risk' | 'broken'>('active')
   const [timeUntilReset, setTimeUntilReset] = useState(0)
 
-  useEffect(() => {
-    checkStreakStatus()
-    calculateTimeUntilReset()
-  }, [currentStreak, lastActivityDate])
-
   const checkStreakStatus = () => {
     if (!lastActivityDate) {
       setStreakStatus('broken')
@@ -47,6 +42,11 @@ export default function StreakSystem({
       setStreakStatus('broken')
     }
   }
+
+  useEffect(() => {
+    checkStreakStatus()
+    calculateTimeUntilReset()
+  }, [currentStreak, lastActivityDate, checkStreakStatus])
 
   const calculateTimeUntilReset = () => {
     const now = new Date()

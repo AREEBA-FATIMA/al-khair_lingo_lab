@@ -11,7 +11,7 @@ from .serializers import VocabularySerializer, VocabularyProgressSerializer
 class VocabularyListView(generics.ListAPIView):
     """List vocabulary words with filtering"""
     serializer_class = VocabularySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Filter vocabulary based on query parameters"""
@@ -56,7 +56,7 @@ class VocabularyDetailView(generics.RetrieveAPIView):
     """Get specific vocabulary word details"""
     queryset = Vocabulary.objects.filter(is_active=True)
     serializer_class = VocabularySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class VocabularyProgressListView(generics.ListAPIView):

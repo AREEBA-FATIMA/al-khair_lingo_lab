@@ -11,7 +11,7 @@ class EnglishCoordinator(models.Model):
     """
     # --- Basic Information ---
     name = models.CharField(max_length=200, default="Unknown Coordinator", help_text="Coordinator's full name")
-    father_name = models.CharField(max_length=200, default="Unknown", help_text="Father's name")
+    last_name = models.CharField(max_length=200, default="Unknown", help_text="Coordinator's last name")
     
     # --- Contact ---
     email = models.EmailField(unique=True, default="temp@coordinator.com", help_text="Coordinator's email address")

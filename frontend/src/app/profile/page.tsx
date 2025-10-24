@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 
 export default function ProfilePage() {
-  const { user, isLoggedIn } = useAuth()
+  const { user, isLoggedIn, loading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -46,6 +46,13 @@ export default function ProfilePage() {
     { id: 5, name: "Perfect Score", description: "Get 100% on any test", icon: "💯", unlocked: false },
     { id: 6, name: "Group Champion", description: "Complete an entire group", icon: "🏆", unlocked: false }
   ])
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   useEffect(() => {
     // Check if user is logged in
@@ -177,7 +184,7 @@ export default function ProfilePage() {
     
     window.addEventListener('progressUpdated', handleProgressUpdate)
     return () => window.removeEventListener('progressUpdated', handleProgressUpdate)
-  }, [])
+  }, [loadUserProgress])
 
   const handleLogout = () => {
     // Clear user data and redirect to home
@@ -185,8 +192,8 @@ export default function ProfilePage() {
     window.location.href = '/'
   }
 
-  // Show loading if user data is not available
-  if (!user) {
+  // Show loading if user data is not available or auth is loading
+  if (!user || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <Navigation />

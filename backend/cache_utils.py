@@ -42,16 +42,29 @@ def cache_api_response(timeout: int = 300, key_prefix: str = 'api', vary_on_user
             cache_key = '_'.join(cache_key_parts)
             
             # Try to get from cache
-            cached_response = cache.get(cache_key)
-            if cached_response is not None:
-                return cached_response
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                # Reconstruct DRF Response from cached data
+                from rest_framework.response import Response
+                return Response(
+                    data=cached_data['data'],
+                    status=cached_data['status_code'],
+                    content_type=cached_data['content_type']
+                )
             
             # Execute view function
             response = view_func(request, *args, **kwargs)
             
-            # Cache successful responses
+            # Cache successful responses - only cache the data, not the response object
             if hasattr(response, 'status_code') and response.status_code == 200:
-                cache.set(cache_key, response, timeout)
+                # Extract data from DRF Response for caching
+                if hasattr(response, 'data'):
+                    cache_data = {
+                        'data': response.data,
+                        'status_code': response.status_code,
+                        'content_type': response.get('Content-Type', 'application/json')
+                    }
+                    cache.set(cache_key, cache_data, timeout)
             
             return response
         

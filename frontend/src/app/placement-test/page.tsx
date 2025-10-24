@@ -74,11 +74,20 @@ export default function PlacementTestPage() {
   const [testResult, setTestResult] = useState<TestAttempt | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   useEffect(() => {
-    fetchAvailableTests()
-  }, [])
+    if (isLoggedIn) {
+      fetchAvailableTests()
+    }
+  }, [isLoggedIn])
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -236,7 +245,7 @@ export default function PlacementTestPage() {
     }
   }
 
-  if (loading && !isTestActive) {
+  if (loading && !isTestActive || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <Navigation />

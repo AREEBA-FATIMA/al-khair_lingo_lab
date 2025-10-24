@@ -11,11 +11,11 @@ class Teacher(models.Model):
     
     # --- Shift Information ---
     SHIFT_CHOICES = [
-        ('M', 'Morning'),
-        ('A', 'Afternoon'),
+        ('morning', 'Morning'),
+        ('afternoon', 'Afternoon'),
     ]
     
-    shift = models.CharField(max_length=1, choices=SHIFT_CHOICES, default='M', help_text="Teacher's shift (Morning/Afternoon)")
+    shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='morning', help_text="Teacher's shift (Morning/Afternoon)")
     
     # --- Academic Assignment ---
     # Teachers are not assigned to specific classes
@@ -83,7 +83,7 @@ class Teacher(models.Model):
                 campus_code = f"C{self.campus.id:02d}" if self.campus else "C01"
                 
                 # Get shift code
-                shift_code = self.shift
+                shift_code = 'M' if self.shift == 'morning' else 'A'
                 
                 # Get current year
                 from datetime import datetime

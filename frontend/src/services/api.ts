@@ -105,7 +105,7 @@ export const apiService = {
     }
   },
 
-  register: async (username: string, email: string, password: string, firstName: string, lastName: string, fatherName?: string, campus?: string, grade?: string, shift?: string) => {
+  register: async (username: string, email: string, password: string, firstName: string, lastName: string, fatherName?: string, role?: string, campus?: string, grade?: string, shift?: string, teacherType?: string, coordinatorLastName?: string) => {
     console.log('DEBUG - API Service: Making student registration request', { username, email, fatherName, campus, grade, shift })
     try {
       const requestData = {
@@ -116,9 +116,12 @@ export const apiService = {
         first_name: firstName,
         last_name: lastName,
         father_name: fatherName,
+        role: role || 'student',
         campus: campus,
         grade: grade,
-        shift: shift
+        shift: shift,
+        teacher_type: teacherType,
+        coordinator_last_name: coordinatorLastName
       }
       console.log('DEBUG - API Service: Request data:', requestData)
       console.log('DEBUG - API Service: Request URL:', `${API_BASE_URL}/students/register/`)
@@ -425,7 +428,67 @@ export const apiService = {
         { value: 'afternoon', label: 'Afternoon' }
       ]
     }
-  }
+  },
+
+  // Admin Panel APIs
+  adminDashboardStats: async () => {
+    try {
+      const response = await api.get('/levels/admin/dashboard/stats/')
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  bulkImportQuestions: async (formData: FormData) => {
+    try {
+      const response = await api.post('/levels/admin/questions/bulk-import/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  getQuestionsForAdmin: async () => {
+    try {
+      const response = await api.get('/levels/admin/questions/list/')
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  createQuestion: async (questionData: any) => {
+    try {
+      const response = await api.post('/levels/admin/questions/create/', questionData)
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  updateQuestion: async (questionId: number, questionData: any) => {
+    try {
+      const response = await api.patch(`/levels/admin/questions/${questionId}/update/`, questionData)
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  deleteQuestion: async (questionId: number) => {
+    try {
+      const response = await api.delete(`/levels/admin/questions/${questionId}/delete/`)
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
 }
 
 export default apiService

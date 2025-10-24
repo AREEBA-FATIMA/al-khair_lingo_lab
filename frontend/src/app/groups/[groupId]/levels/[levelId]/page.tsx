@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Volume2, VolumeX, Trophy, Star } from 'lucide-react'
 import ProgressManager from '@/utils/progressManager'
 import PenguinMascot from '@/components/PenguinMascot'
+import { useAuth } from '@/contexts/AuthContext'
 // import PenguinMascot from '@/components/PenguinMascot'
 
 // Types
@@ -150,6 +151,14 @@ export default function QuizGame() {
   const params = useParams()
   const router = useRouter()
   const { groupId, levelId } = params
+  const { isLoggedIn, loading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   // State
   const [highestUnlocked, setHighestUnlocked] = useState(0)
@@ -875,7 +884,7 @@ export default function QuizGame() {
     persistState()
   }, [highestUnlocked, xpTotal, soundOn])
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
         <div className="text-center">

@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('analytics', '0001_initial'),
-        ('classes', '0002_alter_grade_shift'),
+        ('classes', '0001_initial'),
     ]
 
     operations = [

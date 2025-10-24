@@ -16,7 +16,7 @@ from cache_utils import cache_group_data, cache_api_response
 class GroupListView(generics.ListAPIView):
     """List all groups with user progress"""
     serializer_class = GroupSerializer
-    permission_classes = [permissions.AllowAny]  # Temporarily allow any for testing
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Get groups with user progress"""
@@ -46,7 +46,7 @@ class GroupDetailView(generics.RetrieveAPIView):
 class GroupLevelsView(generics.ListAPIView):
     """Get all levels in a group with user progress"""
     serializer_class = LevelSerializer
-    permission_classes = [permissions.AllowAny]  # Temporarily allow any for testing
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         group_number = self.kwargs['group_number']

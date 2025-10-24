@@ -12,15 +12,18 @@ interface User {
   last_name: string
   role: string
   student_id?: string
+  is_staff?: boolean
+  is_superuser?: boolean
 }
 
 interface AuthContextType {
   user: User | null
   isLoggedIn: boolean
   login: (username: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string, firstName: string, lastName: string) => Promise<void>
+  register: (username: string, email: string, password: string, firstName: string, lastName: string, fatherName: string, campus: string, grade: string, shift: string) => Promise<void>
   logout: () => void
   loading: boolean
+  authLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -29,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
 
   useEffect(() => {
     // Check if user is logged in on page load
@@ -59,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('DEBUG - No saved login data found')
     }
     setLoading(false)
+    setAuthLoading(false)
   }, [])
 
   const login = async (username: string, password: string) => {
@@ -85,7 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('DEBUG - User role:', response.user.role)
         
         // Redirect based on user role
-        if (response.user.role === 'donor') {
+        if (response.user.role === 'admin' || response.user.is_staff) {
+          window.location.href = '/admin/dashboard'
+        } else if (response.user.role === 'donor') {
           window.location.href = '/analytics'
         } else if (response.user.role === 'teacher') {
           window.location.href = '/teachers/dashboard'
@@ -104,11 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const register = async (username: string, email: string, password: string, firstName: string, lastName: string, fatherName?: string, campus?: string, grade?: string, shift?: string) => {
+  const register = async (username: string, email: string, password: string, firstName: string, lastName: string, fatherName: string, campus: string, grade: string, shift: string) => {
     try {
-      console.log('DEBUG - Starting registration process:', { username, email })
+      console.log('DEBUG - Starting student registration process:', { username, email })
       setLoading(true)
-      const response = await apiService.register(username, email, password, firstName, lastName, fatherName || '', campus || '', grade || '', shift || '')
+      const response = await apiService.register(username, email, password, firstName, lastName, fatherName, 'student', campus, grade, shift, '', '')
       console.log('DEBUG - Registration API response:', response)
       
       if (response.success) {
@@ -128,16 +135,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const progressManager = ProgressManager.getInstance()
           progressManager.setCurrentUser(loginResponse.user.id)
           
-          console.log('DEBUG - Registration and auto-login successful:', loginResponse.user)
+          console.log('DEBUG - Student registration and auto-login successful:', loginResponse.user)
           
-          // Redirect based on user role
-          if (loginResponse.user.role === 'donor') {
-            window.location.href = '/analytics'
-          } else if (loginResponse.user.role === 'teacher') {
-            window.location.href = '/teachers/dashboard'
-          } else {
-            window.location.href = '/groups'
-          }
+          // Students always go to groups page
+          window.location.href = '/groups'
         }
       } else {
         throw new Error('Registration failed')
@@ -167,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, isLoggedIn, login, register, logout, loading, authLoading }}>
       {children}
     </AuthContext.Provider>
   )

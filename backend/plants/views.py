@@ -16,20 +16,20 @@ class PlantTypeListView(generics.ListAPIView):
     """List all available plant types"""
     queryset = PlantType.objects.filter(is_active=True)
     serializer_class = PlantTypeSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class PlantTypeDetailView(generics.RetrieveAPIView):
     """Get specific plant type details"""
     queryset = PlantType.objects.filter(is_active=True)
     serializer_class = PlantTypeSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class PlantStageListView(generics.ListAPIView):
     """List plant stages for a specific plant type"""
     serializer_class = PlantStageSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         plant_type_id = self.kwargs['plant_type_id']

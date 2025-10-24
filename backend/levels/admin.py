@@ -2,7 +2,50 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.forms import ModelForm, Textarea, TextInput
+from django import forms
 from .models import Level, Question, LevelCompletion
+
+
+class QuestionForm(ModelForm):
+    """Enhanced form for question creation with better validation"""
+    
+    class Meta:
+        model = Question
+        fields = '__all__'
+        widgets = {
+            'question_text': Textarea(attrs={'rows': 4, 'cols': 80}),
+            'hint': Textarea(attrs={'rows': 2, 'cols': 80}),
+            'explanation': Textarea(attrs={'rows': 3, 'cols': 80}),
+            'options': Textarea(attrs={'rows': 6, 'cols': 80, 'placeholder': 'Enter options separated by new lines\nOption A\nOption B\nOption C\nOption D'}),
+            'correct_answer': TextInput(attrs={'size': 50}),
+        }
+    
+    def clean_options(self):
+        """Validate options format"""
+        options = self.cleaned_data.get('options')
+        if options:
+            # Split by newlines and clean
+            option_list = [opt.strip() for opt in options.split('\n') if opt.strip()]
+            if len(option_list) < 2:
+                raise forms.ValidationError("At least 2 options are required")
+            return options
+        return options
+    
+    def clean(self):
+        """Cross-field validation"""
+        cleaned_data = super().clean()
+        question_type = cleaned_data.get('question_type')
+        options = cleaned_data.get('options')
+        correct_answer = cleaned_data.get('correct_answer')
+        
+        # Validate MCQ questions
+        if question_type == 'mcq' and options and correct_answer:
+            option_list = [opt.strip() for opt in options.split('\n') if opt.strip()]
+            if correct_answer not in option_list:
+                raise forms.ValidationError("Correct answer must be one of the provided options")
+        
+        return cleaned_data
 
 
 class QuestionInline(admin.TabularInline):
@@ -54,6 +97,7 @@ class LevelAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
+    form = QuestionForm
     list_display = (
         'question_order', 'question_type', 'question_text_preview', 
         'level', 'difficulty', 'xp_value', 'is_active', 'created_at'
@@ -65,13 +109,16 @@ class QuestionAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Question Content', {
-            'fields': ('level', 'question_order', 'question_type', 'question_text', 'hint', 'explanation')
+            'fields': ('level', 'question_order', 'question_type', 'question_text', 'hint', 'explanation'),
+            'description': 'Enter the question text and provide helpful hints and explanations for students.'
         }),
         ('Answer Configuration', {
-            'fields': ('options', 'correct_answer', 'audio_url', 'image_url')
+            'fields': ('options', 'correct_answer', 'audio_url', 'image_url'),
+            'description': 'For MCQ: Enter options separated by new lines. For other types: Enter the correct answer.'
         }),
         ('Settings', {
-            'fields': ('difficulty', 'xp_value', 'time_limit_seconds', 'is_active')
+            'fields': ('difficulty', 'xp_value', 'time_limit_seconds', 'is_active'),
+            'description': 'Configure difficulty level, XP reward, and time limit for this question.'
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
@@ -84,6 +131,21 @@ class QuestionAdmin(admin.ModelAdmin):
             return obj.question_text[:50] + "..." if len(obj.question_text) > 50 else obj.question_text
         return "-"
     question_text_preview.short_description = "Question Preview"
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Add help text and improve form layout"""
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Add help text to fields
+        form.base_fields['question_text'].help_text = "Enter the question text that students will see."
+        form.base_fields['options'].help_text = "For MCQ questions: Enter each option on a new line. For other question types, leave empty."
+        form.base_fields['correct_answer'].help_text = "Enter the correct answer. For MCQ, this should match one of the options exactly."
+        form.base_fields['hint'].help_text = "Optional hint to help students if they get the question wrong."
+        form.base_fields['explanation'].help_text = "Explanation shown to students after they answer (correct or incorrect)."
+        form.base_fields['xp_value'].help_text = "XP points awarded for correct answer (typically 10-50 points)."
+        form.base_fields['time_limit_seconds'].help_text = "Time limit in seconds (0 = no limit)."
+        
+        return form
 
 
 @admin.register(LevelCompletion)

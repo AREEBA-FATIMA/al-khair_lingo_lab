@@ -11,7 +11,7 @@ from .serializers import GrammarRuleSerializer, GrammarProgressSerializer
 class GrammarRuleListView(generics.ListAPIView):
     """List grammar rules with filtering"""
     serializer_class = GrammarRuleSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Filter grammar rules based on query parameters"""
@@ -48,7 +48,7 @@ class GrammarRuleDetailView(generics.RetrieveAPIView):
     """Get specific grammar rule details"""
     queryset = GrammarRule.objects.filter(is_active=True)
     serializer_class = GrammarRuleSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class GrammarProgressListView(generics.ListAPIView):

@@ -63,22 +63,31 @@ export default function LevelsPage() {
     current_streak: 0,
     hearts: 5
   })
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, loading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   useEffect(() => {
-    fetchGroupData()
-    fetchLevels()
-    fetchUserStats()
-    loadProgressFromLocalStorage()
-
-    // Listen for level completion events
-    const handleLevelCompleted = () => {
+    if (isLoggedIn) {
+      fetchGroupData()
+      fetchLevels()
+      fetchUserStats()
       loadProgressFromLocalStorage()
-    }
 
-    window.addEventListener('levelCompleted', handleLevelCompleted)
-    return () => window.removeEventListener('levelCompleted', handleLevelCompleted)
-  }, [groupId])
+      // Listen for level completion events
+      const handleLevelCompleted = () => {
+        loadProgressFromLocalStorage()
+      }
+
+      window.addEventListener('levelCompleted', handleLevelCompleted)
+      return () => window.removeEventListener('levelCompleted', handleLevelCompleted)
+    }
+  }, [groupId, isLoggedIn])
 
   const loadProgressFromLocalStorage = () => {
     const progressManager = ProgressManager.getInstance()
@@ -162,7 +171,7 @@ export default function LevelsPage() {
     router.push(`/groups/${groupId}/levels/${level.level_number}`)
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <Navigation />

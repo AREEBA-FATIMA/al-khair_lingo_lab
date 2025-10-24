@@ -107,6 +107,24 @@ class ProgressManager {
         this.userProgress.completedLevels.push(levelNumber)
       }
       
+      // Check if user earned a heart (every 3 levels)
+      const totalCompleted = this.userProgress.completedLevels.length
+      if (totalCompleted % 3 === 0 && this.userProgress.hearts < 5) {
+        this.userProgress.hearts = Math.min(5, this.userProgress.hearts + 1)
+        console.log(`DEBUG - Heart earned!`, {
+          totalCompleted,
+          hearts: this.userProgress.hearts
+        })
+        // Dispatch heart earned event
+        window.dispatchEvent(new CustomEvent('heartEarned', { 
+          detail: { 
+            hearts: this.userProgress.hearts, 
+            levelsCompleted: totalCompleted,
+            heartEarned: true
+          } 
+        }))
+      }
+      
       // Unlock next level (unlock the next level after current one)
       if (levelNumber >= this.userProgress.highestUnlockedLevel) {
         const oldHighest = this.userProgress.highestUnlockedLevel

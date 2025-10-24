@@ -63,20 +63,21 @@ export default function ProgressPage() {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [loading, setLoading] = useState(true)
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
 
   useEffect(() => {
     // Check if user is logged in and is a student
-    if (!isLoggedIn) {
+    if (!authLoading && !isLoggedIn) {
       window.location.href = '/login'
       return
     }
     
-    if (user?.role !== 'student') {
+    if (!authLoading && isLoggedIn && user?.role !== 'student') {
       window.location.href = '/'
       return
     }
 
+    if (!authLoading && isLoggedIn && user?.role === 'student') {
     fetchUserStats()
     fetchRecentActivity()
     fetchAchievements()
@@ -99,7 +100,8 @@ export default function ProgressPage() {
       window.removeEventListener('levelCompleted', handleLevelCompleted)
       window.removeEventListener('progressUpdated', handleProgressUpdated)
     }
-  }, [isLoggedIn, user])
+    }
+  }, [authLoading, isLoggedIn, user])
 
   const loadProgressFromLocalStorage = () => {
     const progressManager = ProgressManager.getInstance()
@@ -373,6 +375,18 @@ export default function ProgressPage() {
   }
 
   // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-[#00bfe6] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect if not logged in or not a student
   if (!isLoggedIn || user?.role !== 'student') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -409,264 +423,592 @@ export default function ProgressPage() {
   const plantStage = getPlantStage(userStats.completion_percentage)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#03045e]/10 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#00bfe6]/10 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 left-40 w-60 h-60 bg-[#03045e]/5 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+      </div>
+      
       <Navigation />
       
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Ultra Modern Header */}
+      <div className="bg-white/95 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-10 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Your Progress</h1>
-              <p className="text-gray-600">Track your learning journey</p>
-              
-              {/* Overall Progress Bar */}
-              <div className="mt-3 w-full max-w-md">
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                  <span>Overall Progress</span>
-                  <span>{Math.round(userStats.completion_percentage)}%</span>
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-2xl flex items-center justify-center shadow-2xl border border-gray-200/50">
+                  <Trophy className="h-8 w-8 text-white drop-shadow-lg" />
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <motion.div
-                    className="bg-gradient-to-r from-[#03045e] to-[#00bfe6] h-2 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, userStats.completion_percentage)}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  />
+            <div>
+                  <h1 className="text-4xl font-black bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent">
+                    Your Progress
+                  </h1>
+                  <p className="text-gray-600 text-lg font-medium">Track your amazing learning journey</p>
                 </div>
               </div>
+              
+              {/* Enhanced Progress Bar */}
+              <div className="mt-6 w-full max-w-lg">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+                  <span className="font-semibold">Overall Progress</span>
+                  <span className="font-black text-lg text-gray-900">{Math.round(userStats.completion_percentage)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
+                  <motion.div
+                    className="bg-gradient-to-r from-[#03045e] to-[#00bfe6] h-4 rounded-full shadow-lg"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, userStats.completion_percentage)}%` }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    style={{ boxShadow: '0 0 20px rgba(3, 4, 94, 0.3)' }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>🌱 Beginner</span>
+                  <span>🌳 Master</span>
+              </div>
             </div>
+            </motion.div>
             
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
             <Link
               href="/groups"
-              className="bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300"
-            >
-              Continue Learning
+                className="group relative bg-gradient-to-r from-[#03045e] to-[#00bfe6] hover:from-[#02033a] hover:to-[#0099cc] text-white px-8 py-4 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-[#03045e]/25 border border-gray-200/50 hover:-translate-y-1 inline-flex items-center justify-center w-auto"
+              >
+                <div className="flex items-center gap-3 ">
+                  <BookOpen className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
+                  <span>Continue Learning</span>
+                  <motion.div
+                    className="w-2 h-2 bg-white rounded-full"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                </div>
             </Link>
+            </motion.div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        {/* Ultra Modern Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* XP Card */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            initial={{ opacity: 0, y: 50, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+              duration: 0.8, 
+              delay: 0.1,
+              type: "spring",
+              stiffness: 120,
+              damping: 15
+            }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            whileHover={{ scale: 1.03, rotateY: 5 }}
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl">
-                <Zap className="h-6 w-6 text-white" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <motion.div
+                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center shadow-2xl border border-gray-200/50"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <Zap className="h-8 w-8 text-white drop-shadow-lg" />
+                </motion.div>
+                <motion.div 
+                  className="text-4xl font-black text-gray-900 drop-shadow-lg"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring" }}
+                >
+                  {userStats.total_xp}
+                </motion.div>
               </div>
-              <span className="text-2xl font-bold text-gray-900">{userStats.total_xp}</span>
+              <h3 className="text-xl font-black text-gray-900 mb-2">Total XP</h3>
+              <p className="text-gray-600 text-sm font-medium">Experience points earned</p>
+              
+              {/* XP Progress Indicator */}
+              <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                <motion.div
+                  className="h-2 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min((userStats.total_xp / 1000) * 100, 100)}%` }}
+                  transition={{ delay: 0.5, duration: 1 }}
+                />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Total XP</h3>
-            <p className="text-gray-600 text-sm">Experience points earned</p>
+            </div>
           </motion.div>
 
           {/* Streak Card */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            initial={{ opacity: 0, y: 50, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+              duration: 0.8, 
+              delay: 0.2,
+              type: "spring",
+              stiffness: 120,
+              damping: 15
+            }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            whileHover={{ scale: 1.03, rotateY: 5 }}
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl">
-                <Flame className="h-6 w-6 text-white" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <motion.div
+                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center shadow-2xl border border-gray-200/50"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <Flame className="h-8 w-8 text-white drop-shadow-lg" />
+                </motion.div>
+                <motion.div 
+                  className="text-4xl font-black text-gray-900 drop-shadow-lg"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4, type: "spring" }}
+                >
+                  {userStats.current_streak}
+                </motion.div>
               </div>
-              <span className="text-2xl font-bold text-gray-900">{userStats.current_streak}</span>
+              <h3 className="text-xl font-black text-gray-900 mb-2">Current Streak</h3>
+              <p className="text-gray-600 text-sm font-medium">Days in a row</p>
+              
+              {/* Streak Fire Effect */}
+              <div className="mt-4 flex items-center gap-2">
+                <motion.div
+                  className="text-2xl"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  🔥
+                </motion.div>
+                <span className="text-gray-600 text-sm font-medium">
+                  {userStats.current_streak >= 7 ? "On Fire!" : "Keep Going!"}
+                </span>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Current Streak</h3>
-            <p className="text-gray-600 text-sm">Days in a row</p>
+            </div>
           </motion.div>
 
           {/* Levels Completed Card */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            initial={{ opacity: 0, y: 50, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+              duration: 0.8, 
+              delay: 0.3,
+              type: "spring",
+              stiffness: 120,
+              damping: 15
+            }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            whileHover={{ scale: 1.03, rotateY: 5 }}
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-gradient-to-r from-blue-400 to-blue-600 rounded-xl">
-                <BookOpen className="h-6 w-6 text-white" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <motion.div
+                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center shadow-2xl border border-gray-200/50"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <BookOpen className="h-8 w-8 text-white drop-shadow-lg" />
+                </motion.div>
+                <motion.div 
+                  className="text-4xl font-black text-gray-900 drop-shadow-lg"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                >
+                  {userStats.total_levels_completed}
+                </motion.div>
               </div>
-              <span className="text-2xl font-bold text-gray-900">{userStats.total_levels_completed}</span>
+              <h3 className="text-xl font-black text-gray-900 mb-2">Levels Completed</h3>
+              <p className="text-gray-600 text-sm font-medium">Total levels finished</p>
+              
+              {/* Level Progress */}
+              <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                <motion.div
+                  className="h-2 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min((userStats.total_levels_completed / 50) * 100, 100)}%` }}
+                  transition={{ delay: 0.6, duration: 1 }}
+                />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Levels Completed</h3>
-            <p className="text-gray-600 text-sm">Total levels finished</p>
+            </div>
           </motion.div>
 
           {/* Average Score Card */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            initial={{ opacity: 0, y: 50, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+              duration: 0.8, 
+              delay: 0.4,
+              type: "spring",
+              stiffness: 120,
+              damping: 15
+            }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            whileHover={{ scale: 1.03, rotateY: 5 }}
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-gradient-to-r from-green-400 to-green-600 rounded-xl">
-                <Target className="h-6 w-6 text-white" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <motion.div
+                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center shadow-2xl border border-gray-200/50"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <Target className="h-8 w-8 text-white drop-shadow-lg" />
+                </motion.div>
+                <motion.div 
+                  className="text-4xl font-black text-gray-900 drop-shadow-lg"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6, type: "spring" }}
+                >
+                  {userStats.average_score}%
+                </motion.div>
               </div>
-              <span className="text-2xl font-bold text-gray-900">{userStats.average_score}%</span>
+              <h3 className="text-xl font-black text-gray-900 mb-2">Average Score</h3>
+              <p className="text-gray-600 text-sm font-medium">Overall accuracy</p>
+              
+              {/* Score Rating */}
+              <div className="mt-4 flex items-center gap-2">
+                <motion.div
+                  className="text-2xl"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  {userStats.average_score >= 90 ? "🏆" : userStats.average_score >= 80 ? "⭐" : "🎯"}
+                </motion.div>
+                <span className="text-gray-600 text-sm font-medium">
+                  {userStats.average_score >= 90 ? "Excellent!" : userStats.average_score >= 80 ? "Great!" : "Good!"}
+                </span>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Average Score</h3>
-            <p className="text-gray-600 text-sm">Overall accuracy</p>
+            </div>
           </motion.div>
         </div>
 
-        {/* Plant Growth & Daily Goal */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Ultra Modern Plant Growth & Daily Goal */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Plant Growth */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Leaf className="h-5 w-5 text-green-500" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <motion.div
+                  className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <Leaf className="h-5 w-5 text-white" />
+                </motion.div>
               Your Plant
             </h3>
             
-            <div className="text-center mb-6">
+              <div className="text-center mb-8">
               <motion.div
-                className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-4xl mx-auto shadow-lg"
+                  className="w-32 h-32 bg-gradient-to-br from-[#03045e] to-[#00bfe6] rounded-full flex items-center justify-center text-6xl mx-auto shadow-2xl border-4 border-gray-200/50"
                 animate={{ 
-                  y: [0, -5, 0],
-                  rotate: [0, 2, -2, 0]
+                    y: [0, -10, 0],
+                    rotate: [0, 5, -5, 0],
+                    scale: [1, 1.05, 1]
                 }}
                 transition={{ 
-                  duration: 3, 
+                    duration: 4, 
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
+                  whileHover={{ scale: 1.1, rotate: 10 }}
               >
                 {userStats.plant_stage === "Fruit Tree" ? "🌳" : 
                  userStats.plant_stage === "Tree" ? "🌲" : 
                  userStats.plant_stage === "Sapling" ? "🌿" : 
                  userStats.plant_stage === "Sprout" ? "🌱" : "🌱"}
               </motion.div>
-              <h4 className="text-lg font-semibold text-gray-900 mt-3">{userStats.plant_stage}</h4>
-              <p className="text-gray-600 text-sm">Current stage</p>
+                <motion.h4 
+                  className="text-2xl font-black text-gray-900 mt-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  {userStats.plant_stage}
+                </motion.h4>
+                <p className="text-gray-600 text-sm font-medium">Current stage</p>
             </div>
             
-            <div className="space-y-3">
+              <div className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Overall Progress</span>
-                <span className="font-semibold">{Math.round(userStats.completion_percentage)}%</span>
+                  <span className="text-gray-600 font-semibold">Overall Progress</span>
+                  <span className="font-black text-gray-900 text-lg">{Math.round(userStats.completion_percentage)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
                 <motion.div
-                  className={`h-2 bg-gradient-to-r ${plantStage.color} rounded-full`}
+                    className="h-3 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full shadow-lg"
                   initial={{ width: 0 }}
                   animate={{ width: `${userStats.completion_percentage}%` }}
-                  transition={{ duration: 1 }}
-                />
+                    transition={{ duration: 1.5, delay: 0.8 }}
+                    style={{ boxShadow: '0 0 20px rgba(3, 4, 94, 0.3)' }}
+                  />
+                </div>
+                
+                {/* Plant Growth Stages */}
+                <div className="flex justify-between text-xs text-gray-500 mt-3">
+                  <span>🌱 Seed</span>
+                  <span>🌿 Sprout</span>
+                  <span>🌳 Tree</span>
+                  <span>🍎 Fruit</span>
+                </div>
               </div>
             </div>
           </motion.div>
 
           {/* Daily Goal */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Target className="h-5 w-5 text-[#00bfe6]" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <motion.div
+                  className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <Target className="h-5 w-5 text-white" />
+                </motion.div>
               Daily Goal
             </h3>
             
-            <div className="text-center mb-6">
-              <div className="text-3xl font-bold text-gray-900 mb-2">
+              <div className="text-center mb-8">
+                <motion.div 
+                  className="text-5xl font-black text-gray-900 mb-2"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7, type: "spring" }}
+                >
                 {userStats.total_xp} / {userStats.daily_goal}
-              </div>
-              <p className="text-gray-600">XP Today</p>
+                </motion.div>
+                <p className="text-gray-600 text-lg font-medium">XP Today</p>
             </div>
             
-            <div className="space-y-3">
+              <div className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Progress</span>
-                <span className="font-semibold">
+                  <span className="text-gray-600 font-semibold">Progress</span>
+                  <span className="font-black text-gray-900 text-lg">
                   {Math.round((userStats.total_xp / userStats.daily_goal) * 100)}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
                 <motion.div
-                  className="h-2 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full"
+                    className="h-3 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full shadow-lg"
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min((userStats.total_xp / userStats.daily_goal) * 100, 100)}%` }}
-                  transition={{ duration: 1 }}
+                    transition={{ duration: 1.5, delay: 0.8 }}
+                    style={{ boxShadow: '0 0 20px rgba(3, 4, 94, 0.3)' }}
                 />
               </div>
               
               {userStats.total_xp >= userStats.daily_goal ? (
-                <p className="text-green-600 text-sm font-medium text-center mt-2">
-                  🎉 Daily goal completed!
-                </p>
-              ) : (
-                <p className="text-gray-600 text-sm text-center mt-2">
+                  <motion.div
+                    className="text-center mt-4"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 1, type: "spring" }}
+                  >
+                    <p className="text-green-600 text-lg font-black flex items-center justify-center gap-2">
+                      <motion.span
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      >
+                        🎉
+                      </motion.span>
+                      Daily goal completed!
+                    </p>
+                  </motion.div>
+                ) : (
+                  <div className="text-center mt-4">
+                    <p className="text-gray-600 text-sm font-medium">
                   {userStats.daily_goal - userStats.total_xp} XP needed
                 </p>
-              )}
+                    <motion.div
+                      className="mt-2 text-2xl"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      🎯
+                    </motion.div>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Recent Activity & Achievements */}
+        {/* Ultra Modern Recent Activity & Achievements */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Activity */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-blue-500" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <motion.div
+                  className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <Activity className="h-5 w-5 text-white" />
+                </motion.div>
               Recent Activity
             </h3>
             
             <div className="space-y-4">
               {recentActivity && recentActivity.length > 0 ? (
                 recentActivity.map((activity, index) => (
-                  <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-[#03045e] to-[#00bfe6] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    <motion.div
+                      key={activity.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.8 + index * 0.1 }}
+                      className="group/item relative flex items-center justify-between p-4 bg-gray-50 backdrop-blur-sm rounded-2xl border border-gray-200/50 hover:bg-gray-100 transition-all duration-300 hover:scale-105"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <motion.div
+                          className="w-12 h-12 bg-gradient-to-br from-[#03045e] to-[#00bfe6] rounded-2xl flex items-center justify-center text-white font-bold shadow-lg border border-gray-200/50"
+                          whileHover={{ rotate: 10, scale: 1.1 }}
+                          transition={{ duration: 0.3 }}
+                        >
                         {activity.type === 'level' ? 'L' : 'T'}
-                      </div>
+                        </motion.div>
                       <div>
-                        <p className="font-medium text-gray-900">{activity.level_name}</p>
-                        <p className="text-sm text-gray-600">{formatDate(activity.completed_at)}</p>
+                          <p className="font-bold text-gray-900 text-lg">{activity.level_name}</p>
+                          <p className="text-gray-600 text-sm font-medium">{formatDate(activity.completed_at)}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">+{activity.xp_earned} XP</p>
-                      <p className="text-sm text-gray-600">{activity.score}%</p>
+                        <motion.p
+                          className="font-black text-gray-900 text-lg"
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.9 + index * 0.1 }}
+                        >
+                          +{activity.xp_earned} XP
+                        </motion.p>
+                        <p className="text-gray-600 text-sm font-medium">{activity.score}%</p>
                     </div>
-                  </div>
+                    </motion.div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No recent activity</p>
-              )}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.8 }}
+                    className="text-center py-12"
+                  >
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Activity className="h-10 w-10 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 text-lg font-medium">No recent activity</p>
+                    <p className="text-gray-500 text-sm mt-2">Complete some levels to see your progress!</p>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </motion.div>
 
           {/* Achievements */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="bg-white rounded-2xl p-6 shadow-lg"
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="group relative bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-3xl p-8 hover:bg-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            style={{ 
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)`,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)`
+            }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Award className="h-5 w-5 text-yellow-500" />
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+            
+            <div className="relative z-10">
+              <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <motion.div
+                  className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#03045e] to-[#00bfe6] flex items-center justify-center"
+                  whileHover={{ rotate: 10, scale: 1.15 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                >
+                  <Award className="h-5 w-5 text-white" />
+                </motion.div>
               Achievements
             </h3>
             
@@ -677,71 +1019,96 @@ export default function ProgressPage() {
                     key={achievement.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className={`group relative flex items-center space-x-4 p-4 rounded-xl transition-all duration-300 ${
+                      transition={{ duration: 0.5, delay: 0.9 + index * 0.1 }}
+                      className={`group/achievement relative flex items-center space-x-4 p-5 rounded-2xl transition-all duration-500 hover:scale-105 ${
                       achievement.unlocked 
-                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg hover:shadow-xl' 
+                          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg hover:shadow-green-500/25' 
                         : 'bg-gray-50 border border-gray-200'
                     }`}
                   >
                     {/* Achievement Icon */}
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all duration-300 ${
+                      <motion.div
+                        className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-2xl border border-gray-200/50 transition-all duration-300 ${
                       achievement.unlocked 
-                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500 group-hover:scale-110' 
-                        : 'bg-gray-300'
-                    }`}>
+                            ? 'bg-gradient-to-br from-[#03045e] to-[#00bfe6] group-hover/achievement:scale-110 group-hover/achievement:rotate-12' 
+                            : 'bg-gray-400'
+                        }`}
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.3 }}
+                      >
                       {achievement.unlocked ? achievement.icon : '🔒'}
-                    </div>
+                      </motion.div>
                     
                     {/* Achievement Content */}
                     <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className={`font-bold text-lg ${
+                        <div className="flex items-center justify-between mb-2">
+                          <p className={`font-black text-xl ${
                           achievement.unlocked ? 'text-gray-900' : 'text-gray-500'
                         }`}>
                           {achievement.name}
                         </p>
                         {achievement.unlocked && (
-                          <div className="flex items-center space-x-1 bg-yellow-100 px-2 py-1 rounded-full">
-                            <span className="text-xs font-bold text-yellow-800">+{achievement.xp_reward} XP</span>
-                          </div>
+                            <motion.div
+                              className="flex items-center space-x-2 bg-yellow-100 px-3 py-1 rounded-full border border-yellow-200"
+                              initial={{ opacity: 0, scale: 0.5 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 1 + index * 0.1 }}
+                            >
+                              <span className="text-xs font-black text-yellow-800">+{achievement.xp_reward} XP</span>
+                            </motion.div>
                         )}
                       </div>
-                      <p className={`text-sm ${
+                        <p className={`text-sm font-medium ${
                         achievement.unlocked ? 'text-gray-600' : 'text-gray-400'
                       }`}>
                         {achievement.description}
                       </p>
                       {achievement.unlocked && achievement.unlocked_at && (
-                        <p className="text-xs text-green-600 font-medium mt-1">
-                          ✓ Unlocked {new Date(achievement.unlocked_at).toLocaleDateString()}
-                        </p>
+                          <motion.p
+                            className="text-xs text-green-600 font-bold mt-2 flex items-center gap-1"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 1.1 + index * 0.1 }}
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                            Unlocked {new Date(achievement.unlocked_at).toLocaleDateString()}
+                          </motion.p>
                       )}
                     </div>
                     
                     {/* Achievement Status Badge */}
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      <motion.div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       achievement.unlocked 
-                        ? 'bg-green-500' 
-                        : 'bg-gray-400'
-                    }`}>
+                            ? 'bg-green-500 shadow-lg' 
+                            : 'bg-gray-500'
+                        }`}
+                        whileHover={{ scale: 1.2 }}
+                        transition={{ duration: 0.3 }}
+                      >
                       {achievement.unlocked ? (
-                        <CheckCircle className="h-4 w-4 text-white" />
+                          <CheckCircle className="h-5 w-5 text-white" />
                       ) : (
-                        <Lock className="h-3 w-3 text-white" />
+                          <Lock className="h-4 w-4 text-white" />
                       )}
-                    </div>
+                      </motion.div>
                   </motion.div>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Award className="h-8 w-8 text-gray-400" />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.9 }}
+                    className="text-center py-12"
+                  >
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Award className="h-10 w-10 text-gray-400" />
                   </div>
-                  <p className="text-gray-500 text-lg font-medium">No achievements yet</p>
-                  <p className="text-gray-400 text-sm mt-1">Complete levels to unlock achievements!</p>
-                </div>
-              )}
+                    <p className="text-gray-600 text-lg font-medium">No achievements yet</p>
+                    <p className="text-gray-500 text-sm mt-2">Complete levels to unlock achievements!</p>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>

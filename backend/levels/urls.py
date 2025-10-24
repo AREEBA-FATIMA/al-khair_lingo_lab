@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from . import admin_views
 
 # Create router for ViewSets
 router = DefaultRouter()
@@ -18,6 +19,14 @@ urlpatterns = [
     
     # Question management
     path('admin/questions/<int:pk>/', views.QuestionDetailView.as_view(), name='admin-question-detail'),
+    
+    # Admin panel endpoints
+    path('admin/dashboard/stats/', admin_views.admin_dashboard_stats, name='admin-dashboard-stats'),
+    path('admin/questions/bulk-import/', admin_views.bulk_import_questions, name='bulk-import-questions'),
+    path('admin/questions/list/', admin_views.question_list_admin, name='admin-question-list'),
+    path('admin/questions/create/', admin_views.create_question_admin, name='admin-create-question'),
+    path('admin/questions/<int:question_id>/update/', admin_views.update_question_admin, name='admin-update-question'),
+    path('admin/questions/<int:question_id>/delete/', admin_views.delete_question_admin, name='admin-delete-question'),
     
     # User progress management (admin view)
     path('admin/completions/', views.LevelCompletionListView.as_view(), name='admin-level-completion-list'),

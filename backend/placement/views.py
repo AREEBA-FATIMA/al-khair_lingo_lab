@@ -11,7 +11,7 @@ from .serializers import PlacementTestSerializer, PlacementTestAttemptSerializer
 class PlacementTestListView(generics.ListAPIView):
     """List placement tests with filtering"""
     serializer_class = PlacementTestSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Filter placement tests based on query parameters"""
@@ -39,7 +39,7 @@ class PlacementTestDetailView(generics.RetrieveAPIView):
     """Get specific placement test details"""
     queryset = PlacementTest.objects.filter(is_active=True)
     serializer_class = PlacementTestSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class PlacementTestAttemptListView(generics.ListAPIView):

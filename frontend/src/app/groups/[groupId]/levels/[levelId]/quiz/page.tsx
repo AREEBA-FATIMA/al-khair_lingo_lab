@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Volume2, VolumeX, Trophy, CheckCircle, X, RotateCcw, BookOpen, HelpCircle, Lightbulb } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Types
 interface Question {
@@ -98,6 +99,14 @@ export default function QuizPage() {
   const params = useParams()
   const router = useRouter()
   const { groupId, levelId } = params
+  const { isLoggedIn, loading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+    }
+  }, [isLoggedIn, authLoading])
 
   // State
   const [currentLevel, setCurrentLevel] = useState<LevelData | null>(null)
@@ -211,7 +220,7 @@ export default function QuizPage() {
     router.push(`/groups/${groupId}`)
   }
 
-  if (!currentLevel) {
+  if (!currentLevel || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">

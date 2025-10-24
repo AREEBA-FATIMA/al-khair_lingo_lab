@@ -15,7 +15,7 @@ class TestExerciseListView(generics.ListAPIView):
     """List all test exercises"""
     queryset = TestExercise.objects.filter(is_active=True)
     serializer_class = TestExerciseSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Filter tests based on query parameters"""
@@ -50,13 +50,13 @@ class TestExerciseDetailView(generics.RetrieveAPIView):
     """Get specific test exercise details"""
     queryset = TestExercise.objects.filter(is_active=True)
     serializer_class = TestExerciseSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class TestQuestionListView(generics.ListAPIView):
     """Get questions for a specific test"""
     serializer_class = TestQuestionSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         test_id = self.kwargs['test_id']

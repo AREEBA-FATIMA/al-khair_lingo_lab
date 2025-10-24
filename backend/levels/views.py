@@ -16,7 +16,7 @@ class LevelListView(generics.ListAPIView):
     """List all levels with pagination and filtering"""
     queryset = Level.objects.filter(is_active=True).prefetch_related('questions')
     serializer_class = LevelSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Filter levels based on query parameters"""
@@ -44,14 +44,14 @@ class LevelDetailView(generics.RetrieveAPIView):
     """Get specific level details"""
     queryset = Level.objects.filter(is_active=True).prefetch_related('questions')
     serializer_class = LevelSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'level_number'
 
 
 class LevelQuestionsView(generics.ListAPIView):
     """Get questions for a specific level"""
     serializer_class = QuestionSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         level_number = self.kwargs['level_number']
@@ -66,7 +66,7 @@ class QuestionDetailView(generics.RetrieveAPIView):
     """Get specific question details"""
     queryset = Question.objects.filter(is_active=True)
     serializer_class = QuestionSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 @api_view(['POST'])

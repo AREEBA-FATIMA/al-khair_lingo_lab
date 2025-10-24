@@ -35,10 +35,12 @@ def request_password_reset(request):
         )
     
     # Create reset token
+    # Handle both DRF Request and Django HttpRequest
+    django_request = request._request if hasattr(request, '_request') else request
     reset_token = PasswordResetToken.create_for_user(
         user=user,
-        ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        ip_address=django_request.META.get('REMOTE_ADDR'),
+        user_agent=django_request.META.get('HTTP_USER_AGENT', '')
     )
     
     # Send reset email (in production, use proper email service)

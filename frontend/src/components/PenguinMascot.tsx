@@ -71,3 +71,7 @@ const PenguinMascot: React.FC<PenguinMascotProps> = ({ className = '' }) => {
 };
 
 export default PenguinMascot;
+
+
+
+

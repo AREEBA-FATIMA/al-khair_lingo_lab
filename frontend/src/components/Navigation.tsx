@@ -360,6 +360,62 @@ export default function Navigation({
                           </button>
                         </>
                       )}
+
+                      {/* Admin-specific navigation links */}
+                      {(user?.role === 'admin' || user?.is_staff) && (
+                        <>
+                          <button
+                            onClick={async () => {
+                              try {
+                                setIsProfileOpen(false)
+                                setIsNavigating(true)
+                                await router.push('/admin/dashboard')
+                              } catch (error) {
+                                console.error('Navigation error:', error)
+                                window.location.href = '/admin/dashboard'
+                              } finally {
+                                setIsNavigating(false)
+                              }
+                            }}
+                            disabled={isNavigating}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-left disabled:opacity-50"
+                          >
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <span className="text-lg">⚙️</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">Admin Dashboard</p>
+                              <p className="text-xs text-gray-500">Manage questions & content</p>
+                            </div>
+                          </button>
+
+                          <button
+                            onClick={async () => {
+                              try {
+                                setIsProfileOpen(false)
+                                setIsNavigating(true)
+                                await router.push('/analytics')
+                              } catch (error) {
+                                console.error('Navigation error:', error)
+                                window.location.href = '/analytics'
+                              } finally {
+                                setIsNavigating(false)
+                              }
+                            }}
+                            disabled={isNavigating}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-left disabled:opacity-50"
+                          >
+                            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                              <span className="text-lg">📊</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">System Analytics</p>
+                              <p className="text-xs text-gray-500">View system statistics</p>
+                            </div>
+                          </button>
+                        </>
+                      )}
+
                     </div>
 
                     {/* Logout Section */}
