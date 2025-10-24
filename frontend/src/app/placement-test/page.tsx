@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Clock, 
@@ -76,9 +76,42 @@ export default function PlacementTestPage() {
   const [error, setError] = useState('')
   const { isLoggedIn, user } = useAuth()
 
+  const fetchAvailableTests = async () => {
+    try {
+      const data = await apiService.getAvailableTests()
+      setTests(data)
+    } catch (error) {
+      console.error('Error fetching tests:', error)
+      setError('Failed to load placement tests')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTestSubmit = useCallback(async () => {
+    if (!selectedTest) return
+    
+    try {
+      setLoading(true)
+      const timeTaken = (selectedTest.time_limit_minutes * 60) - timeRemaining
+      const response = await apiService.submitPlacementTest(selectedTest.id, {
+        answers: userAnswers,
+        time_taken_seconds: timeTaken
+      })
+      
+      setTestResult(response)
+      setIsTestActive(false)
+    } catch (error) {
+      console.error('Error submitting test:', error)
+      setError('Failed to submit test')
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedTest, timeRemaining, userAnswers])
+
   useEffect(() => {
     fetchAvailableTests()
-  }, [])
+  }, [fetchAvailableTests])
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -94,19 +127,7 @@ export default function PlacementTestPage() {
       }, 1000)
     }
     return () => clearInterval(interval)
-  }, [isTestActive, isPaused, timeRemaining])
-
-  const fetchAvailableTests = async () => {
-    try {
-      const data = await apiService.getAvailableTests()
-      setTests(data)
-    } catch (error) {
-      console.error('Error fetching tests:', error)
-      setError('Failed to load placement tests')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [isTestActive, isPaused, timeRemaining, handleTestSubmit])
 
   const startTest = async (test: PlacementTest) => {
     try {
@@ -188,26 +209,6 @@ export default function PlacementTestPage() {
     }
   }
 
-  const handleTestSubmit = async () => {
-    if (!selectedTest) return
-    
-    try {
-      setLoading(true)
-      const timeTaken = (selectedTest.time_limit_minutes * 60) - timeRemaining
-      const response = await apiService.submitPlacementTest(selectedTest.id, {
-        answers: userAnswers,
-        time_taken_seconds: timeTaken
-      })
-      
-      setTestResult(response)
-      setIsTestActive(false)
-    } catch (error) {
-      console.error('Error submitting test:', error)
-      setError('Failed to submit test')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)

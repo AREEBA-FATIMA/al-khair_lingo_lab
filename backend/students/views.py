@@ -188,6 +188,7 @@ def student_registration(request):
             }, status=status.HTTP_201_CREATED)
         else:
             print(f"DEBUG - Student validation failed: {student_serializer.errors}")
+            print(f"DEBUG - Student data that failed: {student_data}")
             return Response({
                 'success': False,
                 'error': 'Student validation failed',

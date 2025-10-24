@@ -3,6 +3,50 @@
 import { useState, useEffect, useRef } from 'react'
 import { Mic, MicOff, Play, Pause, RotateCcw, CheckCircle, XCircle } from 'lucide-react'
 
+// Type declarations for Speech Recognition API
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition
+    webkitSpeechRecognition: typeof SpeechRecognition
+  }
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start(): void
+  stop(): void
+  abort(): void
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
+  onend: (() => void) | null
+}
+
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: SpeechRecognitionResult
+  length: number
+}
+
+interface SpeechRecognitionResult {
+  [index: number]: SpeechRecognitionAlternative
+  length: number
+  isFinal: boolean
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string
+  confidence: number
+}
+
 interface VoiceRecorderProps {
   onRecordingComplete: (audioBlob: Blob, transcript: string) => void
   onRecordingStart?: () => void
@@ -38,37 +82,6 @@ export default function VoiceRecorder({
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
-  useEffect(() => {
-    // Initialize speech recognition
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      recognitionRef.current = new SpeechRecognition()
-      recognitionRef.current.continuous = false
-      recognitionRef.current.interimResults = false
-      recognitionRef.current.lang = 'en-US'
-
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript
-        setTranscript(transcript)
-        checkPronunciation(transcript)
-      }
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error)
-        setError('Speech recognition failed. Please try again.')
-      }
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
-    }
-  }, [])
-
   const checkPronunciation = (transcript: string) => {
     if (!targetText) return
 
@@ -89,6 +102,37 @@ export default function VoiceRecorder({
     const score = Math.round((matches / targetWords.length) * 100)
     setPronunciationScore(score)
   }
+
+  useEffect(() => {
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = false
+      recognitionRef.current.interimResults = false
+      recognitionRef.current.lang = 'en-US'
+
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript
+        setTranscript(transcript)
+        checkPronunciation(transcript)
+      }
+
+      recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error('Speech recognition error:', event.error)
+        setError('Speech recognition failed. Please try again.')
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [checkPronunciation])
 
   const calculateSimilarity = (str1: string, str2: string): number => {
     const longer = str1.length > str2.length ? str1 : str2
@@ -303,7 +347,7 @@ export default function VoiceRecorder({
       {targetText && (
         <div className="bg-gray-100 rounded-lg p-4 mb-4">
           <h4 className="font-medium text-gray-900 mb-2">Target Text:</h4>
-          <p className="text-gray-700 italic">"{targetText}"</p>
+          <p className="text-gray-700 italic">&quot;{targetText}&quot;</p>
         </div>
       )}
 
@@ -311,7 +355,7 @@ export default function VoiceRecorder({
       {transcript && (
         <div className="bg-blue-50 rounded-lg p-4 mb-4">
           <h4 className="font-medium text-gray-900 mb-2">You said:</h4>
-          <p className="text-gray-700">"{transcript}"</p>
+          <p className="text-gray-700">&quot;{transcript}&quot;</p>
         </div>
       )}
 

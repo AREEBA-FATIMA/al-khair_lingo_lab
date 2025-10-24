@@ -101,7 +101,7 @@ export default function PlantGrowthSystem({
     } else {
       setCurrentStage(stage)
     }
-  }, [completionPercentage])
+  }, [completionPercentage, currentStage.name])
 
   useEffect(() => {
     // Check if plant needs water (if not watered in last 24 hours)

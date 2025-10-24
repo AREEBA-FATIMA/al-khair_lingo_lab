@@ -103,17 +103,6 @@ export default function VocabularyPage() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const { isLoggedIn, user } = useAuth()
 
-  useEffect(() => {
-    fetchVocabulary()
-    fetchStats()
-  }, [])
-
-  useEffect(() => {
-    if (isReviewMode && reviewWords.length > 0) {
-      setCurrentWord(reviewWords[currentIndex])
-    }
-  }, [isReviewMode, reviewWords, currentIndex])
-
   const fetchVocabulary = async () => {
     try {
       const data = await apiService.getVocabulary(filter)
@@ -125,6 +114,17 @@ export default function VocabularyPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchVocabulary()
+    fetchStats()
+  }, [fetchVocabulary])
+
+  useEffect(() => {
+    if (isReviewMode && reviewWords.length > 0) {
+      setCurrentWord(reviewWords[currentIndex])
+    }
+  }, [isReviewMode, reviewWords, currentIndex])
 
   const fetchReviewWords = async () => {
     try {
@@ -378,7 +378,7 @@ export default function VocabularyPage() {
                 className="flex items-center space-x-2 px-8 py-4 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold transition-all duration-300 shadow-lg hover:scale-105"
               >
                 <XCircle className="h-5 w-5" />
-                <span>I Don't Know</span>
+                <span>I Don&apos;t Know</span>
               </button>
               
               <button
@@ -435,7 +435,7 @@ export default function VocabularyPage() {
             Vocabulary Review
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Master English vocabulary with spaced repetition. Review words you've learned and discover new ones!
+            Master English vocabulary with spaced repetition. Review words you&apos;ve learned and discover new ones!
           </p>
         </div>
 

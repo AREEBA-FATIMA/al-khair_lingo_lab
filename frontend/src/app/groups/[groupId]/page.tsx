@@ -6,6 +6,7 @@ import { ArrowLeft, Play, CheckCircle, Lock, Leaf, Star, Clock, Target } from 'l
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Navigation from '@/components/Navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Level {
   id: number
@@ -38,6 +39,7 @@ interface Group {
 export default function GroupDetailPage() {
   const params = useParams()
   const groupId = params.groupId as string
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
   
   const [group, setGroup] = useState<Group | null>(null)
   const [levels, setLevels] = useState<Level[]>([])
@@ -200,8 +202,16 @@ export default function GroupDetailPage() {
   }
 
   useEffect(() => {
-    fetchGroupData()
-  }, [groupId])
+    // Check if user is logged in
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+      return
+    }
+    
+    if (!authLoading && isLoggedIn) {
+      fetchGroupData()
+    }
+  }, [authLoading, isLoggedIn, groupId, fetchGroupData])
 
   useEffect(() => {
     // Load user progress first
@@ -214,7 +224,7 @@ export default function GroupDetailPage() {
       // Re-fetch group data to update level unlocking
       fetchGroupData()
     }
-  }, [userProgress])
+  }, [userProgress, fetchGroupData])
 
   const getPlantEmoji = (stage: string) => {
     const stageEmojis: { [key: string]: string } = {
@@ -242,6 +252,30 @@ export default function GroupDetailPage() {
     if (level.is_completed) return 'completed'
     if (level.is_unlocked) return 'unlocked'
     return 'locked'
+  }
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-[#00bfe6] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect if not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-[#00bfe6] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {

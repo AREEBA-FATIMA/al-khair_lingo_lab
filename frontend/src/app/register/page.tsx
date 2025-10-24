@@ -60,11 +60,27 @@ export default function RegisterPage() {
         if (gradeResponse.success) {
           console.log('DEBUG - Grade data received:', gradeResponse.data)
           setGradeOptions(gradeResponse.data.map((grade: any) => ({
-            value: grade.grade,
+            value: grade.grade,  // This should be "Grade 1", "Grade 2", etc.
             label: grade.grade
           })))
         } else {
           console.log('DEBUG - Grade API failed:', gradeResponse)
+          // Fallback to static grade options with correct format
+          setGradeOptions([
+            { value: 'Nursery', label: 'Nursery' },
+            { value: 'KG-I', label: 'KG-I' },
+            { value: 'KG-II', label: 'KG-II' },
+            { value: 'Grade 1', label: 'Grade 1' },
+            { value: 'Grade 2', label: 'Grade 2' },
+            { value: 'Grade 3', label: 'Grade 3' },
+            { value: 'Grade 4', label: 'Grade 4' },
+            { value: 'Grade 5', label: 'Grade 5' },
+            { value: 'Grade 6', label: 'Grade 6' },
+            { value: 'Grade 7', label: 'Grade 7' },
+            { value: 'Grade 8', label: 'Grade 8' },
+            { value: 'Grade 9', label: 'Grade 9' },
+            { value: 'Grade 10', label: 'Grade 10' },
+          ])
         }
 
         if (shiftResponse.success) {
@@ -106,6 +122,10 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    // Debug logging
+    console.log('DEBUG - Form data:', formData)
+    console.log('DEBUG - Grade options:', gradeOptions)
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
@@ -270,7 +290,7 @@ export default function RegisterPage() {
               {/* Father's Name */}
               <div>
                 <label htmlFor="fatherName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Father's Name
+                  Father&apos;s Name
                 </label>
                 <div className="relative">
                   <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />

@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Volume2, VolumeX, Trophy, Star } from 'lucide-react'
+import { ArrowLeft, Volume2, VolumeX, Trophy, Star, Heart } from 'lucide-react'
 import ProgressManager from '@/utils/progressManager'
 import PenguinMascot from '@/components/PenguinMascot'
+import { useAuth } from '@/contexts/AuthContext'
 // import PenguinMascot from '@/components/PenguinMascot'
 
 // Types
@@ -42,77 +43,62 @@ interface LevelMeta {
   xp: string
 }
 
-// Local fallback data
+// Local fallback data - No hardcoded questions
 const localLevels: LevelData[] = [
   {
     id: 1,
-    title: "HTML Basics",
+    level_number: 1,
+    name: "HTML Basics",
     description: "Basic HTML tags (headings, p, a, img).",
-    xp: 10,
-    questions: [
-      { question: "What does HTML stand for?", options: ["HyperText Markup Language", "Home Tool Markup Language", "Hyperlinks Text Makeup Language", "HyperText Machine Language"], correctIndex: 0 },
-      { question: "Which tag is used for a paragraph?", options: ["<p>", "<para>", "<pg>", "<text>"], correctIndex: 0 },
-      { question: "Which tag creates a link?", options: ["<a>", "<link>", "<href>", "<url>"], correctIndex: 0 },
-      { question: "Which attribute sets an image source?", options: ["src", "href", "link", "img"], correctIndex: 0 },
-      { question: "Which tag defines the document title?", options: ["<title>", "<head>", "<name>", "<caption>"], correctIndex: 0 },
-      { question: "Which element contains the main content?", options: ["<main>", "<content>", "<body>", "<section>"], correctIndex: 2 }
-    ]
+    xp_reward: 10,
+    is_unlocked: true,
+    is_test_level: false,
+    test_questions_count: 0,
+    questions: []
   },
   {
     id: 2,
-    title: "Include CSS",
+    level_number: 2,
+    name: "Include CSS",
     description: "Attach CSS using link or style tags.",
-    xp: 12,
-    questions: [
-      { question: "Which tag includes an external CSS file?", options: ["<link rel='stylesheet' href='style.css'>", "<script src='style.css'>", "<css src='style.css'>", "<style href='style.css'>"], correctIndex: 0 },
-      { question: "Where should link to CSS be placed?", options: ["In the head", "In the body", "At end of body", "In the footer"], correctIndex: 0 },
-      { question: "Which attribute specifies media for link?", options: ["media", "type", "rel", "href"], correctIndex: 0 },
-      { question: "To write internal CSS which tag is used?", options: ["<style>", "<css>", "<link>", "<script>"], correctIndex: 0 },
-      { question: "Inline CSS uses which attribute?", options: ["style", "css", "inline", "class"], correctIndex: 0 },
-      { question: "External CSS keeps markup and styles:", options: ["Separated", "Combined", "Conflicting", "Merged"], correctIndex: 0 }
-    ]
+    xp_reward: 12,
+    is_unlocked: true,
+    is_test_level: false,
+    test_questions_count: 0,
+    questions: []
   },
   {
     id: 3,
-    title: "CSS Backgrounds",
+    level_number: 3,
+    name: "CSS Backgrounds",
     description: "Change background colors and images.",
-    xp: 15,
-    questions: [
-      { question: "Which property changes background color?", options: ["background-color", "bg", "color-bg", "backColor"], correctIndex: 0 },
-      { question: "How to set background image in CSS?", options: ["background-image:url('x')", "img-bg:url('x')", "bg:url('x')", "image:url('x')"], correctIndex: 0 },
-      { question: "To make background cover entire area use:", options: ["background-size:cover", "background-fit:all", "cover-background:true", "bg-size:100%"], correctIndex: 0 },
-      { question: "Transparent background value is:", options: ["transparent", "#0000", "none", "hide"], correctIndex: 0 },
-      { question: "Background shorthand property is:", options: ["background", "bg", "backgroundAll", "backgroundProp"], correctIndex: 0 },
-      { question: "To repeat background use property:", options: ["background-repeat", "repeat-bg", "bg-repeat", "repeat"], correctIndex: 0 }
-    ]
+    xp_reward: 15,
+    is_unlocked: true,
+    is_test_level: false,
+    test_questions_count: 0,
+    questions: []
   },
   {
     id: 4,
-    title: "JS Comments",
+    level_number: 4,
+    name: "JS Comments",
     description: "Comments in JS and code readability.",
-    xp: 18,
-    questions: [
-      { question: "Single-line comment in JS is:", options: ["// comment", "<!-- -->", "/* */", "# comment"], correctIndex: 0 },
-      { question: "Multi-line comment uses:", options: ["/* comment */", "// comment", "# comment", "<-- -->"], correctIndex: 0 },
-      { question: "Comments are used for:", options: ["Readability", "Execution", "Styling", "Linking"], correctIndex: 0 },
-      { question: "Which is NOT comment syntax?", options: ["# comment", "// comment", "/* */", "<!-- -->"], correctIndex: 3 },
-      { question: "Good comments explain:", options: ["Why code exists", "Everything verbatim", "Repeat code", "Hide code"], correctIndex: 0 },
-      { question: "Comments are ignored by:", options: ["The JS engine", "User", "Editor", "Terminal"], correctIndex: 0 }
-    ]
+    xp_reward: 18,
+    is_unlocked: true,
+    is_test_level: false,
+    test_questions_count: 0,
+    questions: []
   },
   {
     id: 5,
-    title: "Variables (let)",
+    level_number: 5,
+    name: "Variables (let)",
     description: "Declare variables with let/const.",
-    xp: 0,
-    questions: [
-      { question: "Which declares a block-scoped variable (ES6)?", options: ["let x = 5;", "var x = 5;", "int x = 5;", "v x = 5;"], correctIndex: 0 },
-      { question: "Constant declaration uses:", options: ["const", "letconst", "immutable", "final"], correctIndex: 0 },
-      { question: "Reassignable variable uses:", options: ["let", "const", "static", "immutable"], correctIndex: 0 },
-      { question: "Which is valid identifier?", options: ["myVar", "1var", "my-var", "my var"], correctIndex: 0 },
-      { question: "To declare multiple: let a=1, b=2;", options: ["valid", "invalid", "error", "deprecated"], correctIndex: 0 },
-      { question: "Var is function-scoped while let is:", options: ["block-scoped", "global", "module", "none"], correctIndex: 0 }
-    ]
+    xp_reward: 20,
+    is_unlocked: true,
+    is_test_level: false,
+    test_questions_count: 0,
+    questions: []
   }
 ]
 
@@ -150,6 +136,7 @@ export default function QuizGame() {
   const params = useParams()
   const router = useRouter()
   const { groupId, levelId } = params
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
 
   // State
   const [highestUnlocked, setHighestUnlocked] = useState(0)
@@ -183,6 +170,8 @@ export default function QuizGame() {
     passed: boolean
     xpEarned: number
   } | null>(null)
+  const [showHeartEarned, setShowHeartEarned] = useState(false)
+  const [heartEarnedMessage, setHeartEarnedMessage] = useState('')
   const [currentStep, setCurrentStep] = useState<'intro' | 'practice' | 'quiz' | 'result'>('intro')
   const [practiceStep, setPracticeStep] = useState(0)
 
@@ -282,7 +271,7 @@ export default function QuizGame() {
   }
 
   // Learning content for different levels
-  const getLearningContent = (levelNumber: number) => {
+  const getLearningContent = (levelNumber: number): any => {
     const content = {
       1: {
         topic: "Basic Greetings",
@@ -402,19 +391,74 @@ export default function QuizGame() {
   // Refs
   const infoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Load progress from database
+  const loadProgressFromDatabase = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/progress/load/')
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUserProgress({
+          totalLevels: data.total_levels,
+          completedLevels: data.completed_levels,
+          totalXP: data.total_xp,
+          highestLevel: data.highest_level + 1
+        })
+        
+        // Update local state
+        setHighestUnlocked(data.highest_level)
+        setXpTotal(data.total_xp)
+        persistState()
+        
+        console.log('Progress loaded from database:', {
+          highestLevel: data.highest_level,
+          completedLevels: data.completed_levels,
+          totalXP: data.total_xp
+        })
+      }
+    } catch (error) {
+      console.error('Error loading progress:', error)
+    }
+  }
+
   // Load from localStorage and database on mount
   useEffect(() => {
-    const savedUnlocked = localStorage.getItem('snake_highestUnlocked_v1')
-    const savedXp = localStorage.getItem('snake_xp_v1')
-    const savedSound = localStorage.getItem('snake_sound_v1')
+    // Check if user is logged in
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+      return
+    }
     
-    if (savedUnlocked) setHighestUnlocked(Number(savedUnlocked))
-    if (savedXp) setXpTotal(Number(savedXp))
-    if (savedSound !== null) setSoundOn(savedSound === 'true')
-    
-    // Load progress from database
-    loadProgressFromDatabase()
-  }, [])
+    if (!authLoading && isLoggedIn) {
+      const savedUnlocked = localStorage.getItem('snake_highestUnlocked_v1')
+      const savedXp = localStorage.getItem('snake_xp_v1')
+      const savedSound = localStorage.getItem('snake_sound_v1')
+      
+      if (savedUnlocked) setHighestUnlocked(Number(savedUnlocked))
+      if (savedXp) setXpTotal(Number(savedXp))
+      if (savedSound !== null) setSoundOn(savedSound === 'true')
+      
+      // Load progress from database
+      loadProgressFromDatabase()
+    }
+
+    // Heart earned event listener
+    const handleHeartEarned = (event: CustomEvent) => {
+      const { hearts, levelsCompleted } = event.detail
+      setHeartEarnedMessage(`Amazing! +1 Heart earned for completing ${levelsCompleted} levels!`)
+      setShowHeartEarned(true)
+      
+      // Auto hide after 5 seconds
+      setTimeout(() => {
+        setShowHeartEarned(false)
+      }, 5000)
+    }
+
+    window.addEventListener('heartEarned', handleHeartEarned as EventListener)
+    return () => {
+      window.removeEventListener('heartEarned', handleHeartEarned as EventListener)
+    }
+  }, [authLoading, isLoggedIn, loadProgressFromDatabase])
 
   // Fetch level data from API
   useEffect(() => {
@@ -482,7 +526,7 @@ export default function QuizGame() {
           is_unlocked: true,
           is_test_level: false,
           test_questions_count: 0,
-          questions: localLevels[0]?.questions.map((q, idx) => ({
+          questions: localLevels[0]?.questions.map((q: any, idx: number) => ({
             id: idx + 1,
             question_text: q.question,
             question_type: 'mcq',
@@ -497,7 +541,7 @@ export default function QuizGame() {
             is_active: true
           })) || []
         })
-        const fallbackQuestions = localLevels[0]?.questions.map((q, idx) => ({
+        const fallbackQuestions = localLevels[0]?.questions.map((q: any, idx: number) => ({
           id: idx + 1,
           question_text: q.question,
           question_type: 'mcq',
@@ -755,36 +799,6 @@ export default function QuizGame() {
     }
   }
 
-  // Load progress from database
-  const loadProgressFromDatabase = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/progress/load/')
-      
-      if (response.ok) {
-        const data = await response.json()
-        setUserProgress({
-          totalLevels: data.total_levels,
-          completedLevels: data.completed_levels,
-          totalXP: data.total_xp,
-          currentLevel: data.highest_level + 1
-        })
-        
-        // Update local state
-        setHighestUnlocked(data.highest_level)
-        setXpTotal(data.total_xp)
-        persistState()
-        
-        console.log('Progress loaded from database:', {
-          highestLevel: data.highest_level,
-          completedLevels: data.completed_levels,
-          totalXP: data.total_xp
-        })
-      }
-    } catch (error) {
-      console.error('Error loading progress:', error)
-    }
-  }
-
   // Finish quiz
   const finishLevelQuiz = async () => {
     const total = currentLevelQuestions.length
@@ -858,9 +872,9 @@ export default function QuizGame() {
   // Level click handler
   const handleLevelClick = (idx: number) => {
     if (idx <= highestUnlocked) {
-      startLevelQuiz(idx)
+      startLevelQuiz()
     } else if (idx === highestUnlocked + 1) {
-      startLevelQuiz(idx)
+      startLevelQuiz()
     } else {
       flashHint("Unlock previous levels first")
     }
@@ -873,7 +887,31 @@ export default function QuizGame() {
 
   useEffect(() => {
     persistState()
-  }, [highestUnlocked, xpTotal, soundOn])
+  }, [highestUnlocked, xpTotal, soundOn, persistState])
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect if not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Redirecting...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
@@ -919,170 +957,360 @@ export default function QuizGame() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-900 overflow-auto p-7">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-900 overflow-auto relative">
+      {/* Heart Earned Notification */}
+      {showHeartEarned && (
+        <motion.div
+          initial={{ opacity: 0, y: -100, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -100, scale: 0.8 }}
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-white"
+        >
+          <div className="flex items-center space-x-3">
+            <motion.div
+              animate={{ 
+                scale: [1, 1.2, 1],
+                rotate: [0, 10, -10, 0]
+              }}
+              transition={{ 
+                duration: 1, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <Heart className="h-8 w-8 fill-white" />
+            </motion.div>
+            <div>
+              <h3 className="font-bold text-lg">Heart Earned! 🎉</h3>
+              <p className="text-sm opacity-90">{heartEarnedMessage}</p>
+            </div>
+            <motion.button
+              onClick={() => setShowHeartEarned(false)}
+              className="text-white/80 hover:text-white transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              ✕
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%2303045e%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+      
+      {/* Floating Orbs */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-[#03045e]/10 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#00bfe6]/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      
       {/* Penguin Mascot - Floating helper */}
       <div className="fixed right-6 bottom-6 z-40">
-        <PenguinMascot className="transform hover:scale-110 transition-transform duration-300" />
+        <PenguinMascot className="transform hover:scale-110 transition-all duration-300 hover:rotate-12" />
       </div>
 
-      {/* Top Bar */}
-      <div className="fixed right-6 top-5 flex gap-3 items-center z-50">
-        <div className="bg-white/95 backdrop-blur-sm px-4 py-3 rounded-2xl flex gap-3 items-center border border-gray-200 shadow-xl">
-          <Trophy className="h-5 w-5 text-[#00bfe6]" />
-          <span className="font-bold text-[#03045e] text-lg">XP: {xpTotal}</span>
-        </div>
-        <button
-          onClick={toggleSound}
-          className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/95 backdrop-blur-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors shadow-xl"
-          title="Toggle sound"
+      {/* Top Bar - Modern Glass Design with Mobile Support */}
+      <div className="fixed right-3 top-3 sm:right-6 sm:top-5 flex gap-2 sm:gap-4 items-center z-50">
+        <motion.div 
+          className="bg-white/95 backdrop-blur-xl px-3 py-2 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl flex gap-2 sm:gap-3 items-center border border-gray-200 shadow-2xl"
+          whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,1)" }}
+          transition={{ type: "spring", stiffness: 300 }}
         >
-          {soundOn ? <Volume2 className="h-6 w-6 text-[#00bfe6]" /> : <VolumeX className="h-6 w-6 text-gray-400" />}
-        </button>
+          <Trophy className="h-4 w-4 sm:h-6 sm:w-6 text-[#00bfe6]" />
+          <span className="font-bold text-[#03045e] text-sm sm:text-xl">XP: {xpTotal}</span>
+        </motion.div>
+        <motion.button
+          onClick={toggleSound}
+          className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl sm:rounded-3xl flex items-center justify-center bg-white/95 backdrop-blur-xl border border-gray-200 cursor-pointer hover:bg-white transition-all duration-300 shadow-2xl"
+          title="Toggle sound"
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {soundOn ? <Volume2 className="h-5 w-5 sm:h-7 sm:w-7 text-[#00bfe6]" /> : <VolumeX className="h-5 w-5 sm:h-7 sm:w-7 text-gray-400" />}
+        </motion.button>
       </div>
 
-      {/* Back Button */}
-      <button
+      {/* Back Button - Modern Design with Mobile Support */}
+      <motion.button
         onClick={() => router.back()}
-        className="fixed left-6 top-5 z-50 p-3 hover:bg-white/80 rounded-2xl transition-colors bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl"
+        className="fixed left-3 top-3 sm:left-6 sm:top-5 z-50 p-3 sm:p-4 hover:bg-white/80 rounded-2xl sm:rounded-3xl transition-all duration-300 bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl"
+        whileHover={{ scale: 1.1, x: -5 }}
+        whileTap={{ scale: 0.95 }}
       >
-        <ArrowLeft className="h-6 w-6 text-[#03045e]" />
-      </button>
+        <ArrowLeft className="h-5 w-5 sm:h-7 sm:w-7 text-[#03045e]" />
+      </motion.button>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto relative">
-        {/* Level Header */}
+      <div className="max-w-4xl mx-auto relative px-4 sm:px-6 lg:px-8">
+        {/* Level Header - Modern Glass Card */}
         <div className="text-center mb-12">
-          <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-gray-100 mb-8">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-4">
-              {levelData.name}
-            </h1>
-            <p className="text-gray-700 text-xl mb-6 font-medium">{levelData.description}</p>
-            <div className="flex justify-center gap-4 text-sm">
-              <div className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-4 py-2 rounded-xl font-bold border border-green-200">
-                +{levelData.xp_reward} XP
-              </div>
-              <div className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-4 py-2 rounded-xl font-bold border border-blue-200">
-                {levelData.questions.length} Questions
-              </div>
-              {levelData.is_test_level && (
-                <div className="bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 px-4 py-2 rounded-xl font-bold border border-yellow-200">
-                  Test Level
+          <motion.div 
+            className="bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-10 shadow-2xl border border-gray-200 mb-8 relative overflow-hidden"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            {/* Animated gradient border */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#03045e]/20 via-[#00bfe6]/20 to-[#03045e]/20 rounded-3xl blur-sm"></div>
+            <div className="relative z-10">
+              <motion.h1 
+                className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-4 sm:mb-6"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                {levelData?.name}
+              </motion.h1>
+              <motion.p 
+                className="text-gray-700 text-lg sm:text-xl mb-6 sm:mb-8 font-medium leading-relaxed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                {levelData?.description}
+              </motion.p>
+              <motion.div 
+                className="flex justify-center gap-4 text-sm flex-wrap"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+              >
+                <div className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-6 py-3 rounded-2xl font-bold border border-green-200">
+                  +{levelData?.xp_reward} XP
                 </div>
-              )}
+                <div className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-6 py-3 rounded-2xl font-bold border border-blue-200">
+                  {levelData?.questions.length} Questions
+                </div>
+                {levelData?.is_test_level && (
+                  <div className="bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 px-6 py-3 rounded-2xl font-bold border border-yellow-200">
+                    Test Level
+                  </div>
+                )}
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Start Quiz Button */}
+        {/* Start Quiz Button - Modern Design */}
         <div className="text-center mb-12">
           <motion.button
             onClick={startLevelQuiz}
-            className="px-12 py-6 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white font-bold text-2xl rounded-2xl hover:from-[#02033a] hover:to-[#0099cc] transition-all shadow-2xl hover:shadow-3xl transform hover:scale-105"
+            className="relative px-8 py-6 sm:px-16 sm:py-8 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white font-bold text-xl sm:text-3xl rounded-2xl sm:rounded-3xl transition-all duration-300 overflow-hidden group"
             style={{
               boxShadow: '0 15px 35px rgba(3, 4, 94, 0.4), 0 8px 20px rgba(0, 191, 230, 0.3)'
             }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: '0 20px 40px rgba(3, 4, 94, 0.6), 0 10px 25px rgba(0, 191, 230, 0.4)'
+            }}
             whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
           >
-            Start Learning 📚
+            {/* Animated background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#03045e] to-[#00bfe6] animate-pulse opacity-20"></div>
+            <span className="relative z-10 flex items-center gap-3">
+              Start Learning 
+              <motion.span
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+              >
+                📚
+              </motion.span>
+            </span>
           </motion.button>
         </div>
 
-        {/* Questions Preview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {levelData.questions.map((question, idx) => (
+        {/* Questions Preview - Modern Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-12">
+          {levelData?.questions.map((question, idx) => (
             <motion.div
               key={question.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ 
+                delay: idx * 0.15,
+                type: "spring",
+                stiffness: 100,
+                damping: 15
+              }}
+              className="group relative bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-3 hover:scale-105 overflow-hidden"
+              whileHover={{ 
+                y: -10,
+                scale: 1.02,
+                boxShadow: "0 25px 50px rgba(0,0,0,0.3)"
+              }}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                  {idx + 1}
+              {/* Animated gradient border */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#03045e]/20 via-[#00bfe6]/20 to-[#03045e]/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <motion.div 
+                    className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white rounded-xl sm:rounded-2xl flex items-center justify-center text-base sm:text-lg font-bold shadow-lg"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {idx + 1}
+                  </motion.div>
+                  <span className="text-[#03045e] font-bold text-lg sm:text-xl">Question {idx + 1}</span>
                 </div>
-                <span className="text-[#03045e] font-bold text-lg">Question {idx + 1}</span>
-              </div>
-              <p className="text-gray-700 text-base mb-4 font-medium leading-relaxed">{question.question_text}</p>
-              <div className="flex gap-2 text-xs">
-                <span className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-3 py-2 rounded-lg font-semibold border border-blue-200">
-                  {question.question_type}
-                </span>
-                <span className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-3 py-2 rounded-lg font-semibold border border-purple-200">
-                  +{question.xp_value} XP
-                </span>
-                <span className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-3 py-2 rounded-lg font-semibold border border-orange-200">
-                  {question.time_limit_seconds}s
-                </span>
+                
+                <p className="text-gray-700 text-base sm:text-lg mb-4 sm:mb-6 font-medium leading-relaxed group-hover:text-[#03045e] transition-colors duration-300">
+                  {question.question_text}
+                </p>
+                
+                <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm flex-wrap">
+                  <motion.span 
+                    className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl font-semibold border border-blue-200"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    {question.question_type}
+                  </motion.span>
+                  <motion.span 
+                    className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl font-semibold border border-purple-200"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    +{question.xp_value} XP
+                  </motion.span>
+                  <motion.span 
+                    className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl font-semibold border border-orange-200"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    {question.time_limit_seconds}s
+                  </motion.span>
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Progress Tree */}
+        {/* Progress Tree - Modern Design */}
         <div className="text-center mb-12">
-          <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-2xl">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-6">
-              Your Learning Tree
-            </h3>
-            <div className="flex justify-center items-end gap-3 mb-6">
-              {/* Tree stages based on progress */}
-              {Array.from({ length: 5 }, (_, i) => {
-                const stage = Math.min(Math.floor((highestUnlocked / 10) * 5), 4)
-                const isActive = i <= stage
-                return (
-                  <motion.div
-                    key={i}
-                    className={`w-16 h-20 rounded-t-full flex items-center justify-center text-3xl border-4 border-white shadow-lg ${
-                      isActive ? 'bg-gradient-to-b from-green-400 to-green-600' : 'bg-gradient-to-b from-gray-300 to-gray-500'
-                    }`}
-                    animate={isActive ? { scale: [1, 1.1, 1] } : {}}
-                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-                    style={{
-                      boxShadow: isActive ? '0 8px 20px rgba(34, 197, 94, 0.3)' : '0 4px 10px rgba(0,0,0,0.1)'
-                    }}
-                  >
-                    {i === 0 ? '🌱' : i === 1 ? '🌿' : i === 2 ? '🌳' : i === 3 ? '🌲' : '🌳'}
-                  </motion.div>
-                )
-              })}
+          <motion.div 
+            className="bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-10 border border-gray-200 shadow-2xl relative overflow-hidden"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.2 }}
+          >
+            {/* Animated background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#03045e]/10 via-[#00bfe6]/10 to-[#03045e]/10 rounded-3xl"></div>
+            
+            <div className="relative z-10">
+              <motion.h3 
+                className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent mb-6 sm:mb-8"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.6, delay: 1.4 }}
+              >
+                Your Learning Tree 🌳
+              </motion.h3>
+              
+              <div className="flex justify-center items-end gap-2 sm:gap-4 mb-6 sm:mb-8">
+                {/* Tree stages based on progress */}
+                {Array.from({ length: 5 }, (_, i) => {
+                  const stage = Math.min(Math.floor((highestUnlocked / 10) * 5), 4)
+                  const isActive = i <= stage
+                  return (
+                    <motion.div
+                      key={i}
+                      className={`w-12 h-16 sm:w-16 sm:h-20 lg:w-20 lg:h-24 rounded-t-full flex items-center justify-center text-2xl sm:text-3xl lg:text-4xl border-2 sm:border-4 border-white/30 shadow-2xl relative overflow-hidden ${
+                        isActive ? 'bg-gradient-to-b from-[#00bfe6] to-[#03045e]' : 'bg-gradient-to-b from-gray-400 to-gray-600'
+                      }`}
+                      animate={isActive ? { 
+                        scale: [1, 1.15, 1],
+                        boxShadow: [
+                          '0 8px 20px rgba(0, 191, 230, 0.3)',
+                          '0 12px 30px rgba(0, 191, 230, 0.5)',
+                          '0 8px 20px rgba(0, 191, 230, 0.3)'
+                        ]
+                      } : {}}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                    >
+                      {/* Shimmer effect for active trees */}
+                      {isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                      )}
+                      <span className="relative z-10">
+                        {i === 0 ? '🌱' : i === 1 ? '🌿' : i === 2 ? '🌳' : i === 3 ? '🌲' : '🌳'}
+                      </span>
+                    </motion.div>
+                  )
+                })}
+              </div>
+              
+              <motion.div 
+                className="text-base sm:text-xl text-gray-700 font-semibold bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl px-4 py-3 sm:px-6 sm:py-4 border border-gray-200"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 1.6 }}
+              >
+                Level {highestUnlocked} completed • {Math.round((highestUnlocked / 50) * 100)}% Progress
+              </motion.div>
             </div>
-            <div className="text-lg text-gray-700 font-semibold">
-              Level {highestUnlocked} completed • {Math.round((highestUnlocked / 50) * 100)}% Progress
-            </div>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Info Panel */}
+        {/* Info Panel - Modern Glass Design */}
         <AnimatePresence>
           {showInfoPanel && (
             <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              className="fixed right-5 top-24 w-72 bg-white/95 backdrop-blur-sm rounded-2xl p-6 z-40 border border-gray-200 shadow-2xl"
+              initial={{ opacity: 0, x: 20, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.9 }}
+              className="fixed right-3 top-20 sm:right-5 sm:top-24 w-72 sm:w-80 bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 z-40 border border-gray-200 shadow-2xl"
             >
-              <h4 className="text-[#03045e] font-bold text-xl mb-3">Level 1</h4>
-              <p className="text-gray-700 text-sm mb-4 leading-relaxed">Short description about this level goes here.</p>
-              <div className="flex justify-between items-center">
-                <div className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-4 py-2 rounded-xl font-bold text-sm border border-green-200">+10</div>
-                <div className="text-xs text-gray-500 font-medium">Click to start quiz</div>
-              </div>
+              <motion.h4 
+                className="text-[#03045e] font-bold text-xl sm:text-2xl mb-3 sm:mb-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                Level 1
+              </motion.h4>
+              <motion.p 
+                className="text-gray-700 text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                Short description about this level goes here.
+              </motion.p>
+              <motion.div 
+                className="flex justify-between items-center"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm border border-green-200">
+                  +10
+                </div>
+                <div className="text-xs sm:text-sm text-gray-500 font-medium">Click to start quiz</div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Hint Message */}
+        {/* Hint Message - Modern Toast */}
         <AnimatePresence>
           {hintMessage && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="fixed left-4 bottom-5 bg-white/95 backdrop-blur-sm px-4 py-3 rounded-2xl border border-gray-200 text-[#03045e] font-semibold text-sm z-50 shadow-xl"
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              className="fixed left-3 bottom-4 sm:left-4 sm:bottom-5 bg-white/95 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-gray-200 text-[#03045e] font-semibold text-sm sm:text-base z-50 shadow-2xl"
             >
-              {hintMessage}
+              <div className="flex items-center gap-3">
+                <motion.span
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 0.5, repeat: 2 }}
+                >
+                  💡
+                </motion.span>
+                {hintMessage}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1115,9 +1343,9 @@ export default function QuizGame() {
                   </p>
                   
                   <div className="bg-slate-700/50 rounded-lg p-4 mb-6">
-                    <h4 className="text-lg font-semibold text-blue-300 mb-3">What you'll learn:</h4>
+                    <h4 className="text-lg font-semibold text-blue-300 mb-3">What you&apos;ll learn:</h4>
                     <ul className="text-left space-y-2">
-                      {getLearningContent(levelData?.level_number || 1).objectives.map((objective, idx) => (
+                      {getLearningContent(levelData?.level_number || 1).objectives.map((objective: any, idx: number) => (
                         <li key={idx} className="flex items-center text-gray-300">
                           <span className="text-green-400 mr-2">✓</span>
                           {objective}
@@ -1166,7 +1394,7 @@ export default function QuizGame() {
                             <h4 className="text-3xl font-bold text-white mb-2">{currentPractice.word}</h4>
                             <p className="text-2xl text-blue-300 mb-2">{currentPractice.phonetic}</p>
                             <p className="text-gray-300 mb-4">{currentPractice.meaning}</p>
-                            <p className="text-green-300 italic">"{currentPractice.example}"</p>
+                            <p className="text-green-300 italic">&quot;{currentPractice.example}&quot;</p>
                           </div>
                           
                           <div className="flex justify-center space-x-4">
@@ -1196,7 +1424,7 @@ export default function QuizGame() {
                           </div>
                           
                           <div className="bg-slate-700/50 rounded-lg p-6">
-                            {currentPractice.dialogue.map((line, idx) => (
+                            {currentPractice.dialogue.map((line: any, idx: number) => (
                               <div key={idx} className="mb-2 text-gray-300">
                                 {line}
                               </div>
@@ -1226,7 +1454,7 @@ export default function QuizGame() {
                         <div className="space-y-6">
                           <h4 className="text-xl font-semibold text-center text-blue-300">Learn Colors</h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {currentPractice.colors.map((color, idx) => (
+                            {currentPractice.colors.map((color: any, idx: number) => (
                               <div key={idx} className="text-center">
                                 <div 
                                   className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-white/20"
@@ -1374,24 +1602,24 @@ export default function QuizGame() {
               {currentStep === 'result' && quizResult && (
                 <div className="text-center">
                   <div className="text-6xl mb-4">
-                    {quizResult.passed ? '🎉' : '😔'}
+                    {quizResult?.passed ? '🎉' : '😔'}
                   </div>
                   <h2 className={`text-2xl font-bold mb-2 ${
-                    quizResult.passed ? 'text-green-400' : 'text-red-400'
+                    quizResult?.passed ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {quizResult.passed ? 'Congratulations!' : 'Try Again!'}
+                    {quizResult?.passed ? 'Congratulations!' : 'Try Again!'}
                   </h2>
                   <div className="text-4xl font-bold text-white mb-2">
-                    {quizResult.score}/{quizResult.total}
+                    {quizResult?.score}/{quizResult?.total}
                   </div>
                   <div className={`text-xl font-semibold mb-4 ${
-                    quizResult.passed ? 'text-green-400' : 'text-red-400'
+                    quizResult?.passed ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {quizResult.percentage}%
+                    {quizResult?.percentage}%
                   </div>
-                  {quizResult.passed ? (
+                  {quizResult?.passed ? (
                     <div className="text-yellow-400 text-lg mb-4">
-                      +{quizResult.xpEarned} XP Earned! ⭐
+                      +{quizResult?.xpEarned} XP Earned! ⭐
                     </div>
                   ) : (
                     <div className="text-red-400 text-lg mb-4">

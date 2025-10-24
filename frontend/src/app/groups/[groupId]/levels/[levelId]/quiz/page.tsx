@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Volume2, VolumeX, Trophy, CheckCircle, X, RotateCcw, BookOpen, HelpCircle, Lightbulb } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Types
 interface Question {
@@ -98,6 +99,7 @@ export default function QuizPage() {
   const params = useParams()
   const router = useRouter()
   const { groupId, levelId } = params
+  const { isLoggedIn, user, loading: authLoading } = useAuth()
 
   // State
   const [currentLevel, setCurrentLevel] = useState<LevelData | null>(null)
@@ -111,15 +113,23 @@ export default function QuizPage() {
 
   // Load level data
   useEffect(() => {
-    const levelIndex = Number(levelId)
-    if (levelIndex >= 0 && levelIndex < localLevels.length) {
-      setCurrentLevel(localLevels[levelIndex])
+    // Check if user is logged in
+    if (!authLoading && !isLoggedIn) {
+      window.location.href = '/login'
+      return
     }
+    
+    if (!authLoading && isLoggedIn) {
+      const levelIndex = Number(levelId)
+      if (levelIndex >= 0 && levelIndex < localLevels.length) {
+        setCurrentLevel(localLevels[levelIndex])
+      }
 
-    // Load XP from localStorage
-    const savedXp = localStorage.getItem('snake_xp_v1')
-    if (savedXp) setXpTotal(Number(savedXp))
-  }, [levelId])
+      // Load XP from localStorage
+      const savedXp = localStorage.getItem('snake_xp_v1')
+      if (savedXp) setXpTotal(Number(savedXp))
+    }
+  }, [authLoading, isLoggedIn, levelId])
 
   // Audio functions
   const playTing = () => {
@@ -209,6 +219,30 @@ export default function QuizPage() {
   // Go back to groups
   const goBackToGroups = () => {
     router.push(`/groups/${groupId}`)
+  }
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect if not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!currentLevel) {

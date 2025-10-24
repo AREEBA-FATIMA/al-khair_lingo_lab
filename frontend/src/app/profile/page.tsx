@@ -177,7 +177,7 @@ export default function ProfilePage() {
     
     window.addEventListener('progressUpdated', handleProgressUpdate)
     return () => window.removeEventListener('progressUpdated', handleProgressUpdate)
-  }, [])
+  }, [loadUserProgress])
 
   const handleLogout = () => {
     // Clear user data and redirect to home
