@@ -175,9 +175,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
 
-# Custom Authentication Backend - Temporarily disabled for testing
+# Custom Authentication Backend
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Use default Django backend
+    'users.authentication.MultiMethodAuthBackend',  # Custom backend for multi-method auth
+    'django.contrib.auth.backends.ModelBackend',  # Fallback to default Django backend
 ]
 
 # REST Framework Configuration

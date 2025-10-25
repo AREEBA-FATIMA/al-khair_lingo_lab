@@ -22,6 +22,7 @@ import PenguinMascot from '@/components/PenguinMascot'
 import Navigation from '@/components/Navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import ProgressManager from '@/utils/progressManager'
+import { apiService, Group as APIGroup, Level as APILevel } from '@/services/api'
 
 interface Level {
   id: number
@@ -103,10 +104,22 @@ export default function LevelsPage() {
 
   const fetchGroupData = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/groups/${groupId}/`)
-      const data = await response.json()
+      const data = await apiService.getGroup(parseInt(groupId)) as APIGroup
       console.log('Group data:', data) // Debug log
-      setGroup(data)
+      
+      // Transform API data to local format
+      const transformedGroup: Group = {
+        id: data.id,
+        group_number: data.group_number,
+        name: data.name,
+        description: data.description,
+        difficulty: 1, // Default difficulty
+        completion_percentage: data.completion_percentage,
+        levels_completed: data.levels_completed,
+        total_levels: (data as any).total_levels ?? (data as any).level_count ?? 0
+      }
+      
+      setGroup(transformedGroup)
     } catch (error) {
       console.error('Error fetching group:', error)
     }
@@ -114,10 +127,28 @@ export default function LevelsPage() {
 
   const fetchLevels = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/groups/${groupId}/levels/`)
-      const data = await response.json()
+      const data = await apiService.getLevels(parseInt(groupId)) as APILevel[]
       console.log('Levels data:', data) // Debug log
-      setLevels(data.results || data) // Handle both paginated and non-paginated responses
+      
+      // Transform API data to local format
+      const transformedLevels: Level[] = (Array.isArray(data) ? data : []).map(apiLevel => ({
+        id: apiLevel.id,
+        level_number: apiLevel.level_number,
+        name: apiLevel.name,
+        description: apiLevel.description,
+        difficulty: 1, // Default difficulty
+        xp_reward: apiLevel.xp_reward,
+        is_unlocked: apiLevel.is_unlocked,
+        is_completed: apiLevel.is_completed,
+        is_test_level: false, // Default
+        questions_count: (apiLevel as any).questions_count ?? 6,
+        completion_percentage: apiLevel.completion_percentage,
+        score: 0, // Default
+        attempts: 0, // Default
+        time_spent: 0 // Default
+      }))
+      
+      setLevels(transformedLevels)
     } catch (error) {
       console.error('Error fetching levels:', error)
     } finally {
@@ -127,8 +158,7 @@ export default function LevelsPage() {
 
   const fetchUserStats = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/progress/overview/')
-      const data = await response.json()
+      const data = await apiService.getProgressOverview()
       setUserStats(data)
     } catch (error) {
       console.error('Error fetching user stats:', error)
@@ -310,36 +340,39 @@ export default function LevelsPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
-                className={`group relative bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 ${
-                  isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-1 hover:scale-105 cursor-pointer'
-                } ${isCompleted ? 'ring-2 ring-green-400' : ''}`}
+                className={`group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00bfe6]/40 ${
+                  isLocked 
+                    ? 'opacity-60 cursor-not-allowed grayscale' 
+                    : 'hover:-translate-y-1 hover:scale-105 hover:border-transparent hover:ring-1 hover:ring-[#00bfe6]/20 cursor-pointer'
+                }`}
                 onClick={() => handleLevelClick(level)}
               >
-<<<<<<< Updated upstream
-                {/* Level Number */}
                 {/* Background Gradient */}
-                <div className={`absolute inset-0 rounded-3xl ${
+                <div className={`absolute inset-0 rounded-2xl ${
                   isCompleted 
-                    ? 'bg-gradient-to-r from-[#031067]/10 via-[#031067]/15 to-[#031067]/20' 
+                    ? 'bg-gradient-to-r from-[#03045e]/10 to-[#00bfe6]/10' 
                     : isLocked 
                       ? 'bg-gradient-to-br from-gray-500/5 to-gray-600/5' 
-                      : 'bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10'
+                      : 'bg-gradient-to-r from-[#03045e]/10 to-[#00bfe6]/10'
                 }`}></div>
+
+                {/* Top gradient accent */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03045e]/40 to-[#00bfe6]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                 {/* Level Number & Status */}
                 <div className="relative z-10 flex items-center justify-between mb-6">
                   <motion.div 
                     className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-extrabold shadow-2xl border-2 ${
                       isCompleted 
-                        ? 'bg-gradient-to-r from-[#031067] via-[#031067]/90 to-[#031067] text-white border-[#031067]' 
+                        ? 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white border-[#03045e]' 
                         : isLocked 
                           ? 'bg-gradient-to-br from-gray-400 to-gray-600 text-white border-gray-300' 
-                          : 'bg-gradient-to-br from-[#03045e] to-[#00bfe6] text-white border-[#03045e]'
+                          : 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white border-[#03045e]'
                     }`}
-                    animate={hoveredLevel === level.level_number ? { 
-                      scale: [1, 1.1, 1],
-                      rotate: [0, 5, -5, 0]
-                    } : {}}
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                      rotate: [0, 2, -2, 0]
+                    }}
                     transition={{ duration: 0.5 }}
                   >
                     {level.level_number}
@@ -353,7 +386,7 @@ export default function LevelsPage() {
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
                       >
-                        <CheckCircle className="h-6 w-6" style={{ color: '#031067' }} />
+                        <CheckCircle className="h-6 w-6" style={{ color: '#03045e' }} />
                       </motion.div>
                     ) : (
                       <Play className="h-4 w-4 text-[#00bfe6]" />
@@ -364,6 +397,13 @@ export default function LevelsPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Locked Badge */}
+                {isLocked && (
+                  <span className="absolute top-3 right-3 z-10 text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                    Locked
+                  </span>
+                )}
 
                 {/* Level Info */}
                 <div className="mb-3">
@@ -405,7 +445,7 @@ export default function LevelsPage() {
                 )}
 
                 {/* Hover Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#03045e]/5 to-[#00bfe6]/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#03045e]/5 to-[#00bfe6]/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </motion.div>
             )
           }) : (
@@ -429,7 +469,7 @@ export default function LevelsPage() {
               <h3 className="text-xl font-bold text-white">Group Jump Test Available!</h3>
             </div>
             <p className="text-white/90 mb-4">
-              You've completed 80% of this group. Take the jump test to unlock the next group!
+              You&apos;ve completed 80% of this group. Take the jump test to unlock the next group!
             </p>
             <button className="bg-white text-orange-600 font-bold py-3 px-6 rounded-lg hover:bg-gray-100 transition-colors">
               Take Jump Test

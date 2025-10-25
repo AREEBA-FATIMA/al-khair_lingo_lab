@@ -41,14 +41,18 @@ export interface Group {
   group_number: number
   name: string
   description: string
-  level_count: number
-  plant_type: string
+  // backend may return either total_levels or level_count
+  total_levels?: number
+  level_count?: number
+  // optional plant-related fields (not guaranteed by backend)
+  plant_type?: string
+  current_stage?: string
+  is_wilting?: boolean
+  // progress/unlock fields
   is_unlocked: boolean
   unlock_condition: string
   completion_percentage: number
   levels_completed: number
-  current_stage: string
-  is_wilting: boolean
 }
 
 export interface Level {
@@ -165,17 +169,21 @@ export const apiService = {
   // Groups
   getGroups: async (): Promise<Group[]> => {
     const response = await api.get('/groups/')
-    return response.data
+    const data = response.data
+    // Handle paginated or non-paginated responses
+    if (Array.isArray(data)) return data
+    if (data && Array.isArray(data.results)) return data.results
+    return []
   },
 
   // Levels - Updated to use correct endpoints
   getLevel: async (levelNumber: number) => {
-    const response = await api.get(`/levels/${levelNumber}/`)
+    const response = await api.get(`/levels/levels/${levelNumber}/`)
     return response.data
   },
 
   getLevelQuestions: async (levelNumber: number) => {
-    const response = await api.get(`/levels/${levelNumber}/questions/`)
+    const response = await api.get(`/levels/levels/${levelNumber}/questions/`)
     return response.data
   },
 
@@ -229,12 +237,15 @@ export const apiService = {
   // Get levels for a specific group
   getLevels: async (groupId: number): Promise<Level[]> => {
     const response = await api.get(`/groups/${groupId}/levels/`)
-    return response.data
+    const data = response.data
+    if (Array.isArray(data)) return data
+    if (data && Array.isArray(data.results)) return data.results
+    return []
   },
 
   // Progress
   getUserProgress: async (): Promise<UserProgress> => {
-    const response = await api.get('/progress/')
+    const response = await api.get('/progress/overview/')
     return response.data
   },
 

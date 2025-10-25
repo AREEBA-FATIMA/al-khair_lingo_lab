@@ -119,7 +119,7 @@ export default function Navigation({
   return (
     <header className="bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex justify-between items-center py-2 md:py-3">
           <div className="flex items-center space-x-4">
             {showBackButton && (
               <Link
@@ -130,9 +130,9 @@ export default function Navigation({
               </Link>
             )}
             <div className="flex items-center space-x-2">
-              <Leaf className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent">
-                Lingo
+              <img src="/logo.jpg" alt="Al-Khair Lingo Lab Logo" className="h-8 w-auto sm:h-9 rounded" />
+              <h1 className="text-xl sm:text-2xl leading-tight font-bold bg-gradient-to-r from-[#03045e] to-[#00bfe6] bg-clip-text text-transparent">
+                Al-Khair Lingo lab
               </h1>
             </div>
           </div>

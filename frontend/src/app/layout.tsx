@@ -17,10 +17,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} bg-gradient-to-br from-[#f8fafc] via-white to-[#eef7ff] text-gray-900`}> 
         <AuthProvider>
-          {children}
+          <div className="min-h-screen">
+            {children}
+          </div>
           <Toaster 
             position="top-right"
             toastOptions={{

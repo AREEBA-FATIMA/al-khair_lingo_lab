@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import LearningModal from '@/components/LearningModal'
 import Lottie from 'lottie-react'
 import winnerAnimation from '@/assets/Winner-Prize.json'
+import { apiService } from '@/services/api'
 // import PenguinMascot from '@/components/PenguinMascot'
 
 // Types
@@ -50,72 +51,42 @@ interface LevelMeta {
 const localLevels: LevelData[] = [
   {
     id: 1,
-    title: "HTML Basics",
+    level_number: 1,
+    name: "HTML Basics",
     description: "Basic HTML tags (headings, p, a, img).",
-    xp: 10,
+    xp_reward: 10,
+    is_unlocked: true,
+    is_test_level: false,
+    test_questions_count: 0,
     questions: [
-      { question: "What does HTML stand for?", options: ["HyperText Markup Language", "Home Tool Markup Language", "Hyperlinks Text Makeup Language", "HyperText Machine Language"], correctIndex: 0 },
-      { question: "Which tag is used for a paragraph?", options: ["<p>", "<para>", "<pg>", "<text>"], correctIndex: 0 },
-      { question: "Which tag creates a link?", options: ["<a>", "<link>", "<href>", "<url>"], correctIndex: 0 },
-      { question: "Which attribute sets an image source?", options: ["src", "href", "link", "img"], correctIndex: 0 },
-      { question: "Which tag defines the document title?", options: ["<title>", "<head>", "<name>", "<caption>"], correctIndex: 0 },
-      { question: "Which element contains the main content?", options: ["<main>", "<content>", "<body>", "<section>"], correctIndex: 2 }
-    ]
-  },
-  {
-    id: 2,
-    title: "Include CSS",
-    description: "Attach CSS using link or style tags.",
-    xp: 12,
-    questions: [
-      { question: "Which tag includes an external CSS file?", options: ["<link rel='stylesheet' href='style.css'>", "<script src='style.css'>", "<css src='style.css'>", "<style href='style.css'>"], correctIndex: 0 },
-      { question: "Where should link to CSS be placed?", options: ["In the head", "In the body", "At end of body", "In the footer"], correctIndex: 0 },
-      { question: "Which attribute specifies media for link?", options: ["media", "type", "rel", "href"], correctIndex: 0 },
-      { question: "To write internal CSS which tag is used?", options: ["<style>", "<css>", "<link>", "<script>"], correctIndex: 0 },
-      { question: "Inline CSS uses which attribute?", options: ["style", "css", "inline", "class"], correctIndex: 0 },
-      { question: "External CSS keeps markup and styles:", options: ["Separated", "Combined", "Conflicting", "Merged"], correctIndex: 0 }
-    ]
-  },
-  {
-    id: 3,
-    title: "CSS Backgrounds",
-    description: "Change background colors and images.",
-    xp: 15,
-    questions: [
-      { question: "Which property changes background color?", options: ["background-color", "bg", "color-bg", "backColor"], correctIndex: 0 },
-      { question: "How to set background image in CSS?", options: ["background-image:url('x')", "img-bg:url('x')", "bg:url('x')", "image:url('x')"], correctIndex: 0 },
-      { question: "To make background cover entire area use:", options: ["background-size:cover", "background-fit:all", "cover-background:true", "bg-size:100%"], correctIndex: 0 },
-      { question: "Transparent background value is:", options: ["transparent", "#0000", "none", "hide"], correctIndex: 0 },
-      { question: "Background shorthand property is:", options: ["background", "bg", "backgroundAll", "backgroundProp"], correctIndex: 0 },
-      { question: "To repeat background use property:", options: ["background-repeat", "repeat-bg", "bg-repeat", "repeat"], correctIndex: 0 }
-    ]
-  },
-  {
-    id: 4,
-    title: "JS Comments",
-    description: "Comments in JS and code readability.",
-    xp: 18,
-    questions: [
-      { question: "Single-line comment in JS is:", options: ["// comment", "<!-- -->", "/* */", "# comment"], correctIndex: 0 },
-      { question: "Multi-line comment uses:", options: ["/* comment */", "// comment", "# comment", "<-- -->"], correctIndex: 0 },
-      { question: "Comments are used for:", options: ["Readability", "Execution", "Styling", "Linking"], correctIndex: 0 },
-      { question: "Which is NOT comment syntax?", options: ["# comment", "// comment", "/* */", "<!-- -->"], correctIndex: 3 },
-      { question: "Good comments explain:", options: ["Why code exists", "Everything verbatim", "Repeat code", "Hide code"], correctIndex: 0 },
-      { question: "Comments are ignored by:", options: ["The JS engine", "User", "Editor", "Terminal"], correctIndex: 0 }
-    ]
-  },
-  {
-    id: 5,
-    title: "Variables (let)",
-    description: "Declare variables with let/const.",
-    xp: 0,
-    questions: [
-      { question: "Which declares a block-scoped variable (ES6)?", options: ["let x = 5;", "var x = 5;", "int x = 5;", "v x = 5;"], correctIndex: 0 },
-      { question: "Constant declaration uses:", options: ["const", "letconst", "immutable", "final"], correctIndex: 0 },
-      { question: "Reassignable variable uses:", options: ["let", "const", "static", "immutable"], correctIndex: 0 },
-      { question: "Which is valid identifier?", options: ["myVar", "1var", "my-var", "my var"], correctIndex: 0 },
-      { question: "To declare multiple: let a=1, b=2;", options: ["valid", "invalid", "error", "deprecated"], correctIndex: 0 },
-      { question: "Var is function-scoped while let is:", options: ["block-scoped", "global", "module", "none"], correctIndex: 0 }
+      { 
+        id: 1,
+        question_text: "What does HTML stand for?", 
+        question_type: "mcq",
+        options: ["HyperText Markup Language", "Home Tool Markup Language", "Hyperlinks Text Makeup Language", "HyperText Machine Language"], 
+        correct_answer: "HyperText Markup Language",
+        hint: "It's a markup language for web pages",
+        explanation: "HTML stands for HyperText Markup Language",
+        difficulty: 1,
+        xp_value: 2,
+        question_order: 1,
+        time_limit_seconds: 30,
+        is_active: true
+      },
+      { 
+        id: 2,
+        question_text: "Which tag is used for a paragraph?", 
+        question_type: "mcq",
+        options: ["<p>", "<para>", "<pg>", "<text>"], 
+        correct_answer: "<p>",
+        hint: "It's a single letter tag",
+        explanation: "The <p> tag is used for paragraphs",
+        difficulty: 1,
+        xp_value: 2,
+        question_order: 2,
+        time_limit_seconds: 30,
+        is_active: true
+      }
     ]
   }
 ]
@@ -437,18 +408,10 @@ export default function QuizGame() {
         setError(null)
         
         // Fetch level details
-        const levelResponse = await fetch(`http://127.0.0.1:8000/api/levels/levels/${levelId}/`)
-        if (!levelResponse.ok) {
-          throw new Error(`Level not found: ${levelResponse.status}`)
-        }
-        const levelData = await levelResponse.json()
+        const levelData = await apiService.getLevel(parseInt(levelId as string))
         
         // Fetch questions for this level
-        const questionsResponse = await fetch(`http://127.0.0.1:8000/api/levels/levels/${levelId}/questions/`)
-        if (!questionsResponse.ok) {
-          throw new Error(`Questions not found: ${questionsResponse.status}`)
-        }
-        const questionsData = await questionsResponse.json()
+        const questionsData = await apiService.getLevelQuestions(parseInt(levelId as string))
         
         // Transform API data
         const questionsArray = questionsData.results || questionsData || []
@@ -486,44 +449,8 @@ export default function QuizGame() {
         setError(err instanceof Error ? err.message : 'Failed to fetch level data')
         
         // Fallback to mock data
-        setLevelData({
-          id: parseInt(levelId as string),
-          level_number: parseInt(levelId as string),
-          name: `Level ${levelId}`,
-          description: `Level ${levelId} English learning`,
-          xp_reward: 10,
-          is_unlocked: true,
-          is_test_level: false,
-          test_questions_count: 0,
-          questions: localLevels[0]?.questions.map((q, idx) => ({
-            id: idx + 1,
-            question_text: q.question,
-            question_type: 'mcq',
-            options: q.options,
-            correct_answer: q.options[q.correctIndex],
-            hint: `Hint for question ${idx + 1}`,
-            explanation: `Explanation for question ${idx + 1}`,
-            difficulty: 1,
-            xp_value: 2,
-            question_order: idx + 1,
-            time_limit_seconds: 30,
-            is_active: true
-          })) || []
-        })
-        const fallbackQuestions = localLevels[0]?.questions.map((q, idx) => ({
-          id: idx + 1,
-          question_text: q.question,
-          question_type: 'mcq',
-          options: q.options,
-          correct_answer: q.options[q.correctIndex],
-          hint: `Hint for question ${idx + 1}`,
-          explanation: `Explanation for question ${idx + 1}`,
-          difficulty: 1,
-          xp_value: 2,
-          question_order: idx + 1,
-          time_limit_seconds: 30,
-          is_active: true
-        })) || []
+        setLevelData(localLevels[0])
+        const fallbackQuestions = localLevels[0]?.questions || []
         
         setCurrentLevelQuestions(fallbackQuestions)
       } finally {
@@ -744,25 +671,8 @@ export default function QuizGame() {
   // Save progress to database
   const saveProgressToDatabase = async (result: any) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/progress/save/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          level_id: levelData?.id,
-          score: result.score,
-          total: result.total,
-          xp_earned: result.xpEarned,
-          passed: result.passed
-        })
-      })
-      
-      if (response.ok) {
-        console.log('Progress saved to database')
-      } else {
-        console.error('Failed to save progress to database')
-      }
+      await apiService.completeLevel(levelData?.id || 0, [])
+      console.log('Progress saved to database')
     } catch (error) {
       console.error('Error saving progress:', error)
     }
@@ -771,28 +681,21 @@ export default function QuizGame() {
   // Load progress from database
   const loadProgressFromDatabase = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/progress/load/')
+      const data = await apiService.getUserProgress()
+      setUserProgress({
+        totalLevels: 0, // This will be updated from backend
+        completedLevels: 0, // This will be updated from backend
+        totalXP: data.total_xp,
+        highestLevel: 0 // This will be updated from backend
+      })
       
-      if (response.ok) {
-        const data = await response.json()
-        setUserProgress({
-          totalLevels: data.total_levels,
-          completedLevels: data.completed_levels,
-          totalXP: data.total_xp,
-          currentLevel: data.highest_level + 1
-        })
-        
-        // Update local state
-        setHighestUnlocked(data.highest_level)
-        setXpTotal(data.total_xp)
-        persistState()
-        
-        console.log('Progress loaded from database:', {
-          highestLevel: data.highest_level,
-          completedLevels: data.completed_levels,
-          totalXP: data.total_xp
-        })
-      }
+      // Update local state
+      setXpTotal(data.total_xp)
+      persistState()
+      
+      console.log('Progress loaded from database:', {
+        totalXP: data.total_xp
+      })
     } catch (error) {
       console.error('Error loading progress:', error)
     }
@@ -904,9 +807,9 @@ export default function QuizGame() {
   // Level click handler
   const handleLevelClick = (idx: number) => {
     if (idx <= highestUnlocked) {
-      startLevelQuiz(idx)
+      startLevelQuiz()
     } else if (idx === highestUnlocked + 1) {
-      startLevelQuiz(idx)
+      startLevelQuiz()
     } else {
       flashHint("Unlock previous levels first")
     }

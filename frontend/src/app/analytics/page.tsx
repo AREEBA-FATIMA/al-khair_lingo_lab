@@ -126,110 +126,111 @@ export default function AnalyticsDashboard() {
   // Mock data for demonstration
   useEffect(() => {
     if (isLoggedIn) {
-    const mockOverallStats: OverallStats = {
-      date: new Date().toISOString(),
-      total_users: 1250,
-      total_teachers: 45,
-      total_students: 1200,
-      active_users_today: 890,
-      total_levels: 150,
-      total_groups: 25,
-      levels_completed_today: 45,
-      total_levels_completed: 3450,
-      average_completion_rate: 78,
-      average_xp_per_student: 2500,
-      total_xp_earned: 3000000,
-      students_with_streak: 450,
-      students_active_this_week: 950,
-      students_active_this_month: 1100,
-      top_student_xp: 15000,
-      top_student_streak: 45,
-      top_class_completion: 92,
-    }
-
-    const mockCampusData: CampusData[] = [
-      {
-        campus_id: 1,
-        campus_name: "Main Campus",
-        total_teachers: 20,
-        total_students: 500,
-        total_classes: 15,
-        active_students_today: 380,
-        total_xp_earned: 1200000,
-        average_class_completion: 82,
-      },
-      {
-        campus_id: 2,
-        campus_name: "North Campus",
-        total_teachers: 15,
-        total_students: 400,
-        total_classes: 12,
-        active_students_today: 310,
-        total_xp_earned: 950000,
-        average_class_completion: 75,
-      },
-      {
-        campus_id: 3,
-        campus_name: "South Campus",
-        total_teachers: 10,
-        total_students: 300,
-        total_classes: 10,
-        active_students_today: 200,
-        total_xp_earned: 850000,
-        average_class_completion: 70,
-      },
-    ]
-
-    const mockTeacherData: TeacherData[] = [
-      {
-        teacher_id: 1,
-        teacher_name: "Ahmed Khan",
-        teacher_code: "T001",
-        assigned_class: "Class 5A",
-        total_students: 35,
-        students_completed_levels: 28,
-        active_students_today: 32,
-        average_completion_rate: 85,
-        average_xp_per_student: 3200,
-        top_student_name: "Ali Ahmed",
-        top_student_xp: 12000,
-        struggling_students: 3,
-      },
-      {
-        teacher_id: 2,
-        teacher_name: "Fatima Hassan",
-        teacher_code: "T002",
-        assigned_class: "Class 6B",
-        total_students: 32,
-        students_completed_levels: 25,
-        active_students_today: 28,
+      const mockOverallStats: OverallStats = {
+        date: new Date().toISOString(),
+        total_users: 1250,
+        total_teachers: 45,
+        total_students: 1200,
+        active_users_today: 890,
+        total_levels: 150,
+        total_groups: 25,
+        levels_completed_today: 45,
+        total_levels_completed: 3450,
         average_completion_rate: 78,
-        average_xp_per_student: 2800,
-        top_student_name: "Zainab Ali",
-        top_student_xp: 10500,
-        struggling_students: 5,
-      },
-      {
-        teacher_id: 3,
-        teacher_name: "Mohammed Ibrahim",
-        teacher_code: "T003",
-        assigned_class: "Class 7C",
-        total_students: 38,
-        students_completed_levels: 32,
-        active_students_today: 35,
-        average_completion_rate: 88,
-        average_xp_per_student: 3400,
-        top_student_name: "Hassan Omar",
-        top_student_xp: 13500,
-        struggling_students: 2,
-      },
-    ]
+        average_xp_per_student: 2500,
+        total_xp_earned: 3000000,
+        students_with_streak: 450,
+        students_active_this_week: 950,
+        students_active_this_month: 1100,
+        top_student_xp: 15000,
+        top_student_streak: 45,
+        top_class_completion: 92,
+      }
 
-    setOverallStats(mockOverallStats)
-    setCampusData(mockCampusData)
-    setTeacherData(mockTeacherData)
-    setLoading(false)
-  }, [refreshKey])
+      const mockCampusData: CampusData[] = [
+        {
+          campus_id: 1,
+          campus_name: "Main Campus",
+          total_teachers: 20,
+          total_students: 500,
+          total_classes: 15,
+          active_students_today: 380,
+          total_xp_earned: 1200000,
+          average_class_completion: 82,
+        },
+        {
+          campus_id: 2,
+          campus_name: "North Campus",
+          total_teachers: 15,
+          total_students: 400,
+          total_classes: 12,
+          active_students_today: 310,
+          total_xp_earned: 950000,
+          average_class_completion: 75,
+        },
+        {
+          campus_id: 3,
+          campus_name: "South Campus",
+          total_teachers: 10,
+          total_students: 300,
+          total_classes: 10,
+          active_students_today: 200,
+          total_xp_earned: 850000,
+          average_class_completion: 70,
+        },
+      ]
+
+      const mockTeacherData: TeacherData[] = [
+        {
+          teacher_id: 1,
+          teacher_name: "Ahmed Khan",
+          teacher_code: "T001",
+          assigned_class: "Class 5A",
+          total_students: 35,
+          students_completed_levels: 28,
+          active_students_today: 32,
+          average_completion_rate: 85,
+          average_xp_per_student: 3200,
+          top_student_name: "Ali Ahmed",
+          top_student_xp: 12000,
+          struggling_students: 3,
+        },
+        {
+          teacher_id: 2,
+          teacher_name: "Fatima Hassan",
+          teacher_code: "T002",
+          assigned_class: "Class 6B",
+          total_students: 32,
+          students_completed_levels: 25,
+          active_students_today: 28,
+          average_completion_rate: 78,
+          average_xp_per_student: 2800,
+          top_student_name: "Zainab Ali",
+          top_student_xp: 10500,
+          struggling_students: 5,
+        },
+        {
+          teacher_id: 3,
+          teacher_name: "Mohammed Ibrahim",
+          teacher_code: "T003",
+          assigned_class: "Class 7C",
+          total_students: 38,
+          students_completed_levels: 32,
+          active_students_today: 35,
+          average_completion_rate: 88,
+          average_xp_per_student: 3400,
+          top_student_name: "Hassan Omar",
+          top_student_xp: 13500,
+          struggling_students: 2,
+        },
+      ]
+
+      setOverallStats(mockOverallStats)
+      setCampusData(mockCampusData)
+      setTeacherData(mockTeacherData)
+      setLoading(false)
+    }
+  }, [refreshKey, isLoggedIn])
 
   const refreshData = () => {
     setRefreshKey((prev) => prev + 1)

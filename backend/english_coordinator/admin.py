@@ -22,14 +22,14 @@ class EnglishCoordinatorAdmin(admin.ModelAdmin):
     ]
     
     search_fields = [
-        'name', 'father_name', 'email', 'coordinator_id'
+        'name', 'last_name', 'email', 'coordinator_id'
     ]
     
     readonly_fields = ['coordinator_id', 'created_at', 'updated_at', 'supervised_teachers_list']
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'father_name', 'email', 'password', 'is_active')
+            'fields': ('name', 'last_name', 'email', 'password', 'is_active')
         }),
         ('System Information', {
             'fields': ('coordinator_id', 'created_at', 'updated_at'),
