@@ -220,9 +220,33 @@ export default function QuizPage() {
     router.push(`/groups/${groupId}`)
   }
 
-  if (!currentLevel || authLoading) {
+  // Show loading while checking authentication
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#03045e]/5 via-[#00bfe6]/10 to-[#03045e]/5 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect if not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#03045e]/5 via-[#00bfe6]/10 to-[#03045e]/5 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentLevel) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#03045e]/5 via-[#00bfe6]/10 to-[#03045e]/5 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Loading quiz...</p>
@@ -236,7 +260,7 @@ export default function QuizPage() {
   const percentage = Math.round((correctAnswers / (correctAnswers + incorrectAnswers)) * 100) || 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#03045e]/5 via-[#00bfe6]/10 to-[#03045e]/5">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-slate-200/60">
         <div className="max-w-4xl mx-auto px-6 py-4">

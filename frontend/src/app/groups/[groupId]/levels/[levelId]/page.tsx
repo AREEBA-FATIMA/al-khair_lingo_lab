@@ -7,6 +7,9 @@ import { ArrowLeft, Volume2, VolumeX, Trophy, Star } from 'lucide-react'
 import ProgressManager from '@/utils/progressManager'
 import PenguinMascot from '@/components/PenguinMascot'
 import { useAuth } from '@/contexts/AuthContext'
+import LearningModal from '@/components/LearningModal'
+import Lottie from 'lottie-react'
+import winnerAnimation from '@/assets/Winner-Prize.json'
 // import PenguinMascot from '@/components/PenguinMascot'
 
 // Types
@@ -176,6 +179,7 @@ export default function QuizGame() {
   const [correctCount, setCorrectCount] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [showInfoPanel, setShowInfoPanel] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [questionFeedback, setQuestionFeedback] = useState('')
   const [showNext, setShowNext] = useState(false)
@@ -400,7 +404,7 @@ export default function QuizGame() {
       }
     }
     
-    return content[levelNumber] || {
+    return content[levelNumber as 1 | 2 | 3] || {
       topic: "English Learning",
       intro: "Welcome to this English lesson! Let's learn something new today.",
       objectives: ["Learn new vocabulary", "Practice pronunciation", "Improve your English"],
@@ -852,6 +856,39 @@ export default function QuizGame() {
     }
   }
 
+  // Handle next level navigation
+  const handleNextLevel = () => {
+    const currentLevel = parseInt(levelId as string)
+    const nextLevel = currentLevel + 1
+    
+    console.log('Current level:', currentLevel)
+    console.log('Next level:', nextLevel)
+    console.log('Group ID:', groupId)
+    
+    // Set loading state
+    setIsNavigating(true)
+    
+    // Close modal first
+    setShowModal(false)
+    
+    if (nextLevel <= 20) { // Assuming max 20 levels
+      const nextUrl = `/groups/${groupId}/levels/${nextLevel}`
+      console.log('Navigating to:', nextUrl)
+      
+      // Use window.location for more reliable navigation
+      setTimeout(() => {
+        window.location.href = nextUrl
+      }, 300) // Small delay to let modal close
+    } else {
+      // If no more levels, go back to levels page
+      const levelsUrl = `/groups/${groupId}/levels`
+      console.log('No more levels, going to:', levelsUrl)
+      setTimeout(() => {
+        window.location.href = levelsUrl
+      }, 300)
+    }
+  }
+
   // Show info panel
   const showInfoFor = (idx: number) => {
     if (infoTimeoutRef.current) {
@@ -974,7 +1011,7 @@ export default function QuizGame() {
                 {levelData.questions.length} Questions
               </div>
               {levelData.is_test_level && (
-                <div className="bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 px-4 py-2 rounded-xl font-bold border border-yellow-200">
+                <div className="bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 px-6 py-3 rounded-2xl font-bold border border-yellow-200">
                   Test Level
                 </div>
               )}
@@ -982,18 +1019,42 @@ export default function QuizGame() {
           </div>
         </div>
 
-        {/* Start Quiz Button */}
-        <div className="text-center mb-12">
+        {/* Start Quiz Button - Centered and Prominent */}
+        <div className="flex justify-center items-center min-h-[200px] mb-12">
           <motion.button
             onClick={startLevelQuiz}
-            className="px-12 py-6 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white font-bold text-2xl rounded-2xl hover:from-[#02033a] hover:to-[#0099cc] transition-all shadow-2xl hover:shadow-3xl transform hover:scale-105"
+            className="relative px-12 py-8 sm:px-20 sm:py-12 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white font-bold text-2xl sm:text-4xl rounded-3xl sm:rounded-4xl transition-all duration-300 overflow-hidden group"
             style={{
-              boxShadow: '0 15px 35px rgba(3, 4, 94, 0.4), 0 8px 20px rgba(0, 191, 230, 0.3)'
+              boxShadow: '0 20px 50px rgba(3, 4, 94, 0.5), 0 10px 30px rgba(0, 191, 230, 0.4)'
             }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ 
+              scale: 1.1,
+              boxShadow: '0 25px 60px rgba(3, 4, 94, 0.7), 0 15px 35px rgba(0, 191, 230, 0.5)'
+            }}
             whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 50, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+              duration: 1, 
+              delay: 0.8,
+              type: "spring",
+              stiffness: 100,
+              damping: 15
+            }}
           >
-            Start Learning 📚
+            {/* Animated background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#02033a] to-[#0099cc] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#03045e] to-[#00bfe6] animate-pulse opacity-20"></div>
+            <span className="relative z-10 flex items-center gap-4">
+              Start Learning 
+              <motion.span
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                className="text-3xl sm:text-4xl"
+              >
+                📚
+              </motion.span>
+            </span>
           </motion.button>
         </div>
 
@@ -1097,7 +1158,7 @@ export default function QuizGame() {
         </AnimatePresence>
       </div>
 
-      {/* Learning Modal */}
+      {/* Learning Modal
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -1418,7 +1479,136 @@ export default function QuizGame() {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
+
+      <LearningModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        learningContent={getLearningContent(levelData?.level_number || 1)}
+        onStartPractice={startPractice}
+        onStartQuiz={startQuiz}
+        currentStep={currentStep}
+        practiceStep={practiceStep}
+        onNextPractice={nextPracticeStep}
+        onPreviousPractice={() => setPracticeStep(practiceStep - 1)}
+      >
+        {/* Quiz and Result content will be rendered here by LearningModal */}
+        {currentStep === 'quiz' && (
+          <div className="text-center">
+            <div className="text-6xl mb-4">🎯</div>
+            <h3 className="text-2xl font-bold text-[#03045e] mb-4">Quiz Time!</h3>
+            <p className="text-gray-600 mb-6">Test your knowledge with these questions</p>
+            
+            {currentLevelQuestions && currentLevelQuestions.length > 0 && questionPointer < currentLevelQuestions.length && (
+              <div className="bg-gradient-to-r from-[#03045e]/10 to-[#00bfe6]/10 rounded-xl p-6 mb-6 border border-[#03045e]/20">
+                <div className="text-sm text-[#03045e]/70 mb-4 font-semibold">
+                  Question {questionPointer + 1} of {currentLevelQuestions.length}
+                </div>
+                <h4 className="text-xl font-semibold text-[#03045e] mb-4">
+                  {currentLevelQuestions[questionPointer]?.question_text}
+                </h4>
+                
+                <div className="space-y-3">
+                  {currentLevelQuestions[questionPointer]?.options?.map((option: string, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleAnswerClick(idx)}
+                      disabled={selectedOption !== null}
+                      className={`w-full p-4 rounded-xl text-left transition-all duration-200 font-medium ${
+                        selectedOption === idx
+                          ? currentLevelQuestions[questionPointer]?.correct_answer === option
+                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
+                            : 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                          : 'bg-gradient-to-r from-[#03045e]/5 to-[#00bfe6]/5 hover:from-[#03045e]/10 hover:to-[#00bfe6]/10 text-[#03045e] border border-[#03045e]/20 hover:border-[#03045e]/40'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+                
+                {questionFeedback && (
+                  <div className={`mt-4 p-3 rounded-lg ${
+                    questionFeedback.includes('Correct') ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+                  }`}>
+                    {questionFeedback}
+                  </div>
+                )}
+                
+                {showNext && (
+                  <button
+                    onClick={handleNext}
+                    className="mt-4 bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white px-6 py-3 rounded-xl hover:from-[#03045e]/90 hover:to-[#00bfe6]/90 transition-all duration-300 font-semibold shadow-lg"
+                  >
+                    {questionPointer < currentLevelQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentStep === 'result' && quizResult && (
+          <div className="text-center">
+            {quizResult?.passed && (
+              <div className="mb-6">
+                <Lottie
+                  animationData={winnerAnimation}
+                  loop={false}
+                  autoplay={true}
+                  style={{ width: 200, height: 200, margin: '0 auto' }}
+                />
+              </div>
+            )}
+            <div className="text-6xl mb-4">
+              {quizResult?.passed ? '🎉' : '😔'}
+            </div>
+            <h2 className={`text-2xl font-bold mb-2 ${
+              quizResult?.passed ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {quizResult?.passed ? 'Congratulations!' : 'Try Again!'}
+            </h2>
+            <div className="text-4xl font-bold text-[#03045e] mb-2">
+              {quizResult?.score}/{quizResult?.total}
+            </div>
+            <div className={`text-xl font-semibold mb-4 ${
+              quizResult?.passed ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {quizResult?.percentage}%
+            </div>
+            {quizResult?.passed ? (
+              <div className="text-[#00bfe6] text-lg mb-4 font-semibold">
+                +{quizResult?.xpEarned} XP Earned! ⭐
+              </div>
+            ) : (
+              <div className="text-red-600 text-lg mb-4 font-semibold">
+                Level Failed - Try Again! 💪
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-6 py-3 rounded-xl bg-gray-500 text-white font-semibold hover:bg-gray-600 transition-all duration-300 shadow-lg"
+              >
+                Back to Levels
+              </button>
+              {quizResult?.passed && (
+                <button
+                  onClick={handleNextLevel}
+                  disabled={isNavigating}
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg ${
+                    isNavigating 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white hover:from-[#03045e]/90 hover:to-[#00bfe6]/90'
+                  }`}
+                >
+                  {isNavigating ? 'Loading... ⏳' : 'Next Level 🚀'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </LearningModal>
 
     </div>
   )

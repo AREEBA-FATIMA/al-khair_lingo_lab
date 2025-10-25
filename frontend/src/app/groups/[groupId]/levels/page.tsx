@@ -315,23 +315,46 @@ export default function LevelsPage() {
                 } ${isCompleted ? 'ring-2 ring-green-400' : ''}`}
                 onClick={() => handleLevelClick(level)}
               >
+<<<<<<< Updated upstream
                 {/* Level Number */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    isCompleted 
-                      ? 'bg-green-500 text-white' 
-                      : isLocked 
-                        ? 'bg-gray-300 text-gray-500' 
-                        : 'bg-gradient-to-r from-[#03045e] to-[#00bfe6] text-white'
-                  }`}>
+                {/* Background Gradient */}
+                <div className={`absolute inset-0 rounded-3xl ${
+                  isCompleted 
+                    ? 'bg-gradient-to-r from-[#031067]/10 via-[#031067]/15 to-[#031067]/20' 
+                    : isLocked 
+                      ? 'bg-gradient-to-br from-gray-500/5 to-gray-600/5' 
+                      : 'bg-gradient-to-br from-[#03045e]/10 to-[#00bfe6]/10'
+                }`}></div>
+
+                {/* Level Number & Status */}
+                <div className="relative z-10 flex items-center justify-between mb-6">
+                  <motion.div 
+                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-extrabold shadow-2xl border-2 ${
+                      isCompleted 
+                        ? 'bg-gradient-to-r from-[#031067] via-[#031067]/90 to-[#031067] text-white border-[#031067]' 
+                        : isLocked 
+                          ? 'bg-gradient-to-br from-gray-400 to-gray-600 text-white border-gray-300' 
+                          : 'bg-gradient-to-br from-[#03045e] to-[#00bfe6] text-white border-[#03045e]'
+                    }`}
+                    animate={hoveredLevel === level.level_number ? { 
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 5, -5, 0]
+                    } : {}}
+                    transition={{ duration: 0.5 }}
+                  >
                     {level.level_number}
-                  </div>
+                  </motion.div>
                   
                   <div className="flex items-center space-x-1">
                     {isLocked ? (
                       <Lock className="h-4 w-4 text-gray-400" />
                     ) : isCompleted ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <CheckCircle className="h-6 w-6" style={{ color: '#031067' }} />
+                      </motion.div>
                     ) : (
                       <Play className="h-4 w-4 text-[#00bfe6]" />
                     )}
@@ -372,21 +395,6 @@ export default function LevelsPage() {
                     </div>
                   </div>
                 )}
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Zap className="h-3 w-3" />
-                    <span>{level.xp_reward} XP</span>
-                  </div>
-                  {level.attempts > 0 && (
-                    <div className="flex items-center space-x-1">
-                      <Target className="h-3 w-3" />
-                      <span>{level.score}%</span>
-                    </div>
-                  )}
-                </div>
-
                 {/* Completion Badge */}
                 {isCompleted && (
                   <div className="absolute -top-1 -right-1">
